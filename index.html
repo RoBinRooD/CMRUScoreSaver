@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ส่งงาน · บันทึกคะแนน</title>
+  <meta name="description" content="ระบบส่งงานและบันทึกคะแนน วิชาคอมพิวเตอร์กราฟิก มหาวิทยาลัยราชภัฏเชียงใหม่">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/config.js"></script>
+  <script src="js/grade.js"></script>
+  <script src="js/roster.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">✦</span>
+      <span>ส่งงาน · บันทึกคะแนน</span>
+    </div>
+    <div class="topbar-right" id="topbar-right"></div>
+  </header>
+  <main id="app" class="container">
+    <p class="muted center pad">กำลังโหลด…</p>
+  </main>
+  <div id="toasts" aria-live="polite"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

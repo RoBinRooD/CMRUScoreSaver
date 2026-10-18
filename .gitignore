@@ -1,0 +1,6 @@
+# รายชื่อนักศึกษาเป็นข้อมูลส่วนบุคคล — ห้าม commit (repo GitHub Pages เป็นสาธารณะ)
+*.xls
+*.xlsx
+*.csv
+node_modules/
+.DS_Store

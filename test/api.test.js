@@ -36,11 +36,38 @@ test('teacher sees all courses; students only their own', () => {
   assert.deepEqual(s.courses.map((c) => c.courseCode), ['DEMO2303']);
 });
 
-test('no auto-binding: a student with an id-like email must still register', () => {
+test('<id>@domain email: confirm-only registration from the roster', () => {
   const b = loadBackend();
-  const me = b.ok('69000103@demo.ac.th', 'me');
-  assert.equal(me.needsBinding, true);
+  const e = '69000103@demo.ac.th';
+  const me = b.ok(e, 'me');
+  assert.equal(me.needsBinding, true, 'no silent auto-binding — student confirms first');
   assert.equal(me.courses.length, 0);
+  assert.equal(me.registration.studentId, '69000103');
+  assert.equal(me.registration.name, 'นางสาวปิยะ แสงทอง');
+  assert.deepEqual(me.registration.courses.map((c) => c.courseCode), ['DEMO2303']);
+  // ใช้รหัสอื่นที่ไม่ใช่ของอีเมลไม่ได้
+  assert.match(err(b, e, 'register', { studentId: '69000104' }), /เฉพาะรหัส 69000103/);
+  // ไม่ต้องกรอกชื่อ
+  const done = b.ok(e, 'register', { nickname: 'ปิ่น' });
+  assert.equal(done.studentId, '69000103');
+  assert.deepEqual(done.courses.map((c) => c.courseCode), ['DEMO2303']);
+  assert.equal(done.registration, null);
+});
+
+test('<id>@domain email not in any roster: told to contact the teacher', () => {
+  const b = loadBackend();
+  const e = '69999999@demo.ac.th';
+  assert.deepEqual({ ...b.ok(e, 'me').registration }, { studentId: '69999999', notFound: true });
+  assert.match(err(b, e, 'register', {}), /ยังไม่อยู่ในรายชื่อ/);
+  b.ok(T, 'addStudent', { courseCode: 'DEMO3314', studentId: '69999999', name: 'นายมาช้า ลงทะเบียนเพิ่ม' });
+  assert.equal(b.ok(e, 'register', {}).courses[0].courseCode, 'DEMO3314');
+});
+
+test('<id>@domain email whose id was taken by another account is flagged', () => {
+  const b = loadBackend();
+  b.ok(T, 'setStudentEmail', { studentId: '69000104', email: 'someone@demo.ac.th' });
+  assert.equal(b.ok('69000104@demo.ac.th', 'me').registration.takenByOther, true);
+  assert.match(err(b, '69000104@demo.ac.th', 'register', {}), /บัญชีอื่น/);
 });
 
 test('register: id and name must match the registrar roster', () => {

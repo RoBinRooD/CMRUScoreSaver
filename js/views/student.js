@@ -26,6 +26,15 @@ export function renderStudent(root, ctx) {
 /* ---------- สมัครเข้าใช้งาน ---------- */
 
 function renderBind(root, ctx) {
+  const reg = ctx.me.registration;
+  if (reg && reg.name) return renderConfirm(root, ctx, reg);
+  if (reg && reg.notFound) {
+    return mount(root, h('div', { class: 'signin' }, h('div', { class: 'card form' },
+      h('h1', {}, 'ยังไม่พบรายชื่อ'),
+      h('p', {}, 'รหัส ', h('strong', {}, reg.studentId), ' (', ctx.me.email, ') ยังไม่อยู่ในรายชื่อวิชาใด'),
+      h('p', { class: 'muted' }, 'กรุณาแจ้งอาจารย์ให้นำเข้า/เพิ่มรายชื่อ แล้วกลับมาที่หน้านี้อีกครั้ง'),
+      actionButton('ลองใหม่', () => ctx.refreshMe(), { class: 'primary' }))));
+  }
   const f = {
     studentId: h('input', { inputmode: 'numeric', autocomplete: 'off', placeholder: 'เช่น 67152901', maxlength: 13, required: true }),
     firstName: h('input', { autocomplete: 'given-name', placeholder: 'ไม่ต้องใส่คำนำหน้า', required: true }),
@@ -53,6 +62,32 @@ function renderBind(root, ctx) {
     await ctx.refreshMe();
   }, { class: 'primary', type: 'submit' }),
   h('p', { class: 'muted small' }, 'ไม่พบชื่อ? อาจลงทะเบียนเรียนช้าหรือยังไม่อยู่ในรายชื่อ — แจ้งอาจารย์ให้เพิ่มรายชื่อ'))));
+}
+
+/** อีเมลเป็น <รหัส>@cmru.ac.th และรหัสอยู่ในรายชื่อ → แค่ยืนยัน */
+function renderConfirm(root, ctx, reg) {
+  const nickname = h('input', { maxlength: 50 });
+  const phone = h('input', { type: 'tel', inputmode: 'tel', autocomplete: 'tel', maxlength: 15 });
+  const field = (label, el) => h('label', { class: 'field' }, h('span', {}, label), el);
+  mount(root, h('div', { class: 'signin', style: 'text-align:left' }, h('form', {
+    class: 'card form',
+    onsubmit: (e) => e.preventDefault()
+  },
+  h('h1', {}, 'ยืนยันการสมัคร'),
+  h('p', { class: 'muted' }, 'ระบบพบรหัสของคุณในรายชื่อลงทะเบียน'),
+  h('div', { class: 'feedback' },
+    h('div', { style: 'font-size:1.1rem;font-weight:600' }, reg.name),
+    h('div', { class: 'muted small' }, `รหัส ${reg.studentId} · ${ctx.me.email}`),
+    h('ul', { class: 'small', style: 'margin:.5rem 0 0;padding-left:1.2rem' },
+      reg.courses.map((c) => h('li', {}, `${c.courseCode} ${c.title}`)))),
+  reg.takenByOther ? h('div', { class: 'banner' }, 'รหัสนี้ถูกผูกกับบัญชีอื่นไว้ กรุณาติดต่ออาจารย์ให้รีเซ็ต') : null,
+  h('div', { class: 'form-2' }, field('ชื่อเล่น (ไม่บังคับ)', nickname), field('เบอร์โทร (ไม่บังคับ)', phone)),
+  actionButton('ยืนยันสมัคร', async () => {
+    await call('register', { nickname: nickname.value.trim(), phone: phone.value.trim() });
+    toast('สมัครสำเร็จ');
+    await ctx.refreshMe();
+  }, { class: 'primary', type: 'submit', disabled: reg.takenByOther }),
+  h('p', { class: 'muted small' }, 'ถ้าชื่อไม่ใช่คุณ ให้ออกจากระบบแล้วเข้าด้วยบัญชี <รหัสนักศึกษา>@cmru.ac.th ของคุณเอง'))));
 }
 
 /* ---------- งาน ---------- */

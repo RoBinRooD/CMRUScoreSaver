@@ -64,8 +64,9 @@ export function signIn(container, message) {
         h('button', { class: 'primary', onclick: () => done('demo:teacher@demo.ac.th') }, 'อาจารย์'),
         h('button', { onclick: () => done('demo:69000101@demo.ac.th') }, 'นักศึกษา 69000101 (สมัครแล้ว · วิชา 2D)'),
         h('button', { onclick: () => done('demo:68000102@demo.ac.th') }, 'นักศึกษา 68000102 (สมัครแล้ว · วิชา 3D)'),
-        h('button', { onclick: () => done('demo:newstudent@demo.ac.th') }, 'นักศึกษาใหม่ (ยังไม่สมัคร)'),
-        h('p', { class: 'small muted' }, 'ลองสมัครด้วยรหัส 69000103 ชื่อ ปิยะ แสงทอง')));
+        h('button', { onclick: () => done('demo:69000103@demo.ac.th') }, 'นักศึกษาใหม่ 69000103 (ยังไม่สมัคร)'),
+        h('button', { onclick: () => done('demo:69999999@demo.ac.th') }, 'นักศึกษาที่ไม่อยู่ในรายชื่อ'),
+        h('button', { onclick: () => done('demo:somchai@demo.ac.th') }, 'บัญชีที่อีเมลไม่ใช่รหัส (กรอกรหัส + ชื่อเอง)')));
       return;
     }
 

@@ -469,7 +469,7 @@ async function settings(body, ctx) {
     h('section', { class: 'card form' },
       h('h2', {}, 'การเข้าถึง'),
       h('label', { class: 'field' }, h('span', {}, 'อีเมลอาจารย์ (บรรทัดละ 1)'), f.teacherEmails),
-      h('label', { class: 'field' }, h('span', {}, 'โดเมนอีเมลมหาวิทยาลัยที่นักศึกษาใช้สมัคร เช่น g.cmru.ac.th (จำเป็น — ว่าง = นักศึกษาเข้าไม่ได้)'), f.allowedDomains),
+      h('label', { class: 'field' }, h('span', {}, 'โดเมนอีเมลมหาวิทยาลัยที่นักศึกษาใช้ล็อกอิน เช่น cmru.ac.th (จำเป็น — ว่าง = นักศึกษาเข้าไม่ได้)'), f.allowedDomains),
       h('label', { class: 'field' }, h('span', {}, 'เว็บไซต์ที่อัปโหลดได้ (origin) เช่น https://robinrood.github.io'), f.allowedOrigins),
       h('label', { class: 'field' }, h('span', {}, 'ขนาดไฟล์สูงสุดต่อไฟล์ (MB)'), f.uploadMaxMB)),
     h('section', { class: 'card form' },

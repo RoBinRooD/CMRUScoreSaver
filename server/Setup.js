@@ -31,7 +31,7 @@ function setup() {
   var me = Session.getEffectiveUser().getEmail();
   var defaults = {
     teacherEmails: me,
-    allowedDomains: '',
+    allowedDomains: 'cmru.ac.th',
     allowedOrigins: 'https://robinrood.github.io',
     clientId: '',
     rootFolderId: '',
@@ -43,7 +43,7 @@ function setup() {
   if (!have.rootFolderId) defaults.rootFolderId = DriveApp.createFolder('CMRUScoreSaver งานนักศึกษา').getId();
   Object.keys(defaults).forEach(function (k) {
     if (have[k] === undefined) insert_('Settings', { key: k, value: defaults[k] });
-    else if (k === 'rootFolderId' && !have[k]) {
+    else if ((k === 'rootFolderId' || k === 'allowedDomains') && !have[k]) {
       var r = find_(rows_('Settings'), function (x) { return x.key === k; });
       r.value = defaults[k];
       update_('Settings', r);

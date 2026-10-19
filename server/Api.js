@@ -244,6 +244,7 @@ function apiMe_(user) {
     studentName: user.studentName || '',
     needsBinding: user.role === 'student' && !user.studentId,
     courses: courses,
+    registration: user.role === 'student' && !user.studentId ? registrationInfo_(user) : null,
     warnings: user.role === 'teacher' ? setupWarnings_() : []
   };
 }
@@ -254,6 +255,30 @@ function setupWarnings_() {
     w.push('ยังไม่ได้ตั้งโดเมนอีเมลมหาวิทยาลัย — นักศึกษายังสมัครไม่ได้ (ตั้งที่แท็บ ตั้งค่า)');
   }
   return w;
+}
+
+/** อีเมลนักศึกษา มรภ.เชียงใหม่ = <รหัสนักศึกษา>@cmru.ac.th → คืนรหัส (หรือ null ถ้าไม่ใช่รูปแบบนี้) */
+function emailStudentId_(email) {
+  var local = String(email || '').split('@')[0];
+  return /^\d{8,13}$/.test(local) ? local : null;
+}
+
+/** ข้อมูลสำหรับหน้าสมัครของนักศึกษาที่ยังไม่สมัคร */
+function registrationInfo_(user) {
+  var id = emailStudentId_(user.email);
+  if (!id) return null;
+  var rows = rows_('Students').filter(function (r) { return r.studentId === id; });
+  if (!rows.length) return { studentId: id, notFound: true };
+  var courses = rows_('Courses');
+  return {
+    studentId: id,
+    name: rows[0].name,
+    takenByOther: rows.some(function (r) { return r.email && r.email.toLowerCase() !== user.email; }),
+    courses: rows.map(function (r) {
+      var c = find_(courses, function (x) { return x.courseCode === r.courseCode; });
+      return { courseCode: r.courseCode, title: c ? c.title : '' };
+    })
+  };
 }
 
 /** ตัดคำนำหน้าและช่องว่าง เพื่อเทียบชื่อที่กรอกกับชื่อในใบรายชื่อ */
@@ -268,29 +293,38 @@ function normalizeName_(s) {
 function apiRegister_(user, p) {
   if (user.role !== 'student') throw new Error('อาจารย์ไม่ต้องสมัคร');
   if (user.studentId) throw new Error('บัญชีนี้สมัครแล้วด้วยรหัส ' + user.studentId);
-  var hit = rateLimit_('reg_' + user.email, 5, 3600, 'กรอกข้อมูลไม่ถูกต้องหลายครั้งเกินไป กรุณารอ 1 ชั่วโมง หรือติดต่ออาจารย์');
-
-  var id = str_(p.studentId, 20);
-  var first = str_(p.firstName, 100), last = str_(p.lastName, 100);
-  if (!/^\d{8,13}$/.test(id)) throw new Error('รหัสนักศึกษาต้องเป็นตัวเลข 8–13 หลัก');
-  if (!first || !last) throw new Error('กรุณากรอกชื่อและนามสกุล');
   var phone = str_(p.phone, 20).replace(/[\s-]/g, '');
   if (phone && !/^\+?\d{9,12}$/.test(phone)) throw new Error('เบอร์โทรไม่ถูกต้อง');
+  var rows;
 
-  var rows = rows_('Students').filter(function (r) { return r.studentId === id; });
-  if (!rows.length) {
-    hit();
-    throw new Error('ไม่พบรหัส ' + id + ' ในรายชื่อลงทะเบียน — ตรวจรหัสอีกครั้ง หรือติดต่ออาจารย์');
-  }
-  if (normalizeName_(rows[0].name) !== normalizeName_(first + last)) {
-    hit();
-    throw new Error('ชื่อ-นามสกุลไม่ตรงกับรายชื่อลงทะเบียนของรหัสนี้ (กรอกตามใบรายชื่อของมหาวิทยาลัย ไม่ต้องใส่คำนำหน้า)');
+  var fromEmail = emailStudentId_(user.email);
+  if (fromEmail) {
+    // อีเมลแบบ <รหัส>@cmru.ac.th ยืนยันตัวตนโดย Google แล้ว → ใช้รหัสจากอีเมล ไม่ต้องตรวจชื่อ
+    if (p.studentId && str_(p.studentId, 20) !== fromEmail) throw new Error('สมัครได้เฉพาะรหัส ' + fromEmail + ' ตามอีเมลที่ล็อกอิน');
+    rows = rows_('Students').filter(function (r) { return r.studentId === fromEmail; });
+    if (!rows.length) throw new Error('รหัส ' + fromEmail + ' ยังไม่อยู่ในรายชื่อวิชาใด กรุณาแจ้งอาจารย์');
+  } else {
+    // อีเมลรูปแบบอื่น → ต้องกรอกรหัส + ชื่อ-นามสกุลให้ตรงกับรายชื่อ
+    var hit = rateLimit_('reg_' + user.email, 5, 3600, 'กรอกข้อมูลไม่ถูกต้องหลายครั้งเกินไป กรุณารอ 1 ชั่วโมง หรือติดต่ออาจารย์');
+    var id = str_(p.studentId, 20);
+    var first = str_(p.firstName, 100), last = str_(p.lastName, 100);
+    if (!/^\d{8,13}$/.test(id)) throw new Error('รหัสนักศึกษาต้องเป็นตัวเลข 8–13 หลัก');
+    if (!first || !last) throw new Error('กรุณากรอกชื่อและนามสกุล');
+    rows = rows_('Students').filter(function (r) { return r.studentId === id; });
+    if (!rows.length) {
+      hit();
+      throw new Error('ไม่พบรหัส ' + id + ' ในรายชื่อลงทะเบียน — ตรวจรหัสอีกครั้ง หรือติดต่ออาจารย์');
+    }
+    if (normalizeName_(rows[0].name) !== normalizeName_(first + last)) {
+      hit();
+      throw new Error('ชื่อ-นามสกุลไม่ตรงกับรายชื่อลงทะเบียนของรหัสนี้ (กรอกตามใบรายชื่อของมหาวิทยาลัย ไม่ต้องใส่คำนำหน้า)');
+    }
   }
   if (rows.some(function (r) { return r.email && r.email.toLowerCase() !== user.email; })) {
     throw new Error('รหัสนี้ถูกสมัครด้วยบัญชีอื่นแล้ว กรุณาติดต่ออาจารย์');
   }
   bindRows_(rows, user.email, { nickname: str_(p.nickname, 50), phone: phone });
-  user.studentId = id;
+  user.studentId = rows[0].studentId;
   user.studentName = rows[0].name;
   user.courses = rows.map(function (r) { return r.courseCode; });
   return apiMe_(user);

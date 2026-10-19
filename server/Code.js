@@ -6,10 +6,10 @@
 
 // คำสั่งที่มีการเขียนข้อมูล — รันภายใต้ lock เพื่อกันการเขียนชนกัน
 var WRITE_ACTIONS = {
-  me: 1, bind: 1, finalizeUpload: 1, submitLink: 1, removeFile: 1,
+  register: 1, finalizeUpload: 1, submitLink: 1, removeFile: 1,
   importRoster: 1, upsertAssignment: 1, deleteAssignment: 1, saveGrades: 1,
   saveAttendance: 1, saveExams: 1, updateCourse: 1, updateSettings: 1,
-  setStudentEmail: 1, removeStudent: 1
+  setStudentEmail: 1, addStudent: 1, removeStudent: 1
 };
 
 function doGet() {

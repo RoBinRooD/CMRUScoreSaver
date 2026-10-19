@@ -8,7 +8,7 @@ var SCHEMA = {
   Settings: ['key', 'value'],
   Courses: ['courseCode', 'title', 'section', 'term', 'schedule', 'credits', 'teacher',
     'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks'],
-  Students: ['courseCode', 'studentId', 'name', 'group', 'email', 'boundAt'],
+  Students: ['courseCode', 'studentId', 'name', 'group', 'email', 'boundAt', 'nickname', 'phone'],
   Assignments: ['id', 'courseCode', 'title', 'description', 'maxScore', 'dueAt', 'allowLate', 'published', 'createdAt'],
   Submissions: ['id', 'assignmentId', 'studentId', 'files', 'link', 'submittedAt', 'isLate', 'score', 'feedback', 'gradedAt'],
   Attendance: ['courseCode', 'studentId', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8',

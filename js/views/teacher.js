@@ -19,6 +19,7 @@ export function renderTeacher(root, ctx) {
   if (!course && tab !== 'settings') tab = 'students';
   const body = h('div');
   mount(root,
+    (ctx.me.warnings || []).map((w) => h('div', { class: 'banner' }, '⚠️ ', w)),
     course
       ? h('div', { style: 'margin-bottom:.5rem' },
         h('h1', {}, course.title),
@@ -350,26 +351,66 @@ async function students(body, ctx) {
   if (!ctx.course) return mount(body, importer);
   mount(body, loading());
   const list = await call('listStudents', { courseCode: ctx.course.courseCode });
-  const bound = list.filter((s) => s.email).length;
+  const registered = list.filter((s) => s.email).length;
+  const filter = h('select', { 'aria-label': 'กรองสถานะ' },
+    h('option', { value: 'all' }, 'ทั้งหมด'),
+    h('option', { value: 'no' }, 'ยังไม่สมัคร'),
+    h('option', { value: 'yes' }, 'สมัครแล้ว'));
+  const tbody = h('tbody');
+  const reload = () => students(body, ctx);
+  const draw = () => mount(tbody, list
+    .filter((s) => filter.value === 'all' || (filter.value === 'yes') === !!s.email)
+    .map((s) => h('tr', {},
+      h('td', { class: 'nowrap' }, s.studentId),
+      h('td', { class: 'nowrap' }, s.name, s.nickname ? h('span', { class: 'muted' }, ` (${s.nickname})`) : null),
+      h('td', { class: 'nowrap' }, s.group),
+      h('td', { class: 'nowrap' }, s.email
+        ? h('span', { class: 'chip ok', title: 'สมัครเมื่อ ' + fmtDate(s.boundAt) }, 'สมัครแล้ว')
+        : h('span', { class: 'chip warn' }, 'ยังไม่สมัคร')),
+      h('td', {}, s.email || '-', s.phone ? h('div', { class: 'muted small' }, s.phone) : null),
+      h('td', { class: 'nowrap' },
+        h('button', { class: 'sm', onclick: () => editEmail(s).then((ok) => ok && reload()) }, s.email ? 'แก้/รีเซ็ต' : 'กำหนดอีเมล'),
+        actionButton('นำออก', async () => {
+          if (!(await confirmBox(`นำ ${s.name} ออกจากรายชื่อวิชานี้? (งานที่ส่งแล้วยังอยู่)`, 'นำออก', 'danger'))) return;
+          await call('removeStudent', { courseCode: ctx.course.courseCode, studentId: s.studentId });
+          reload();
+        }, { class: 'sm ghost danger' })))));
+  filter.addEventListener('change', draw);
+  draw();
   mount(body, h('div', { class: 'stack' },
     importer,
-    h('div', { class: 'row' }, h('h2', { style: 'margin:0' }, `รายชื่อ ${list.length} คน`), h('span', { class: 'chip ' + (bound === list.length ? 'ok' : 'warn') }, `ผูกบัญชีแล้ว ${bound}`)),
+    h('div', { class: 'row' },
+      h('h2', { style: 'margin:0' }, `รายชื่อ ${list.length} คน`),
+      h('span', { class: 'chip ' + (registered === list.length ? 'ok' : 'warn') }, `สมัครแล้ว ${registered}/${list.length}`),
+      h('span', { class: 'spacer' }),
+      filter,
+      h('button', { onclick: () => addStudentForm(ctx.course).then((ok) => ok && reload()) }, '+ เพิ่มนักศึกษา')),
     h('div', { class: 'table-wrap' }, h('table', {},
-      h('thead', {}, h('tr', {}, h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'), h('th', {}, 'หมู่เรียน'), h('th', {}, 'บัญชี Google'), h('th', {}, ''))),
-      h('tbody', {}, list.map((s) => h('tr', {},
-        h('td', { class: 'nowrap' }, s.studentId), h('td', { class: 'nowrap' }, s.name), h('td', { class: 'nowrap' }, s.group),
-        h('td', {}, s.email ? h('span', { title: 'ผูกเมื่อ ' + fmtDate(s.boundAt) }, s.email) : h('span', { class: 'muted' }, 'ยังไม่ผูก')),
-        h('td', { class: 'nowrap' },
-          h('button', { class: 'sm', onclick: () => editEmail(s).then((ok) => ok && students(body, ctx)) }, s.email ? 'เปลี่ยน/รีเซ็ต' : 'กำหนดอีเมล'),
-          actionButton('นำออก', async () => {
-            if (!(await confirmBox(`นำ ${s.name} ออกจากรายชื่อวิชานี้? (งานที่ส่งแล้วยังอยู่)`, 'นำออก', 'danger'))) return;
-            await call('removeStudent', { courseCode: ctx.course.courseCode, studentId: s.studentId });
-            students(body, ctx);
-          }, { class: 'sm ghost danger' })))))))));
+      h('thead', {}, h('tr', {}, h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'), h('th', {}, 'หมู่เรียน'), h('th', {}, 'สถานะ'), h('th', {}, 'บัญชี / เบอร์'), h('th', {}, ''))),
+      tbody))));
+}
+
+function addStudentForm(course) {
+  const f = {
+    studentId: h('input', { inputmode: 'numeric', maxlength: 13 }),
+    name: h('input', { placeholder: 'เช่น นางสาวสมหญิง ใจดี' }),
+    group: h('input', { placeholder: 'เช่น ศอ 68.ศป.บ.4.1' })
+  };
+  return modal(`เพิ่มนักศึกษาใน ${course.courseCode}`, h('div', { class: 'form' },
+    h('p', { class: 'muted small' }, 'สำหรับนักศึกษาที่ไม่อยู่ในไฟล์รายชื่อ เพิ่มแล้วนักศึกษาสมัครด้วยรหัสและชื่อนี้ได้'),
+    h('label', { class: 'field' }, h('span', {}, 'รหัสนักศึกษา'), f.studentId),
+    h('label', { class: 'field' }, h('span', {}, 'ชื่อ-นามสกุล (ตามใบรายชื่อ)'), f.name),
+    h('label', { class: 'field' }, h('span', {}, 'หมู่เรียน'), f.group)), [{
+    label: 'เพิ่ม',
+    run: async () => {
+      await call('addStudent', { courseCode: course.courseCode, studentId: f.studentId.value.trim(), name: f.name.value.trim(), group: f.group.value.trim() });
+      toast('เพิ่มนักศึกษาแล้ว');
+    }
+  }]);
 }
 
 function editEmail(s) {
-  const input = h('input', { type: 'email', value: s.email, placeholder: 'เว้นว่าง = รีเซ็ตให้นักศึกษาผูกเองใหม่' });
+  const input = h('input', { type: 'email', value: s.email, placeholder: 'เว้นว่าง = รีเซ็ตให้นักศึกษาสมัครใหม่' });
   return modal(`บัญชีของ ${s.studentId} ${s.name}`,
     h('label', { class: 'field' }, h('span', {}, 'อีเมล Google'), input),
     [{ label: 'บันทึก', run: async () => { await call('setStudentEmail', { studentId: s.studentId, email: input.value.trim() }); toast('บันทึกแล้ว'); } }]);
@@ -410,7 +451,7 @@ function rosterImporter(ctx) {
 
 /* ---------- ตั้งค่า ---------- */
 
-async function settings(body) {
+async function settings(body, ctx) {
   mount(body, loading());
   const s = await call('getSettings');
   const text = (v) => h('textarea', { value: v.join('\n'), style: 'min-height:70px' });
@@ -428,7 +469,7 @@ async function settings(body) {
     h('section', { class: 'card form' },
       h('h2', {}, 'การเข้าถึง'),
       h('label', { class: 'field' }, h('span', {}, 'อีเมลอาจารย์ (บรรทัดละ 1)'), f.teacherEmails),
-      h('label', { class: 'field' }, h('span', {}, 'โดเมนอีเมลนักศึกษาที่อนุญาต เช่น g.cmru.ac.th (ว่าง = ทุกบัญชี Google)'), f.allowedDomains),
+      h('label', { class: 'field' }, h('span', {}, 'โดเมนอีเมลมหาวิทยาลัยที่นักศึกษาใช้สมัคร เช่น g.cmru.ac.th (จำเป็น — ว่าง = นักศึกษาเข้าไม่ได้)'), f.allowedDomains),
       h('label', { class: 'field' }, h('span', {}, 'เว็บไซต์ที่อัปโหลดได้ (origin) เช่น https://robinrood.github.io'), f.allowedOrigins),
       h('label', { class: 'field' }, h('span', {}, 'ขนาดไฟล์สูงสุดต่อไฟล์ (MB)'), f.uploadMaxMB)),
     h('section', { class: 'card form' },
@@ -447,5 +488,6 @@ async function settings(body) {
         attendancePoints: Object.fromEntries(Object.entries(pts).map(([k, el]) => [k, Number(el.value)]))
       });
       toast('บันทึกการตั้งค่าแล้ว');
+      await ctx.refreshMe();
     }, { class: 'primary' }))));
 }

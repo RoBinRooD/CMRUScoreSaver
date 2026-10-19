@@ -55,7 +55,7 @@ function memorySeed_() {
       var id = c[2] + String(101 + i);
       db.Students.push({
         courseCode: c[0], studentId: id, name: (i % 2 ? 'นาย' : 'นางสาว') + first[(i + ci) % 8] + ' ' + last[i],
-        group: 'ตัวอย่าง.' + (ci + 1), email: '', boundAt: ''
+        group: 'ตัวอย่าง.' + (ci + 1), email: '', boundAt: '', nickname: '', phone: ''
       });
       db.Attendance.push({ courseCode: c[0], studentId: id, w1: 'P', w2: i === 3 ? 'A' : i === 5 ? 'L' : 'P' });
     }
@@ -75,7 +75,16 @@ function memorySeed_() {
     { id: 'S2', assignmentId: 'A1', studentId: '69000102', files: JSON.stringify([{ id: 'demo-file-2', name: 'logo-final.ai', size: 3145728, mimeType: 'application/postscript' }]),
       link: '', submittedAt: new Date(Date.now() - 2 * day).toISOString(), isLate: 'true', score: '', feedback: '', gradedAt: '' }
   );
+  // ตัวอย่างนักศึกษาที่สมัครแล้ว
+  [['69000101', 'ส้ม'], ['68000102', 'บีม']].forEach(function (x) {
+    db.Students.filter(function (r) { return r.studentId === x[0]; }).forEach(function (r) {
+      r.email = x[0] + '@demo.ac.th';
+      r.boundAt = new Date().toISOString();
+      r.nickname = x[1];
+    });
+  });
   db._files = {};
+  db._rate = {};
   db._seq = 100;
   return db;
 }
@@ -153,6 +162,16 @@ function verifyIdToken_(token) {
   var m = /^demo:(.+@.+)$/.exec(String(token || ''));
   if (!m) throw new Error('AUTH: กรุณาเข้าสู่ระบบ');
   return { email: m[1].toLowerCase(), name: m[1].split('@')[0] };
+}
+
+function rateLimit_(key, max, seconds, message) {
+  var db = memoryLoad_();
+  db._rate = db._rate || {};
+  if ((db._rate[key] || 0) >= max) throw new Error(message);
+  return function hit() {
+    db._rate[key] = (db._rate[key] || 0) + 1;
+    memoryPersist_();
+  };
 }
 
 /* ---------- เขียนทับ Drive ---------- */

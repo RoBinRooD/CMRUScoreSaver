@@ -23,22 +23,36 @@ export function renderStudent(root, ctx) {
   else renderWork(body, course);
 }
 
-/* ---------- ยืนยันรหัสนักศึกษา ---------- */
+/* ---------- สมัครเข้าใช้งาน ---------- */
 
 function renderBind(root, ctx) {
-  const input = h('input', { inputmode: 'numeric', autocomplete: 'off', placeholder: 'เช่น 67152901', maxlength: 13, required: true });
-  mount(root, h('div', { class: 'signin' }, h('div', { class: 'card form' },
-    h('h1', {}, 'ยืนยันรหัสนักศึกษา'),
-    h('p', { class: 'muted' }, `บัญชี ${ctx.me.email} ยังไม่ได้ผูกกับรหัสนักศึกษา กรอกรหัสของคุณ (ทำได้ครั้งเดียว — ถ้ากรอกผิดต้องให้อาจารย์รีเซ็ต)`),
-    h('label', { class: 'field' }, h('span', {}, 'รหัสนักศึกษา'), input),
-    actionButton('ยืนยัน', async () => {
-      const id = input.value.trim();
-      if (!/^\d{8,13}$/.test(id)) throw new Error('รหัสนักศึกษาต้องเป็นตัวเลข 8–13 หลัก');
-      if (!(await confirmBox(`ยืนยันว่าคุณคือรหัส ${id}?`))) return;
-      await call('bind', { studentId: id });
-      toast('ผูกบัญชีเรียบร้อย');
-      await ctx.refreshMe();
-    }, { class: 'primary' }))));
+  const f = {
+    studentId: h('input', { inputmode: 'numeric', autocomplete: 'off', placeholder: 'เช่น 67152901', maxlength: 13, required: true }),
+    firstName: h('input', { autocomplete: 'given-name', placeholder: 'ไม่ต้องใส่คำนำหน้า', required: true }),
+    lastName: h('input', { autocomplete: 'family-name', required: true }),
+    nickname: h('input', { maxlength: 50 }),
+    phone: h('input', { type: 'tel', inputmode: 'tel', autocomplete: 'tel', maxlength: 15 })
+  };
+  const field = (label, el) => h('label', { class: 'field' }, h('span', {}, label), el);
+  mount(root, h('div', { class: 'signin', style: 'text-align:left' }, h('form', {
+    class: 'card form',
+    onsubmit: (e) => e.preventDefault()
+  },
+  h('h1', {}, 'สมัครเข้าใช้งาน'),
+  h('p', { class: 'muted' }, 'กรอกรหัสและชื่อ-นามสกุลให้ตรงกับใบรายชื่อลงทะเบียนของมหาวิทยาลัย ระบบจะผูกรหัสนี้กับบัญชี ',
+    h('strong', {}, ctx.me.email), ' (สมัครได้ครั้งเดียว)'),
+  field('รหัสนักศึกษา *', f.studentId),
+  h('div', { class: 'form-2' }, field('ชื่อ *', f.firstName), field('นามสกุล *', f.lastName)),
+  h('div', { class: 'form-2' }, field('ชื่อเล่น', f.nickname), field('เบอร์โทร', f.phone)),
+  actionButton('สมัคร', async () => {
+    const data = Object.fromEntries(Object.entries(f).map(([k, el]) => [k, el.value.trim()]));
+    if (!/^\d{8,13}$/.test(data.studentId)) throw new Error('รหัสนักศึกษาต้องเป็นตัวเลข 8–13 หลัก');
+    if (!data.firstName || !data.lastName) throw new Error('กรุณากรอกชื่อและนามสกุล');
+    const me = await call('register', data);
+    toast(`สมัครสำเร็จ — ${me.courses.map((c) => c.courseCode).join(', ')}`);
+    await ctx.refreshMe();
+  }, { class: 'primary', type: 'submit' }),
+  h('p', { class: 'muted small' }, 'ไม่พบชื่อ? อาจลงทะเบียนเรียนช้าหรือยังไม่อยู่ในรายชื่อ — แจ้งอาจารย์ให้เพิ่มรายชื่อ'))));
 }
 
 /* ---------- งาน ---------- */

@@ -6,7 +6,7 @@ function actions_() {
   return {
     // ทุกคน
     me: apiMe_,
-    bind: apiBind_,
+    register: apiRegister_,
     // นักศึกษา
     myAssignments: apiMyAssignments_,
     myGrades: apiMyGrades_,
@@ -18,6 +18,7 @@ function actions_() {
     importRoster: apiImportRoster_,
     listStudents: apiListStudents_,
     setStudentEmail: apiSetStudentEmail_,
+    addStudent: apiAddStudent_,
     removeStudent: apiRemoveStudent_,
     listAssignments: apiListAssignments_,
     upsertAssignment: apiUpsertAssignment_,
@@ -142,7 +143,10 @@ function checkInRoster_(code, studentId) {
 }
 
 function studentView_(r) {
-  return { studentId: r.studentId, name: r.name, group: r.group, email: r.email, boundAt: r.boundAt };
+  return {
+    studentId: r.studentId, name: r.name, group: r.group, email: r.email, boundAt: r.boundAt,
+    nickname: r.nickname || '', phone: r.phone || ''
+  };
 }
 
 function checkEnrolled_(user, courseCode) {
@@ -239,21 +243,53 @@ function apiMe_(user) {
     studentId: user.studentId || null,
     studentName: user.studentName || '',
     needsBinding: user.role === 'student' && !user.studentId,
-    courses: courses
+    courses: courses,
+    warnings: user.role === 'teacher' ? setupWarnings_() : []
   };
 }
 
-function apiBind_(user, p) {
-  if (user.role !== 'student') throw new Error('อาจารย์ไม่ต้องยืนยันรหัส');
-  if (user.studentId) throw new Error('บัญชีนี้ผูกกับรหัส ' + user.studentId + ' แล้ว');
-  var id = str_(p.studentId, 20);
-  if (!/^\d{8,13}$/.test(id)) throw new Error('รหัสนักศึกษาไม่ถูกต้อง');
-  var rows = rows_('Students').filter(function (r) { return r.studentId === id; });
-  if (!rows.length) throw new Error('ไม่พบรหัส ' + id + ' ในรายชื่อวิชาใดเลย กรุณาติดต่ออาจารย์');
-  if (rows.some(function (r) { return r.email && r.email.toLowerCase() !== user.email; })) {
-    throw new Error('รหัสนี้ถูกผูกกับบัญชีอื่นแล้ว กรุณาติดต่ออาจารย์');
+function setupWarnings_() {
+  var w = [];
+  if (!listSetting_('allowedDomains').length) {
+    w.push('ยังไม่ได้ตั้งโดเมนอีเมลมหาวิทยาลัย — นักศึกษายังสมัครไม่ได้ (ตั้งที่แท็บ ตั้งค่า)');
   }
-  bindRows_(rows, user.email);
+  return w;
+}
+
+/** ตัดคำนำหน้าและช่องว่าง เพื่อเทียบชื่อที่กรอกกับชื่อในใบรายชื่อ */
+function normalizeName_(s) {
+  return String(s || '')
+    .replace(/^\s*(นางสาว|นาง|นาย|น\.ส\.|ด\.ช\.|ด\.ญ\.|mr\.?|mrs\.?|miss|ms\.?)\s*/i, '')
+    .replace(/\s+/g, '')
+    .toLowerCase();
+}
+
+/** นักศึกษาสมัครเข้าใช้งาน: รหัส + ชื่อ-นามสกุลต้องตรงกับรายชื่อที่อาจารย์นำเข้า */
+function apiRegister_(user, p) {
+  if (user.role !== 'student') throw new Error('อาจารย์ไม่ต้องสมัคร');
+  if (user.studentId) throw new Error('บัญชีนี้สมัครแล้วด้วยรหัส ' + user.studentId);
+  var hit = rateLimit_('reg_' + user.email, 5, 3600, 'กรอกข้อมูลไม่ถูกต้องหลายครั้งเกินไป กรุณารอ 1 ชั่วโมง หรือติดต่ออาจารย์');
+
+  var id = str_(p.studentId, 20);
+  var first = str_(p.firstName, 100), last = str_(p.lastName, 100);
+  if (!/^\d{8,13}$/.test(id)) throw new Error('รหัสนักศึกษาต้องเป็นตัวเลข 8–13 หลัก');
+  if (!first || !last) throw new Error('กรุณากรอกชื่อและนามสกุล');
+  var phone = str_(p.phone, 20).replace(/[\s-]/g, '');
+  if (phone && !/^\+?\d{9,12}$/.test(phone)) throw new Error('เบอร์โทรไม่ถูกต้อง');
+
+  var rows = rows_('Students').filter(function (r) { return r.studentId === id; });
+  if (!rows.length) {
+    hit();
+    throw new Error('ไม่พบรหัส ' + id + ' ในรายชื่อลงทะเบียน — ตรวจรหัสอีกครั้ง หรือติดต่ออาจารย์');
+  }
+  if (normalizeName_(rows[0].name) !== normalizeName_(first + last)) {
+    hit();
+    throw new Error('ชื่อ-นามสกุลไม่ตรงกับรายชื่อลงทะเบียนของรหัสนี้ (กรอกตามใบรายชื่อของมหาวิทยาลัย ไม่ต้องใส่คำนำหน้า)');
+  }
+  if (rows.some(function (r) { return r.email && r.email.toLowerCase() !== user.email; })) {
+    throw new Error('รหัสนี้ถูกสมัครด้วยบัญชีอื่นแล้ว กรุณาติดต่ออาจารย์');
+  }
+  bindRows_(rows, user.email, { nickname: str_(p.nickname, 50), phone: phone });
   user.studentId = id;
   user.studentName = rows[0].name;
   user.courses = rows.map(function (r) { return r.courseCode; });
@@ -343,7 +379,8 @@ function apiImportRoster_(user, p) {
       var bound = emailById[id];
       students.push({
         courseCode: code, studentId: id, name: str_(s.name, 200), group: str_(s.group, 100),
-        email: bound ? bound.email : '', boundAt: bound ? bound.boundAt : ''
+        email: bound ? bound.email : '', boundAt: bound ? bound.boundAt : '',
+        nickname: bound ? bound.nickname : '', phone: bound ? bound.phone : ''
       });
       added++;
     }
@@ -372,6 +409,28 @@ function apiSetStudentEmail_(user, p) {
   if (!mine.length) throw new Error('ไม่พบรหัสนักศึกษา');
   bindRows_(mine, email);
   return studentView_(mine[0]);
+}
+
+function apiAddStudent_(user, p) {
+  requireTeacher_(user);
+  courseRow_(p.courseCode);
+  var id = str_(p.studentId, 20);
+  var name = str_(p.name, 200);
+  if (!/^\d{8,13}$/.test(id)) throw new Error('รหัสนักศึกษาต้องเป็นตัวเลข 8–13 หลัก');
+  if (!name) throw new Error('กรุณาใส่ชื่อ-นามสกุล');
+  var rows = rows_('Students');
+  if (find_(rows, function (r) { return r.courseCode === p.courseCode && r.studentId === id; })) {
+    throw new Error('รหัสนี้อยู่ในวิชานี้แล้ว');
+  }
+  // ถ้าสมัครไว้แล้วจากวิชาอื่น ให้ใช้บัญชีเดิม
+  var other = find_(rows, function (r) { return r.studentId === id && r.email; });
+  var row = {
+    courseCode: p.courseCode, studentId: id, name: name, group: str_(p.group, 100),
+    email: other ? other.email : '', boundAt: other ? other.boundAt : '',
+    nickname: other ? other.nickname : '', phone: other ? other.phone : ''
+  };
+  insert_('Students', row);
+  return studentView_(row);
 }
 
 function apiRemoveStudent_(user, p) {

@@ -58,8 +58,8 @@ function authenticate_(idToken) {
 
 /**
  * อาจารย์ = อีเมลอยู่ใน Settings.teacherEmails
- * นักศึกษา = อีเมลถูกผูกกับรหัสนักศึกษาในแท็บ Students
- *   ผูกอัตโนมัติถ้าตัวเลขหน้า @ ตรงกับรหัสนักศึกษา (เช่น 67152901@g.cmru.ac.th) มิฉะนั้นนักศึกษากรอกรหัสเองครั้งแรก
+ * นักศึกษา = บัญชีโดเมนมหาวิทยาลัย (Settings.allowedDomains) ที่สมัครแล้ว คือผูกกับรหัสนักศึกษาในแท็บ Students
+ *   ยังไม่สมัคร → studentId = null และเว็บจะแสดงหน้าสมัคร (apiRegister_)
  */
 function resolveUser_(ident) {
   var email = ident.email;
@@ -67,22 +67,12 @@ function resolveUser_(ident) {
     return { email: email, name: ident.name, role: 'teacher', courses: [] };
   }
   var domains = listSetting_('allowedDomains');
-  if (domains.length && domains.indexOf(email.split('@')[1]) < 0) {
+  if (!domains.length) throw new Error('AUTH_DOMAIN: ระบบยังไม่เปิดรับนักศึกษา (อาจารย์ยังไม่ได้ตั้งค่าโดเมนมหาวิทยาลัย)');
+  if (domains.indexOf(email.split('@')[1]) < 0) {
     throw new Error('AUTH_DOMAIN: บัญชีนี้ใช้ไม่ได้ กรุณาเข้าสู่ระบบด้วยบัญชี @' + domains.join(' หรือ @'));
   }
 
-  var students = rows_('Students');
-  var mine = students.filter(function (r) { return r.email.toLowerCase() === email; });
-  if (!mine.length) {
-    var digits = email.split('@')[0].replace(/\D/g, '');
-    if (digits.length >= 8) {
-      var match = students.filter(function (r) { return r.studentId === digits; });
-      if (match.length && !match.some(function (r) { return r.email; })) {
-        bindRows_(match, email);
-        mine = match;
-      }
-    }
-  }
+  var mine = rows_('Students').filter(function (r) { return r.email.toLowerCase() === email; });
   return {
     email: email,
     name: ident.name,
@@ -93,13 +83,31 @@ function resolveUser_(ident) {
   };
 }
 
-function bindRows_(rows, email) {
+/** profile: { nickname, phone } — email ว่าง = รีเซ็ตการสมัคร */
+function bindRows_(rows, email, profile) {
   var t = now_();
   rows.forEach(function (r) {
     r.email = email;
     r.boundAt = email ? t : '';
+    if (!email) {
+      r.nickname = '';
+      r.phone = '';
+    } else if (profile) {
+      r.nickname = profile.nickname;
+      r.phone = profile.phone;
+    }
     update_('Students', r);
   });
+}
+
+/** นับจำนวนครั้งต่อ key ภายในช่วงเวลา — เกิน max แล้วโยน error */
+function rateLimit_(key, max, seconds, message) {
+  var cache = CacheService.getScriptCache();
+  var n = Number(cache.get('rl_' + key) || 0);
+  if (n >= max) throw new Error(message);
+  return function hit() {
+    cache.put('rl_' + key, String(n + 1), seconds);
+  };
 }
 
 function requireTeacher_(user) {

@@ -5,6 +5,13 @@ const { loadBackend } = require('./backend.js');
 const T = 'teacher@demo.ac.th';
 const ORIGIN = 'http://localhost:8080';
 
+/** สมัครด้วยรหัสและชื่อจากรายชื่อตัวอย่าง (อีเมล = <รหัส>@demo.ac.th) */
+function reg(b, id) {
+  const name = b.db().Students.find((r) => r.studentId === id).name.replace(/^(นางสาว|นาย)/, '');
+  const [firstName, lastName] = name.split(' ');
+  return b.ok(id + '@demo.ac.th', 'register', { studentId: id, firstName, lastName });
+}
+
 function err(b, email, action, payload) {
   const r = b.call(email, action, payload);
   assert.equal(r.ok, false, `${action} should fail`);
@@ -22,24 +29,66 @@ test('teacher sees all courses; students only their own', () => {
   const t = b.ok(T, 'me');
   assert.equal(t.role, 'teacher');
   assert.equal(t.courses.length, 2);
+  assert.deepEqual([...t.warnings], []);
   const s = b.ok('69000101@demo.ac.th', 'me');
   assert.equal(s.role, 'student');
-  assert.equal(s.studentId, '69000101', 'auto-binds when the email starts with the student id');
+  assert.equal(s.studentId, '69000101');
   assert.deepEqual(s.courses.map((c) => c.courseCode), ['DEMO2303']);
 });
 
-test('binding: a student claims an id once; others cannot take it', () => {
+test('no auto-binding: a student with an id-like email must still register', () => {
   const b = loadBackend();
-  const me = b.ok('somchai@demo.ac.th', 'me');
+  const me = b.ok('69000103@demo.ac.th', 'me');
   assert.equal(me.needsBinding, true);
-  assert.match(err(b, 'somchai@demo.ac.th', 'myAssignments', { courseCode: 'DEMO2303' }), /ยืนยันรหัส/);
-  assert.match(err(b, 'somchai@demo.ac.th', 'bind', { studentId: '12345678' }), /ไม่พบรหัส/);
-  const bound = b.ok('somchai@demo.ac.th', 'bind', { studentId: '69000103' });
-  assert.equal(bound.studentId, '69000103');
-  assert.match(err(b, 'thief@demo.ac.th', 'bind', { studentId: '69000103' }), /ผูกกับบัญชีอื่น/);
-  // อาจารย์รีเซ็ตแล้วผูกใหม่ได้
+  assert.equal(me.courses.length, 0);
+});
+
+test('register: id and name must match the registrar roster', () => {
+  const b = loadBackend();
+  const e = 'piya@demo.ac.th';
+  assert.match(err(b, e, 'myAssignments', { courseCode: 'DEMO2303' }), /ยืนยันรหัส/);
+  assert.match(err(b, e, 'register', { studentId: '12345678', firstName: 'ก', lastName: 'ข' }), /ไม่พบรหัส/);
+  assert.match(err(b, e, 'register', { studentId: '69000103', firstName: 'ปิยะ', lastName: 'ผิด' }), /ไม่ตรง/);
+  assert.match(err(b, e, 'register', { studentId: '69000103', firstName: '', lastName: 'x' }), /ชื่อและนามสกุล/);
+  // คำนำหน้าและช่องว่างไม่มีผล
+  const me = b.ok(e, 'register', { studentId: '69000103', firstName: 'นางสาว ปิยะ', lastName: ' แสง ทอง ', nickname: 'ปิ่น', phone: '081-234-5678' });
+  assert.equal(me.studentId, '69000103');
+  assert.equal(me.needsBinding, false);
+  assert.deepEqual(me.courses.map((c) => c.courseCode), ['DEMO2303']);
+  const row = b.ok(T, 'listStudents', { courseCode: 'DEMO2303' }).find((s) => s.studentId === '69000103');
+  assert.equal(row.email, e);
+  assert.equal(row.nickname, 'ปิ่น');
+  assert.equal(row.phone, '0812345678');
+  assert.match(err(b, e, 'register', { studentId: '69000104', firstName: 'x', lastName: 'y' }), /สมัครแล้ว/);
+  // คนอื่นสมัครรหัสเดียวกันไม่ได้ จนกว่าอาจารย์รีเซ็ต
+  assert.match(err(b, 'other@demo.ac.th', 'register', { studentId: '69000103', firstName: 'ปิยะ', lastName: 'แสงทอง' }), /บัญชีอื่น/);
   b.ok(T, 'setStudentEmail', { studentId: '69000103', email: '' });
-  assert.equal(b.ok('thief@demo.ac.th', 'bind', { studentId: '69000103' }).studentId, '69000103');
+  assert.equal(b.ok('other@demo.ac.th', 'register', { studentId: '69000103', firstName: 'ปิยะ', lastName: 'แสงทอง' }).studentId, '69000103');
+});
+
+test('register: blocked after 5 wrong attempts', () => {
+  const b = loadBackend();
+  const e = 'guess@demo.ac.th';
+  for (let i = 0; i < 5; i++) err(b, e, 'register', { studentId: '6900010' + i, firstName: 'สุ่ม', lastName: 'เดา' });
+  assert.match(err(b, e, 'register', { studentId: '69000103', firstName: 'ปิยะ', lastName: 'แสงทอง' }), /หลายครั้งเกินไป/);
+});
+
+test('register spans every course that has the id; teacher can add late students', () => {
+  const b = loadBackend();
+  b.ok(T, 'addStudent', { courseCode: 'DEMO3314', studentId: '69000103', name: 'นางสาวปิยะ แสงทอง', group: 'เพิ่มเอง' });
+  assert.match(err(b, T, 'addStudent', { courseCode: 'DEMO3314', studentId: '69000103', name: 'x' }), /อยู่ในวิชานี้แล้ว/);
+  const me = reg(b, '69000103');
+  assert.deepEqual(me.courses.map((c) => c.courseCode).sort(), ['DEMO2303', 'DEMO3314']);
+  // เพิ่มเข้าวิชาใหม่หลังสมัครแล้ว → ใช้บัญชีเดิมทันที
+  b.ok(T, 'importRoster', { course: { courseCode: 'NEW1001', title: 'ใหม่' }, students: [{ studentId: '69000103', name: 'นางสาวปิยะ แสงทอง' }] });
+  assert.equal(b.ok('69000103@demo.ac.th', 'me').courses.length, 3);
+});
+
+test('students need a configured university domain; teacher is warned', () => {
+  const b = loadBackend();
+  b.ok(T, 'updateSettings', { allowedDomains: [] });
+  assert.match(err(b, '69000101@demo.ac.th', 'me', {}), /ยังไม่เปิดรับ/);
+  assert.equal(b.ok(T, 'me').warnings.length, 1);
 });
 
 test('students cannot call teacher actions or see other courses', () => {
@@ -76,6 +125,8 @@ test('import roster adds a course and keeps existing bindings', () => {
 test('upload flow: start → finalize shares the file with the owner only', () => {
   const b = loadBackend();
   const s = '69000103@demo.ac.th';
+  reg(b, '69000103');
+  reg(b, '69000104');
   const { uploadUrl } = b.ok(s, 'startUpload', { assignmentId: 'A2', fileName: 'poster/v1.psd', mimeType: 'image/vnd.adobe.photoshop', size: 300 * 1024 * 1024, origin: ORIGIN });
   const fileId = uploadUrl.replace('demo-upload://', '');
   const f = b.db()._files[fileId];
@@ -107,6 +158,7 @@ test('upload flow: start → finalize shares the file with the owner only', () =
 test('upload guards: origin, size, deadline, graded work', () => {
   const b = loadBackend();
   const s = '69000103@demo.ac.th';
+  reg(b, '69000103');
   const base = { assignmentId: 'A2', fileName: 'a.png', mimeType: 'image/png', size: 1000, origin: ORIGIN };
   assert.match(err(b, s, 'startUpload', { ...base, origin: 'https://evil.example' }), /ไม่ได้รับอนุญาต/);
   assert.match(err(b, s, 'startUpload', { ...base, size: 0 }), /ว่างเปล่า/);
@@ -154,7 +206,7 @@ test('teacher grades, takes attendance and exams; gradebook totals', () => {
   assert.equal(st.result.grade, 'A');
 
   // นักศึกษาเห็นเกรดเมื่ออาจารย์เปิดเผยเท่านั้น
-  b.ok('68000101@demo.ac.th', 'me');
+  reg(b, '68000101');
   assert.equal(b.ok('68000101@demo.ac.th', 'myGrades', { courseCode: 'DEMO3314' }).grade, null);
   b.ok(T, 'updateCourse', { courseCode: 'DEMO3314', gradesVisible: true });
   const mine = b.ok('68000101@demo.ac.th', 'myGrades', { courseCode: 'DEMO3314' });

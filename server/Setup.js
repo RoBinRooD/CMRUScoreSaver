@@ -14,8 +14,13 @@ function setup() {
     if (sh.getLastRow() === 0) {
       sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold');
       sh.setFrozenRows(1);
+    } else {
+      // เวอร์ชันใหม่เพิ่มคอลัมน์ → เติมหัวคอลัมน์ที่ขาดต่อท้าย
+      var header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+      var missing = cols.filter(function (c) { return header.indexOf(c) < 0; });
+      if (missing.length) sh.getRange(1, header.length + 1, 1, missing.length).setValues([missing]).setFontWeight('bold');
     }
-    sh.getRange(1, 1, sh.getMaxRows(), cols.length).setNumberFormat('@');
+    sh.getRange(1, 1, sh.getMaxRows(), sh.getLastColumn()).setNumberFormat('@');
   });
 
   ss.getSheets().forEach(function (sh) {
@@ -45,5 +50,5 @@ function setup() {
     }
   });
 
-  Logger.log('ตั้งค่าเสร็จแล้ว — ต่อไป: ใส่ clientId และ allowedDomains ในแท็บ Settings แล้ว Deploy เป็น Web app');
+  Logger.log('ตั้งค่าเสร็จแล้ว — ต่อไป: ใส่ clientId และ allowedDomains (โดเมนอีเมลมหาวิทยาลัย) ในแท็บ Settings แล้ว Deploy เป็น Web app');
 }

@@ -4,7 +4,7 @@
   "description": "ระบบส่งงานและบันทึกคะแนน — GitHub Pages + Google Apps Script + Google Sheets/Drive",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "build": "node scripts/build-gas.mjs",
+    "build": "node scripts/build-gas.mjs && node scripts/build-web.mjs",
     "serve": "python3 -m http.server 8080"
   }
 }

@@ -26,6 +26,6 @@ test/                          node --test
 
 ```bash
 npm test          # ทดสอบ backend + สูตรเกรด + ตัวอ่านรายชื่อ
-npm run build     # รวม server/*.js → dist/Code.gs (ต้องรันทุกครั้งที่แก้ server/ หรือ js/grade.js)
+npm run build     # รวม server/*.js → dist/Code.gs + ติดเลขเวอร์ชันไฟล์ใน index.html (รันทุกครั้งที่แก้โค้ด)
 npm run serve     # เปิด http://localhost:8080/?demo
 ```

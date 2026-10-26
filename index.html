@@ -8,10 +8,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <script src="js/config.js"></script>
-  <script src="js/grade.js"></script>
-  <script src="js/roster.js"></script>
+  <!-- assets:start (สร้างโดย npm run build — อย่าแก้เอง) -->
+  <link rel="stylesheet" href="css/style.css?v=7e9d0f8420">
+  <script>window.ASSET_VERSION = {"build":"b2405022","js/mock/memory-backend.js":"ab1d2f8601","server/Api.js":"ce601eed9e","server/Auth.js":"faf15b1b61","server/Board.js":"dd9b0479dc","server/Code.js":"2f32a0d85b","server/Dashboard.js":"f32b0368be","server/Db.js":"4309c9776c","server/Groups.js":"3e43222bd8","server/Leave.js":"9deafb6b91","server/Setup.js":"938610e18c","server/Syllabus.js":"db67120214","server/Upload.js":"322c9ab4e6"};</script>
+  <script src="js/config.js?v=4926768b33"></script>
+  <script src="js/grade.js?v=3f179aabea"></script>
+  <script src="js/roster.js?v=b9e3fd67f5"></script>
+  <script type="importmap">{"imports":{"./js/api.js":"./js/api.js?v=8390c854bd","./js/app.js":"./js/app.js?v=92e976d1e0","./js/auth.js":"./js/auth.js?v=23517f2b39","./js/ui.js":"./js/ui.js?v=f94b591b2f","./js/upload.js":"./js/upload.js?v=1536ed56cf","./js/views/board.js":"./js/views/board.js?v=1e073d27c8","./js/views/dashboard.js":"./js/views/dashboard.js?v=2e84605d62","./js/views/leave.js":"./js/views/leave.js?v=45b9ff4cad","./js/views/student.js":"./js/views/student.js?v=687193c856","./js/views/syllabus.js":"./js/views/syllabus.js?v=b8df612e1c","./js/views/teacher.js":"./js/views/teacher.js?v=9ed665374c","./js/views/timeline.js":"./js/views/timeline.js?v=d0455fcd39"}}</script>
+  <!-- assets:end -->
 </head>
 <body>
   <header class="topbar">
@@ -25,6 +29,9 @@
     <p class="muted center pad">กำลังโหลด…</p>
   </main>
   <div id="toasts" aria-live="polite"></div>
-  <script type="module" src="js/app.js"></script>
+  <!-- app:start -->
+  <footer class="build muted small">เวอร์ชัน b2405022</footer>
+  <script type="module" src="js/app.js?v=92e976d1e0"></script>
+  <!-- app:end -->
 </body>
 </html>

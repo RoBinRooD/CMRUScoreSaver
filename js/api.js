@@ -13,7 +13,7 @@ function loadDemoBackend() {
     'server/Setup.js', 'js/mock/memory-backend.js'];
   demoReady ??= files.reduce((p, src) => p.then(() => new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = src;
+    s.src = src + '?v=' + (window.ASSET_VERSION?.[src] || '');
     s.onload = resolve;
     s.onerror = () => reject(new Error('โหลด ' + src + ' ไม่ได้'));
     document.head.append(s);

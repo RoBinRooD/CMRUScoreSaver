@@ -326,4 +326,6 @@ article.group-card { opacity: 0.85; }
 .mark.unsaved::after {
   content: ''; position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn);
 }
+footer.build { text-align: center; padding: 1.5rem 0 1rem; }
+
 .save-status { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }

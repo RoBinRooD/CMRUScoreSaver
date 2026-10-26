@@ -98,6 +98,9 @@ test('approving leave for a future week does not mark that week as held for ever
   const v = b.ok(S, 'submitLeave', { ...base, week: 9 });
   b.ok(T, 'decideLeave', { leaveId: v.id, status: 'approved' });
   assert.equal(marks(b, '69000101')[8], 'E');
+  // นักศึกษาเห็น "ลา" ทั้งในหน้าคะแนนและภาพรวม แม้สัปดาห์นั้นยังไม่เช็คชื่อ
+  assert.equal(b.ok(S, 'myGrades', { courseCode: 'DEMO2303' }).attendance.marks[8], 'E');
+  assert.equal(b.ok(S, 'studentDashboard', { courseCode: 'DEMO2303' }).attendance.tally.E, 1);
   const att = b.ok(T, 'getAttendance', { courseCode: 'DEMO2303' });
   assert.deepEqual([...att.heldWeeks], [1, 2]);
   // บันทึกเช็คชื่อทีหลังก็ยังไม่นับสัปดาห์ที่มีแค่ "ลา"

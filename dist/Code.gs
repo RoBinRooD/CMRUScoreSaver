@@ -2175,6 +2175,8 @@ function apiStudentDashboard_(user, p) {
   var held = d.course.heldWeeks;
   var tally = { P: 0, L: 0, E: 0, A: 0 };
   held.forEach(function (w) { tally[marks[w - 1] || 'A']++; });
+  // ลาที่อนุมัติแล้วในสัปดาห์ที่ยังไม่เช็คชื่อ ก็นับด้วย
+  marks.forEach(function (m, i) { if (m === 'E' && held.indexOf(i + 1) < 0) tally.E++; });
   return {
     course: d.course,
     todo: work.filter(function (w) { return w.status === 'open' || (w.status === 'missing' && w.allowLate); }).slice(0, 6),

@@ -12,7 +12,8 @@ var WRITE_ACTIONS = {
   setStudentEmail: 1, addStudent: 1, removeStudent: 1,
   saveGroup: 1, leaveGroup: 1, deleteGroup: 1, deleteCourse: 1,
   saveSyllabus: 1, addSyllabusLink: 1, finalizeSyllabusUpload: 1, removeSyllabusAttachment: 1,
-  saveTask: 1, deleteTask: 1
+  saveTask: 1, deleteTask: 1,
+  submitLeave: 1, finalizeLeaveUpload: 1, cancelLeave: 1, decideLeave: 1
 };
 
 function doGet() {

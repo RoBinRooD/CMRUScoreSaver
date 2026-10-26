@@ -4,6 +4,7 @@ import { teacherDashboard } from './dashboard.js';
 import { renderSyllabus } from './syllabus.js';
 import { renderTimeline } from './timeline.js';
 import { renderBoard } from './board.js';
+import { teacherLeaves } from './leave.js';
 
 const TABS = [
   ['overview', 'ภาพรวม'],
@@ -13,6 +14,7 @@ const TABS = [
   ['timeline', 'Timeline'],
   ['board', 'บอร์ดกลุ่ม'],
   ['attendance', 'เช็คชื่อ'],
+  ['leaves', 'ใบลา'],
   ['exams', 'สอบ'],
   ['gradebook', 'สมุดคะแนน'],
   ['students', 'นักศึกษา'],
@@ -37,7 +39,7 @@ export function renderTeacher(root, ctx) {
     tabs(course ? TABS : [['students', 'นักศึกษา'], ['settings', 'ตั้งค่า']], tab, ctx.setTab),
     body);
   const views = {
-    overview: teacherDashboard, syllabus: renderSyllabus, timeline: renderTimeline, board: renderBoard,
+    overview: teacherDashboard, syllabus: renderSyllabus, timeline: renderTimeline, board: renderBoard, leaves: teacherLeaves,
     assignments, grading, attendance, exams, gradebook, students, settings
   };
   views[tab](body, ctx).catch((e) => mount(body, errorBox(e)));
@@ -361,6 +363,8 @@ async function attendance(body, ctx) {
 
   window.onbeforeunload = () => (dirty ? true : undefined);
   mount(body, h('div', { class: 'stack' },
+    data.pendingLeaves ? h('div', { class: 'banner' }, `มีใบลารออนุมัติ ${data.pendingLeaves} ใบ — อนุมัติแล้วระบบจะเช็คชื่อเป็น "ลา" ให้ `,
+      h('button', { class: 'sm', onclick: () => ctx.setTab('leaves') }, 'ไปที่ใบลา')) : null,
     h('div', { class: 'row' },
       h('div', { class: 'legend muted' }, 'คลิกช่องเพื่อเปลี่ยน:', ['P', 'L', 'A', 'E'].map((k) => h('span', {}, h('span', { class: 'mark btn ' + k }, k), ' ', MARK_LABEL[k]))),
       h('span', { class: 'spacer' }),

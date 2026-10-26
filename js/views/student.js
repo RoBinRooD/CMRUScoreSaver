@@ -5,6 +5,7 @@ import { studentDashboard } from './dashboard.js';
 import { renderSyllabus } from './syllabus.js';
 import { renderTimeline } from './timeline.js';
 import { renderBoard } from './board.js';
+import { studentLeaves } from './leave.js';
 
 const TABS = [
   ['overview', 'ภาพรวม'],
@@ -12,6 +13,7 @@ const TABS = [
   ['work', 'งานที่ต้องส่ง'],
   ['timeline', 'Timeline'],
   ['board', 'บอร์ดกลุ่ม'],
+  ['leave', 'ใบลา'],
   ['grades', 'คะแนนของฉัน']
 ];
 
@@ -38,6 +40,7 @@ export function renderStudent(root, ctx) {
     work: () => renderWork(body, course, me.studentId),
     timeline: () => renderTimeline(body, ctx),
     board: () => renderBoard(body, ctx),
+    leave: () => studentLeaves(body, ctx),
     grades: () => renderGrades(body, course)
   };
   Promise.resolve(views[tab]()).catch((e) => mount(body, errorBox(e)));

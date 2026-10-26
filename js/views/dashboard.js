@@ -84,6 +84,8 @@ export async function teacherDashboard(body, ctx) {
   }
   const c = d.counts;
   mount(body, h('div', { class: 'stack' },
+    c.pendingLeaves ? h('div', { class: 'banner' }, `มีใบลารออนุมัติ ${c.pendingLeaves} ใบ `,
+      h('button', { class: 'sm', onclick: () => ctx.setTab('leaves') }, 'ไปที่ใบลา →')) : null,
     h('div', { class: 'stats' },
       tile('นักศึกษาสมัครแล้ว', `${c.registered}/${c.students}`, c.students - c.registered ? `ยังไม่สมัคร ${c.students - c.registered} คน` : 'ครบทุกคน', meter(c.registered, c.students, 'นักศึกษาสมัครแล้ว')),
       tile('งานที่เปิด', String(c.assignments), c.hidden ? `ซ่อนอยู่ ${c.hidden} งาน` : null),

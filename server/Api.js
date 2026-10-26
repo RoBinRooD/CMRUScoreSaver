@@ -15,6 +15,11 @@ function actions_() {
     myAssignments: apiMyAssignments_,
     myGrades: apiMyGrades_,
     studentDashboard: apiStudentDashboard_,
+    myLeaves: apiMyLeaves_,
+    submitLeave: apiSubmitLeave_,
+    startLeaveUpload: apiStartLeaveUpload_,
+    finalizeLeaveUpload: apiFinalizeLeaveUpload_,
+    cancelLeave: apiCancelLeave_,
     saveTask: apiSaveTask_,
     deleteTask: apiDeleteTask_,
     startUpload: apiStartUpload_,
@@ -37,6 +42,8 @@ function actions_() {
     deleteGroup: apiDeleteGroup_,
     deleteCourse: apiDeleteCourse_,
     teacherDashboard: apiTeacherDashboard_,
+    listLeaves: apiListLeaves_,
+    decideLeave: apiDecideLeave_,
     saveSyllabus: apiSaveSyllabus_,
     addSyllabusLink: apiAddSyllabusLink_,
     startSyllabusUpload: apiStartSyllabusUpload_,
@@ -511,6 +518,7 @@ function apiDeleteCourse_(user, p) {
     students: rows_('Students').filter(inCourse).length,
     assignments: Object.keys(ids).length,
     submissions: rows_('Submissions').filter(function (s) { return ofWork(s) && (s.submittedAt || s.score !== ''); }).length,
+    leaves: rows_('LeaveRequests').filter(inCourse).length,
     groups: rows_('Groups').filter(ofWork).length
   };
   if (p.preview) return counts;
@@ -522,6 +530,7 @@ function apiDeleteCourse_(user, p) {
   remove_('Assignments', inCourse);
   remove_('Attendance', inCourse);
   remove_('Exams', inCourse);
+  remove_('LeaveRequests', inCourse);
   remove_('Students', inCourse);
   remove_('Courses', inCourse);
   counts.filesTrashed = p.trashFiles ? trashCourseFolder_(code) : false;
@@ -667,6 +676,7 @@ function apiGetAttendance_(user, p) {
   rows_('Attendance').forEach(function (r) { if (r.courseCode === p.courseCode) att[r.studentId] = marksOf_(r); });
   return {
     heldWeeks: c.heldWeeks,
+    pendingLeaves: pendingLeaves_(p.courseCode),
     rows: rosterOf_(p.courseCode).map(function (r) {
       var v = studentView_(r);
       v.marks = att[r.studentId] || marksOf_(null);
@@ -693,9 +703,10 @@ function apiSaveAttendance_(user, p) {
       r['w' + w] = m;
     }
   });
+  // สัปดาห์ที่มีแค่ "ลา" (จากใบลาที่อนุมัติล่วงหน้า) ยังไม่นับว่าเช็คชื่อแล้ว
   rows.forEach(function (r) {
     if (r.courseCode !== p.courseCode) return;
-    for (var w = 1; w <= Grade.WEEKS; w++) if (r['w' + w]) held[w] = true;
+    for (var w = 1; w <= Grade.WEEKS; w++) if (r['w' + w] && r['w' + w] !== 'E') held[w] = true;
   });
   saveAll_('Attendance');
   course.heldWeeks = JSON.stringify(Object.keys(held).map(Number).sort(function (a, b) { return a - b; }));

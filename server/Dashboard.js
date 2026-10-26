@@ -153,7 +153,8 @@ function apiTeacherDashboard_(user, p) {
       assignments: published.length,
       hidden: cards.length - published.length,
       toGrade: students.reduce(function (n, s) { return n + s.toGrade; }, 0),
-      heldWeeks: d.course.heldWeeks.length
+      heldWeeks: d.course.heldWeeks.length,
+      pendingLeaves: pendingLeaves_(p.courseCode)
     },
     attendanceAvg: attN ? Grade.round2(attSum / attN) : null,
     assignments: cards.filter(function (c) { return c.published; }).map(function (c) {

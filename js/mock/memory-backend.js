@@ -93,6 +93,11 @@ function memorySeed_() {
     attachments: [{ id: 'Ldemo1', kind: 'link', name: 'ตัวอย่างผลงานรุ่นพี่', url: 'https://www.behance.net/' }]
   });
   db.Courses[0].syllabusUpdatedAt = new Date().toISOString();
+  db.LeaveRequests.push({
+    id: 'V1', courseCode: 'DEMO2303', studentId: '69000104', week: '2', date: new Date(Date.now() - 7 * day).toISOString().slice(0, 10),
+    type: 'sick', reason: 'มีไข้สูง ไปโรงพยาบาล', files: '[]', status: 'pending', note: '',
+    submittedAt: new Date(Date.now() - 6 * day).toISOString(), decidedAt: '', prevMark: ''
+  });
   db.Submissions.push(
     { id: 'S1', assignmentId: 'A1', studentId: '69000101', files: JSON.stringify([{ id: 'demo-file-1', name: 'logo.png', size: 524288, mimeType: 'image/png' }]),
       link: '', submittedAt: new Date(Date.now() - 4 * day).toISOString(), isLate: 'false', score: '8', feedback: 'สีสวย ตัวอักษรอ่านง่าย', gradedAt: new Date().toISOString() },
@@ -226,6 +231,10 @@ function shareReader_(id, email) {
   var f = memoryLoad_()._files[id];
   if (f && f.shared.indexOf(email) < 0) f.shared.push(email);
   memoryPersist_();
+}
+
+function leaveFolderId_(courseCode, folderName) {
+  return courseCode + '/ใบลา/' + folderName;
 }
 
 function syllabusFolderId_(courseCode) {

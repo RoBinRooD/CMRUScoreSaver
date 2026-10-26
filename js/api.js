@@ -9,7 +9,7 @@ export function onReauth(fn) {
 
 let demoReady;
 function loadDemoBackend() {
-  const files = ['server/Code.js', 'server/Db.js', 'server/Auth.js', 'server/Api.js', 'server/Upload.js', 'server/Groups.js', 'server/Syllabus.js', 'server/Board.js', 'server/Dashboard.js',
+  const files = ['server/Code.js', 'server/Db.js', 'server/Auth.js', 'server/Api.js', 'server/Upload.js', 'server/Groups.js', 'server/Syllabus.js', 'server/Board.js', 'server/Dashboard.js', 'server/Leave.js',
     'server/Setup.js', 'js/mock/memory-backend.js'];
   demoReady ??= files.reduce((p, src) => p.then(() => new Promise((resolve, reject) => {
     const s = document.createElement('script');

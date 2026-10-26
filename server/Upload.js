@@ -220,6 +220,13 @@ function trashFile_(id) {
   DriveApp.getFileById(id).setTrashed(true);
 }
 
+/** <root>/<รหัสวิชา>/ใบลา/<รหัส ชื่อ> */
+function leaveFolderId_(courseCode, folderName) {
+  var root = settings_().rootFolderId;
+  if (!root) throw new Error('ยังไม่ได้ตั้งค่า rootFolderId — รัน setup()');
+  return ensureFolder_(ensureFolder_(ensureFolder_(root, courseCode), 'ใบลา'), safeName_(folderName));
+}
+
 function syllabusFolderId_(courseCode) {
   var root = settings_().rootFolderId;
   if (!root) throw new Error('ยังไม่ได้ตั้งค่า rootFolderId — รัน setup()');

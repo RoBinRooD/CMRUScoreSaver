@@ -14,6 +14,8 @@ var SCHEMA = {
   Submissions: ['id', 'assignmentId', 'studentId', 'files', 'link', 'submittedAt', 'isLate', 'score', 'feedback', 'gradedAt',
     'groupId'],
   Groups: ['id', 'assignmentId', 'name', 'members', 'createdAt'],
+  LeaveRequests: ['id', 'courseCode', 'studentId', 'week', 'date', 'type', 'reason', 'files', 'status', 'note',
+    'submittedAt', 'decidedAt', 'prevMark'],
   Tasks: ['id', 'groupId', 'title', 'note', 'status', 'assignee', 'dueAt', 'createdBy', 'createdAt', 'updatedAt'],
   Attendance: ['courseCode', 'studentId', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8',
     'w9', 'w10', 'w11', 'w12', 'w13', 'w14', 'w15', 'w16'],

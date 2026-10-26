@@ -37,7 +37,7 @@ test('deleteCourse: preview counts, PIN required, removes only that course', () 
   b.ok(T, 'updateSettings', { deletePin: { next: '1234' } });
 
   const preview = b.ok(T, 'deleteCourse', { courseCode: 'DEMO2303', preview: true });
-  assert.deepEqual({ ...preview }, { students: 8, assignments: 3, submissions: 2, groups: 1 });
+  assert.deepEqual({ ...preview }, { students: 8, assignments: 3, submissions: 2, groups: 1, leaves: 1 });
   assert.equal(b.ok(T, 'me').courses.length, 2, 'preview deletes nothing');
 
   assert.match(err(b, T, 'deleteCourse', { courseCode: 'DEMO2303', pin: '9999' }), /PIN ไม่ถูกต้อง/);

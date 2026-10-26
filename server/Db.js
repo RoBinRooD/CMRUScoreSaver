@@ -75,10 +75,17 @@ function toArray_(t, obj) {
   });
 }
 
+// เขียนเป็น Plain text เสมอ — appendRow/แถวที่เกินช่วงที่ setup() จัดรูปแบบไว้ จะแปลง "2/2569" เป็นวันที่ หรือตัดเลข 0 นำหน้า
+function writeText_(sh, row, data) {
+  var need = row + data.length - 1 - sh.getMaxRows();
+  if (need > 0) sh.insertRowsAfter(sh.getMaxRows(), need);
+  sh.getRange(row, 1, data.length, data[0].length).setNumberFormat('@').setValues(data);
+}
+
 function insert_(name, obj) {
   var t = table_(name);
-  t.sheet.appendRow(toArray_(t, obj));
-  obj._row = t.sheet.getLastRow();
+  obj._row = t.sheet.getLastRow() + 1;
+  writeText_(t.sheet, obj._row, [toArray_(t, obj)]);
   t.rows.push(obj);
   return obj;
 }
@@ -86,7 +93,7 @@ function insert_(name, obj) {
 function update_(name, obj) {
   var t = table_(name);
   if (!obj._row) return insert_(name, obj);
-  t.sheet.getRange(obj._row, 1, 1, t.headers.length).setValues([toArray_(t, obj)]);
+  writeText_(t.sheet, obj._row, [toArray_(t, obj)]);
   return obj;
 }
 
@@ -97,7 +104,7 @@ function saveAll_(name) {
   var data = t.rows.map(function (r) { return toArray_(t, r); });
   var last = sh.getLastRow();
   if (last > 1) sh.getRange(2, 1, last - 1, t.headers.length).clearContent();
-  if (data.length) sh.getRange(2, 1, data.length, t.headers.length).setValues(data);
+  if (data.length) writeText_(sh, 2, data);
   t.rows.forEach(function (r, i) { r._row = i + 2; });
 }
 

@@ -53,6 +53,7 @@ function actions_() {
     saveGrades: apiSaveGrades_,
     getAttendance: apiGetAttendance_,
     saveAttendance: apiSaveAttendance_,
+    setAttendanceMarks: apiSetAttendanceMarks_,
     getExams: apiGetExams_,
     saveExams: apiSaveExams_,
     gradebook: apiGradebook_,
@@ -689,7 +690,6 @@ function apiSaveAttendance_(user, p) {
   requireTeacher_(user);
   var course = courseRow_(p.courseCode);
   var rows = rows_('Attendance');
-  var held = {};
   (p.rows || []).forEach(function (it) {
     checkInRoster_(p.courseCode, it.studentId);
     var r = find_(rows, function (x) { return x.courseCode === p.courseCode && x.studentId === it.studentId; });
@@ -703,15 +703,59 @@ function apiSaveAttendance_(user, p) {
       r['w' + w] = m;
     }
   });
-  // สัปดาห์ที่มีแค่ "ลา" (จากใบลาที่อนุมัติล่วงหน้า) ยังไม่นับว่าเช็คชื่อแล้ว
-  rows.forEach(function (r) {
-    if (r.courseCode !== p.courseCode) return;
+  saveAll_('Attendance');
+  updateHeldWeeks_(course);
+  return apiGetAttendance_(user, p);
+}
+
+/** สัปดาห์ที่มีการเช็คชื่อแล้ว — สัปดาห์ที่มีแค่ "ลา" (จากใบลาที่อนุมัติล่วงหน้า) ยังไม่นับ */
+function updateHeldWeeks_(course) {
+  var held = {};
+  rows_('Attendance').forEach(function (r) {
+    if (r.courseCode !== course.courseCode) return;
     for (var w = 1; w <= Grade.WEEKS; w++) if (r['w' + w] && r['w' + w] !== 'E') held[w] = true;
   });
-  saveAll_('Attendance');
-  course.heldWeeks = JSON.stringify(Object.keys(held).map(Number).sort(function (a, b) { return a - b; }));
-  update_('Courses', course);
-  return apiGetAttendance_(user, p);
+  var next = JSON.stringify(Object.keys(held).map(Number).sort(function (a, b) { return a - b; }));
+  if (next !== course.heldWeeks) {
+    course.heldWeeks = next;
+    update_('Courses', course);
+  }
+  return JSON.parse(next);
+}
+
+/**
+ * บันทึกอัตโนมัติจากหน้าเช็คชื่อ: เขียนเฉพาะช่องที่เปลี่ยน { changes: [{ studentId, week, mark }] }
+ * ช่องอื่นไม่ถูกแตะ — ส่งซ้ำได้ (เช่น กู้คืนจากเครื่องแล้วส่งใหม่) และไม่ทับ "ลา" ที่อนุมัติระหว่างนั้น
+ */
+function apiSetAttendanceMarks_(user, p) {
+  requireTeacher_(user);
+  var course = courseRow_(p.courseCode);
+  var changes = p.changes || [];
+  if (changes.length > 5000) throw new Error('เปลี่ยนพร้อมกันมากเกินไป');
+  var roster = {};
+  rosterOf_(p.courseCode).forEach(function (r) { roster[r.studentId] = true; });
+  // ตรวจทั้งชุดก่อน แล้วค่อยเขียน — ช่องผิดช่องเดียว = ไม่บันทึกเลย
+  var clean = changes.map(function (c) {
+    var id = str_(c.studentId, 20);
+    if (!roster[id]) throw new Error('ไม่พบรหัส ' + id + ' ในรายชื่อวิชา ' + p.courseCode);
+    var w = Number(c.week);
+    if (!(w >= 1 && w <= Grade.WEEKS && w === Math.floor(w))) throw new Error('สัปดาห์ไม่ถูกต้อง: ' + c.week);
+    var m = String(c.mark || '').toUpperCase();
+    if (['', 'P', 'L', 'A', 'E'].indexOf(m) < 0) throw new Error('สถานะเช็คชื่อไม่ถูกต้อง: ' + m);
+    return { id: id, w: w, m: m };
+  });
+  var rows = rows_('Attendance');
+  clean.forEach(function (c) {
+    var r = find_(rows, function (x) { return x.courseCode === p.courseCode && x.studentId === c.id; });
+    if (!r) {
+      r = { courseCode: p.courseCode, studentId: c.id };
+      for (var k = 1; k <= Grade.WEEKS; k++) r['w' + k] = '';
+      rows.push(r);
+    }
+    r['w' + c.w] = c.m;
+  });
+  if (changes.length) saveAll_('Attendance');
+  return { saved: changes.length, heldWeeks: updateHeldWeeks_(course), savedAt: now_() };
 }
 
 function apiGetExams_(user, p) {

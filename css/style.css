@@ -320,3 +320,10 @@ article.group-card { opacity: 0.85; }
   .who { display: none; }
   .grid { grid-template-columns: 1fr; }
 }
+
+/* เช็คชื่อ: ช่องที่ยังไม่ยืนยันจากเซิร์ฟเวอร์ */
+.mark.unsaved { position: relative; }
+.mark.unsaved::after {
+  content: ''; position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn);
+}
+.save-status { display: flex; gap: 0.4rem; align-items: center; }

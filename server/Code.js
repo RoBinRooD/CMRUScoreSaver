@@ -8,7 +8,7 @@
 var WRITE_ACTIONS = {
   register: 1, finalizeUpload: 1, submitLink: 1, removeFile: 1,
   importRoster: 1, upsertAssignment: 1, deleteAssignment: 1, saveGrades: 1,
-  saveAttendance: 1, saveExams: 1, updateCourse: 1, updateSettings: 1,
+  saveAttendance: 1, setAttendanceMarks: 1, saveExams: 1, updateCourse: 1, updateSettings: 1,
   setStudentEmail: 1, addStudent: 1, removeStudent: 1,
   saveGroup: 1, leaveGroup: 1, deleteGroup: 1, deleteCourse: 1,
   saveSyllabus: 1, addSyllabusLink: 1, finalizeSyllabusUpload: 1, removeSyllabusAttachment: 1,

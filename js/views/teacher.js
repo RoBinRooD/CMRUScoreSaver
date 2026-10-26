@@ -1,5 +1,5 @@
 import { h, mount, loading, errorBox, toast, actionButton, confirmBox, modal, fmtDate, fmtSize, fmtNum, toLocalInput, driveUrl, tabs, MARK_LABEL } from '../ui.js';
-import { call } from '../api.js';
+import { call, beacon } from '../api.js';
 import { teacherDashboard } from './dashboard.js';
 import { renderSyllabus } from './syllabus.js';
 import { renderTimeline } from './timeline.js';
@@ -335,13 +335,151 @@ function teacherGroupForm(a, data, g) {
 /* ---------- เช็คชื่อ ---------- */
 
 const CYCLE = ['', 'P', 'L', 'A', 'E'];
+const SAVE_DELAY = 1000; // บันทึกหลังคลิกล่าสุด
+const RETRY = [3, 10, 30, 60]; // วินาที — ลองใหม่เมื่อบันทึกไม่สำเร็จ
+
+/*
+ * เช็คชื่อบันทึกอัตโนมัติ — เช็คซ้ำย้อนหลังไม่ได้ จึงกันข้อมูลหาย 3 ชั้น:
+ * 1) ทุกคลิกเก็บลง localStorage ทันที (ปิดหน้า/เน็ตหลุด → เปิดใหม่แล้วกู้คืนและส่งต่อให้)
+ * 2) ส่งเฉพาะช่องที่เปลี่ยน (setAttendanceMarks) หลังคลิกล่าสุด 1 วินาที — ล้มเหลวลองใหม่เอง
+ * 3) ซ่อน/ปิดหน้า → ส่งที่ค้างด้วย sendBeacon
+ * ข้อมูลสำรองลบเมื่อเซิร์ฟเวอร์ยืนยันแล้วเท่านั้น
+ */
+const attSavers = new Map(); // courseCode → saver (ยังทำงานต่อแม้สลับไปแท็บอื่น)
+
+function attKey(code) {
+  return 'cmruscoresaver_att_' + code;
+}
+
+const STALE_BACKUP = 6 * 3600 * 1000; // สำรองเก่ากว่านี้ ให้อาจารย์ยืนยันก่อนส่ง (อาจถูกแก้จากเครื่องอื่นไปแล้ว)
+
+/** { at, pending } — รองรับรูปแบบเดิมที่เก็บแค่ pending */
+function loadBackup(code) {
+  try {
+    const v = JSON.parse(localStorage.getItem(attKey(code)) || 'null');
+    if (!v) return { at: 0, pending: {} };
+    return v.pending ? v : { at: 0, pending: v };
+  } catch { return { at: 0, pending: {} }; }
+}
+
+function attendanceSaver(code) {
+  if (attSavers.has(code)) return attSavers.get(code);
+  const backup = loadBackup(code);
+  const s = {
+    pending: backup.pending, // { studentId: { week: mark } }
+    backupAt: backup.at,
+    saving: false,
+    error: null,
+    savedAt: null,
+    timer: null,
+    retry: 0,
+    onChange: () => {},
+    count() { return Object.values(s.pending).reduce((n, w) => n + Object.keys(w).length, 0); },
+    persist() {
+      try {
+        if (s.count()) localStorage.setItem(attKey(code), JSON.stringify({ at: Date.now(), pending: s.pending }));
+        else localStorage.removeItem(attKey(code));
+      } catch { /* ส่งเซิร์ฟเวอร์ต่อไป */ }
+    },
+    set(studentId, week, mark) {
+      s.backupAt = Date.now();
+      (s.pending[studentId] ??= {})[week] = mark;
+      s.persist();
+      s.schedule(SAVE_DELAY);
+      s.onChange();
+    },
+    changes() {
+      return Object.entries(s.pending).flatMap(([studentId, weeks]) =>
+        Object.entries(weeks).map(([week, mark]) => ({ studentId, week: Number(week), mark })));
+    },
+    schedule(ms) {
+      clearTimeout(s.timer);
+      s.timer = setTimeout(() => s.flush(), ms);
+    },
+    async flush() {
+      clearTimeout(s.timer);
+      if (s.saving || !s.count()) return;
+      const sent = s.changes();
+      s.saving = true;
+      s.onChange();
+      try {
+        const res = await call('setAttendanceMarks', { courseCode: code, changes: sent });
+        // ลบเฉพาะช่องที่ค่ายังเท่ากับที่ส่งไป — ถ้าคลิกเพิ่มระหว่างส่ง จะส่งรอบถัดไป
+        sent.forEach(({ studentId, week, mark }) => {
+          const w = s.pending[studentId];
+          if (w && w[week] === mark) delete w[week];
+          if (w && !Object.keys(w).length) delete s.pending[studentId];
+        });
+        s.persist();
+        s.error = null;
+        s.retry = 0;
+        s.savedAt = res.savedAt;
+        s.heldWeeks = res.heldWeeks;
+      } catch (e) {
+        s.error = e.message || String(e);
+        s.schedule(RETRY[Math.min(s.retry++, RETRY.length - 1)] * 1000);
+      } finally {
+        s.saving = false;
+        s.onChange();
+        if (!s.error && s.count()) s.schedule(300);
+      }
+    },
+    /** ปิด/ซ่อนหน้า: ส่งด้วย beacon (ข้อมูลสำรองยังเก็บไว้จนกว่าจะยืนยัน) */
+    beacon() {
+      if (s.count()) beacon('setAttendanceMarks', { courseCode: code, changes: s.changes() });
+    }
+  };
+  attSavers.set(code, s);
+  return s;
+}
+
+const pendingAttendance = () => [...attSavers.values()].reduce((n, s) => n + s.count(), 0);
+window.addEventListener('beforeunload', (e) => {
+  attSavers.forEach((s) => s.beacon());
+  if (pendingAttendance()) { e.preventDefault(); e.returnValue = ''; }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') attSavers.forEach((s) => s.flush());
+});
+window.addEventListener('online', () => attSavers.forEach((s) => s.flush()));
 
 async function attendance(body, ctx) {
   mount(body, loading());
-  const data = await call('getAttendance', { courseCode: ctx.course.courseCode });
+  const code = ctx.course.courseCode;
+  const saver = attendanceSaver(code);
+  const data = await call('getAttendance', { courseCode: code });
   const rows = data.rows.map((r) => ({ ...r, marks: [...r.marks] }));
-  let dirty = false;
+  // ช่องที่ยังไม่ได้รับการยืนยัน (จากรอบก่อน หรือกำลังส่งอยู่) ทับค่าจากเซิร์ฟเวอร์
+  const restored = saver.count();
+  const stale = restored && !saver.saving && Date.now() - (saver.backupAt || 0) > STALE_BACKUP;
+  rows.forEach((r) => Object.entries(saver.pending[r.studentId] || {}).forEach(([w, m]) => { r.marks[w - 1] = m; }));
+  const staleBanner = h('div', { class: 'banner bad' },
+    `พบการเช็คชื่อที่ยังไม่ได้บันทึก ${restored} ช่อง จาก${saver.backupAt ? 'วันที่ ' + fmtDate(new Date(saver.backupAt).toISOString()) : 'ครั้งก่อน'} (แสดงเป็นจุดในตาราง) `,
+    actionButton('ส่งบันทึก', async () => { staleBanner.remove(); await saver.flush(); }, { class: 'sm primary' }), ' ',
+    actionButton('ทิ้ง', async () => {
+      if (!(await confirmBox('ทิ้งการเช็คชื่อที่ยังไม่ได้บันทึก? ตารางจะกลับเป็นค่าที่บันทึกในระบบ', 'ทิ้ง', 'danger'))) return;
+      saver.pending = {};
+      saver.persist();
+      attendance(body, ctx);
+    }, { class: 'sm ghost danger' }));
   const holder = h('div');
+  const status = h('div', { class: 'save-status', role: 'status', 'aria-live': 'polite' });
+
+  const drawStatus = () => {
+    const n = saver.count();
+    const saveNow = h('button', { class: 'sm', onclick: () => saver.flush() }, 'บันทึกตอนนี้');
+    if (saver.saving) mount(status, h('span', { class: 'chip info' }, `⏳ กำลังบันทึก ${n} ช่อง…`));
+    else if (saver.error) mount(status, h('span', { class: 'chip bad' }, `⚠️ บันทึกไม่สำเร็จ — ค้าง ${n} ช่อง (เก็บไว้ในเครื่องแล้ว ลองใหม่อัตโนมัติ)`), saveNow);
+    else if (n) mount(status, h('span', { class: 'chip warn' }, `● รอบันทึก ${n} ช่อง`));
+    else mount(status, h('span', { class: 'chip ok' }, saver.savedAt ? `✓ บันทึกแล้ว ${fmtDate(saver.savedAt)}` : '✓ บันทึกอัตโนมัติ'));
+    status.title = saver.error || '';
+  };
+
+  const setMark = (r, i, m) => {
+    if (r.marks[i] === m) return;
+    r.marks[i] = m;
+    saver.set(r.studentId, i + 1, m);
+  };
 
   const draw = () => {
     mount(holder, h('div', { class: 'table-wrap' }, h('table', { class: 'att' },
@@ -350,32 +488,39 @@ async function attendance(body, ctx) {
         Array.from({ length: 16 }, (_, i) => h('th', {},
           h('button', {
             class: 'sm ghost', title: `สัปดาห์ ${i + 1}: ทำเครื่องหมาย "มา" ให้ทุกคนที่ยังว่าง`,
-            onclick: () => { rows.forEach((r) => { if (!r.marks[i]) r.marks[i] = 'P'; }); dirty = true; draw(); }
+            onclick: () => { rows.forEach((r) => { if (!r.marks[i]) setMark(r, i, 'P'); }); draw(); }
           }, String(i + 1)))))),
       h('tbody', {}, rows.map((r) => h('tr', {},
         h('td', { class: 'nowrap' }, r.studentId),
         h('td', { class: 'nowrap' }, r.name),
-        r.marks.map((m, i) => h('td', {}, h('button', {
-          class: 'mark ' + m, title: MARK_LABEL[m], 'aria-label': `${r.studentId} สัปดาห์ ${i + 1}: ${MARK_LABEL[m]}`,
-          onclick: () => { r.marks[i] = CYCLE[(CYCLE.indexOf(m) + 1) % CYCLE.length]; dirty = true; draw(); }
-        }, m || '·')))))))));
+        r.marks.map((m, i) => {
+          const unsaved = saver.pending[r.studentId]?.[i + 1] !== undefined;
+          return h('td', {}, h('button', {
+            class: 'mark ' + m + (unsaved ? ' unsaved' : ''), title: MARK_LABEL[m] + (unsaved ? ' (ยังไม่บันทึก)' : ''),
+            'aria-label': `${r.studentId} สัปดาห์ ${i + 1}: ${MARK_LABEL[m]}`,
+            onclick: () => { setMark(r, i, CYCLE[(CYCLE.indexOf(m) + 1) % CYCLE.length]); draw(); }
+          }, m || '·'));
+        })))))));
   };
+  // วาดใหม่เมื่อบันทึกเสร็จ เพื่อเอาจุด "ยังไม่บันทึก" ออก
+  saver.onChange = () => { drawStatus(); if (!saver.saving && holder.isConnected) draw(); };
 
-  window.onbeforeunload = () => (dirty ? true : undefined);
   mount(body, h('div', { class: 'stack' },
     data.pendingLeaves ? h('div', { class: 'banner' }, `มีใบลารออนุมัติ ${data.pendingLeaves} ใบ — อนุมัติแล้วระบบจะเช็คชื่อเป็น "ลา" ให้ `,
       h('button', { class: 'sm', onclick: () => ctx.setTab('leaves') }, 'ไปที่ใบลา')) : null,
     h('div', { class: 'row' },
       h('div', { class: 'legend muted' }, 'คลิกช่องเพื่อเปลี่ยน:', ['P', 'L', 'A', 'E'].map((k) => h('span', {}, h('span', { class: 'mark btn ' + k }, k), ' ', MARK_LABEL[k]))),
       h('span', { class: 'spacer' }),
-      actionButton('บันทึกการเช็คชื่อ', async () => {
-        await call('saveAttendance', { courseCode: ctx.course.courseCode, rows: rows.map((r) => ({ studentId: r.studentId, marks: r.marks })) });
-        dirty = false;
-        toast('บันทึกการเช็คชื่อแล้ว');
-      }, { class: 'primary' })),
-    h('p', { class: 'muted small' }, 'คลิกเลขสัปดาห์ที่หัวตารางเพื่อให้ทุกคนที่ยังว่าง = มา · สัปดาห์ที่มีการเช็คชื่อแล้ว ช่องว่างจะนับเป็นขาด'),
+      status),
+    restored && stale ? staleBanner : null,
+    h('p', { class: 'muted small' }, 'บันทึกอัตโนมัติทุกครั้งที่คลิก (เก็บสำรองในเครื่องด้วย ถ้าเน็ตหลุดจะส่งให้เมื่อกลับมา) · คลิกเลขสัปดาห์ที่หัวตารางเพื่อให้ทุกคนที่ยังว่าง = มา · สัปดาห์ที่มีการเช็คชื่อแล้ว ช่องว่างจะนับเป็นขาด'),
     holder));
   draw();
+  drawStatus();
+  if (restored && !stale) {
+    toast(`กู้คืนการเช็คชื่อที่ยังไม่ได้บันทึก ${restored} ช่อง — กำลังส่ง`);
+    saver.flush();
+  }
 }
 
 /* ---------- สอบ ---------- */

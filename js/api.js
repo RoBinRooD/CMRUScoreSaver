@@ -50,3 +50,23 @@ export async function call(action, payload = {}, retried = false) {
 export function resetDemo() {
   window.memoryReset_?.();
 }
+
+/**
+ * ส่งคำสั่งตอนปิด/ซ่อนหน้า (navigator.sendBeacon) — ไม่รอผล คืน true ถ้าส่งออกไปได้
+ * ใช้เป็นด่านสุดท้ายเท่านั้น: ผู้เรียกต้องเก็บข้อมูลสำรองไว้เองจนกว่า call() ปกติจะยืนยันว่าบันทึกแล้ว
+ */
+export function beacon(action, payload) {
+  const token = getToken();
+  if (!token) return false;
+  const body = JSON.stringify({ action, payload, idToken: token });
+  if (DEMO) {
+    if (!window.handleRequest_) return false;
+    window.handleRequest_(JSON.parse(body));
+    return true;
+  }
+  try {
+    return navigator.sendBeacon(window.APP_CONFIG.apiUrl, new Blob([body], { type: 'text/plain;charset=utf-8' }));
+  } catch {
+    return false;
+  }
+}

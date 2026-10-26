@@ -115,6 +115,7 @@ function assignmentView_(a) {
     published: a.published === 'true',
     createdAt: a.createdAt,
     groupMax: isGroupWork_(a) ? Number(a.groupMax) : 0,
+    half: a.half === '2' ? 2 : 1,
     overdue: isPastDue_(a)
   };
 }
@@ -225,7 +226,7 @@ function computeFor_(d, studentId) {
     attendance: d.att[studentId] || marksOf_(null),
     assignments: d.assignments.map(function (a) {
       var sub = d.subs[a.id + '|' + studentId];
-      return { score: sub ? sub.score : null, maxScore: a.maxScore, overdue: a.overdue };
+      return { score: sub ? sub.score : null, maxScore: a.maxScore, overdue: a.overdue, half: a.half };
     }),
     midterm: ex.midterm,
     maxMidterm: d.course.maxMidterm,
@@ -596,6 +597,7 @@ function apiUpsertAssignment_(user, p) {
   a.allowLate = p.allowLate ? 'true' : 'false';
   a.published = p.published ? 'true' : 'false';
   a.groupMax = groupMax ? String(groupMax) : '';
+  a.half = Number(p.half) === 2 ? '2' : '1';
   if (p.id) update_('Assignments', a); else insert_('Assignments', a);
   return assignmentView_(a);
 }

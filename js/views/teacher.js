@@ -49,7 +49,7 @@ async function assignments(body, ctx) {
   mount(body, loading());
   const list = await call('listAssignments', { courseCode: ctx.course.courseCode });
   const edit = async (a) => {
-    const saved = await assignmentForm(ctx.course, a);
+    const saved = await assignmentForm(ctx.course, a, list);
     if (saved) assignments(body, ctx);
   };
   mount(body, h('div', { class: 'stack' },
@@ -63,7 +63,7 @@ async function assignments(body, ctx) {
         h('span', { class: 'spacer' }),
         a.published ? null : h('span', { class: 'chip' }, 'ซ่อนอยู่'),
         a.overdue ? h('span', { class: 'chip warn' }, 'เลยกำหนด') : h('span', { class: 'chip info' }, 'เปิดรับ')),
-      h('div', { class: 'muted small' }, `กำหนดส่ง ${fmtDate(a.dueAt)} · เต็ม ${a.maxScore} · ${a.allowLate ? 'รับงานช้า' : 'ไม่รับงานช้า'}`),
+      h('div', { class: 'muted small' }, `กำหนดส่ง ${fmtDate(a.dueAt)} · เต็ม ${a.maxScore} · ${a.allowLate ? 'รับงานช้า' : 'ไม่รับงานช้า'} · คะแนนเก็บ${a.half === 2 ? 'ครึ่งหลัง' : 'ครึ่งแรก'}`),
       a.description ? h('p', { class: 'desc' }, a.description) : null,
       h('div', { class: 'row small', style: 'margin:.5rem 0' },
         a.groupMax ? h('span', { class: 'chip' }, `งานกลุ่ม ≤${a.groupMax} คน · ${a.counts.groups} กลุ่ม`) : null,
@@ -81,7 +81,10 @@ async function assignments(body, ctx) {
       : h('p', { class: 'muted center pad' }, 'ยังไม่มีงาน — กด "สร้างงาน"')));
 }
 
-function assignmentForm(course, a) {
+function assignmentForm(course, a, list = []) {
+  // งานใหม่: ใช้ครึ่งเทอมเดียวกับงานที่กำหนดส่งล่าสุด
+  const latest = list.filter((x) => x.dueAt).sort((x, y) => (x.dueAt < y.dueAt ? 1 : -1))[0];
+  const half = a ? a.half : latest?.half || 1;
   const f = {
     title: h('input', { value: a?.title || '', required: true, maxlength: 200 }),
     description: h('textarea', { value: a?.description || '', placeholder: 'รายละเอียด / ไฟล์ที่ต้องส่ง' }),
@@ -90,7 +93,10 @@ function assignmentForm(course, a) {
     allowLate: h('input', { type: 'checkbox', checked: a ? a.allowLate : true }),
     published: h('input', { type: 'checkbox', checked: a ? a.published : true }),
     isGroup: h('input', { type: 'checkbox', checked: !!a?.groupMax }),
-    groupMax: h('input', { type: 'number', min: 2, max: 50, step: 1, value: a?.groupMax || 4, style: 'width:5em' })
+    groupMax: h('input', { type: 'number', min: 2, max: 50, step: 1, value: a?.groupMax || 4, style: 'width:5em' }),
+    half: h('select', {},
+      h('option', { value: '1', selected: half !== 2 }, 'คะแนนเก็บครึ่งเทอมแรก'),
+      h('option', { value: '2', selected: half === 2 }, 'คะแนนเก็บครึ่งเทอมหลัง'))
   };
   const groupMaxField = h('label', { class: 'check' }, 'สมาชิกสูงสุด', f.groupMax, 'คน');
   const syncGroup = () => { groupMaxField.hidden = !f.isGroup.checked; };
@@ -102,6 +108,7 @@ function assignmentForm(course, a) {
     h('div', { class: 'form-2' },
       h('label', { class: 'field' }, h('span', {}, 'คะแนนเต็ม'), f.maxScore),
       h('label', { class: 'field' }, h('span', {}, 'กำหนดส่ง'), f.dueAt)),
+    h('label', { class: 'field' }, h('span', {}, 'นับเป็นคะแนน'), f.half),
     h('label', { class: 'check' }, f.allowLate, 'รับงานหลังกำหนด (ทำเครื่องหมายว่าส่งช้า)'),
     h('label', { class: 'check' }, f.published, 'แสดงให้นักศึกษาเห็น'),
     h('div', { class: 'row' }, h('label', { class: 'check' }, f.isGroup, 'งานกลุ่ม (นักศึกษาจับกลุ่มเอง)'), groupMaxField));
@@ -112,7 +119,8 @@ function assignmentForm(course, a) {
         id: a?.id, courseCode: course.courseCode, title: f.title.value, description: f.description.value,
         maxScore: Number(f.maxScore.value), dueAt: f.dueAt.value ? new Date(f.dueAt.value).toISOString() : '',
         allowLate: f.allowLate.checked, published: f.published.checked,
-        groupMax: f.isGroup.checked ? Number(f.groupMax.value) : 0
+        groupMax: f.isGroup.checked ? Number(f.groupMax.value) : 0,
+        half: Number(f.half.value)
       });
       toast('บันทึกงานแล้ว');
     }
@@ -424,9 +432,11 @@ async function gradebook(body, ctx) {
   const compute = (s) => Grade.compute({
     weights, cutoffs: gb.settings.gradeCutoffs, attendancePoints: gb.settings.attendancePoints,
     heldWeeks: gb.course.heldWeeks, attendance: s.attendance,
-    assignments: gb.assignments.map((a) => ({ score: s.scores[a.id], maxScore: a.maxScore, overdue: a.overdue })),
+    assignments: gb.assignments.map((a) => ({ score: s.scores[a.id], maxScore: a.maxScore, overdue: a.overdue, half: a.half })),
     midterm: s.exams.midterm, maxMidterm: gb.course.maxMidterm, final: s.exams.final, maxFinal: gb.course.maxFinal
   });
+
+  const maxOf = (k) => Grade.compute({ weights }).halves.max[k];
 
   const draw = () => {
     const sum = Grade.PARTS.reduce((t, k) => t + (Number(weights[k]) || 0), 0);
@@ -440,13 +450,15 @@ async function gradebook(body, ctx) {
       h('div', { class: 'table-wrap' }, h('table', {},
         h('thead', {}, h('tr', {},
           h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'),
-          gb.assignments.map((a) => h('th', { class: 'num', title: a.title }, `${a.title.slice(0, 14)} (/${a.maxScore})`)),
-          Grade.PARTS.map((k) => h('th', { class: 'num' }, `${labels[k]} ${weights[k]}%`)),
+          gb.assignments.map((a) => h('th', { class: 'num', title: `${a.title} · ครึ่ง${a.half === 2 ? 'หลัง' : 'แรก'}` }, `${a.title.slice(0, 14)} (/${a.maxScore})`, h('div', { class: 'muted small' }, a.half === 2 ? 'ครึ่งหลัง' : 'ครึ่งแรก'))),
+          ['attendance', 'assignments'].map((k) => h('th', { class: 'num' }, `${labels[k]} ${weights[k]}%`)),
+          REGISTRAR_COLS.map(([k, label]) => h('th', { class: 'num reg' }, label, h('div', { class: 'muted small' }, `/${fmtNum(maxOf(k))}`))),
           h('th', { class: 'num' }, 'รวม'), h('th', {}, 'เกรด'))),
         h('tbody', {}, results.map(({ s, r }) => h('tr', {},
           h('td', { class: 'nowrap' }, s.studentId), h('td', { class: 'nowrap' }, s.name),
           gb.assignments.map((a) => h('td', { class: 'num' }, fmtNum(s.scores[a.id]))),
-          Grade.PARTS.map((k) => h('td', { class: 'num' }, fmtNum(r.parts[k].points))),
+          ['attendance', 'assignments'].map((k) => h('td', { class: 'num muted' }, fmtNum(r.parts[k].points))),
+          REGISTRAR_COLS.map(([k]) => h('td', { class: 'num reg' }, fmtNum(r.halves[k]))),
           h('td', { class: 'num' }, h('strong', {}, fmtNum(r.total))),
           h('td', {}, h('span', { class: 'chip accent' }, r.grade)))))))));
     return results;
@@ -457,12 +469,14 @@ async function gradebook(body, ctx) {
 
   const exportXlsx = async () => {
     const XLSX = await loadXlsx();
-    const head = ['รหัส', 'ชื่อ', 'หมู่เรียน', ...gb.assignments.map((a) => `${a.title} (/${a.maxScore})`),
-      ...Grade.PARTS.map((k) => `${labels[k]} (${weights[k]}%)`), 'รวม', 'เกรด'];
+    const head = ['รหัส', 'ชื่อ', 'หมู่เรียน', ...gb.assignments.map((a) => `${a.title} (/${a.maxScore}) ครึ่ง${a.half === 2 ? 'หลัง' : 'แรก'}`),
+      ...['attendance', 'assignments'].map((k) => `${labels[k]} (${weights[k]}%)`),
+      ...REGISTRAR_COLS.map(([k, label]) => `${label} (/${maxOf(k)})`), 'รวม', 'เกรด'];
     const rows = gb.students.map((s) => {
       const r = compute(s);
       return [s.studentId, s.name, s.group, ...gb.assignments.map((a) => s.scores[a.id] ?? ''),
-        ...Grade.PARTS.map((k) => r.parts[k].points ?? ''), r.total, r.grade];
+        ...['attendance', 'assignments'].map((k) => r.parts[k].points ?? ''),
+        ...REGISTRAR_COLS.map(([k]) => r.halves[k]), r.total, r.grade];
     });
     const ws = XLSX.utils.aoa_to_sheet([[`${gb.course.courseCode} ${gb.course.title} ภาค ${gb.course.term}`], [], head, ...rows]);
     const wb = XLSX.utils.book_new();
@@ -477,15 +491,54 @@ async function gradebook(body, ctx) {
       h('div', { class: 'row' },
         h('label', { class: 'check' }, visible, 'ประกาศคะแนนรวมและเกรดให้นักศึกษาเห็น'),
         h('span', { class: 'spacer' }),
+        actionButton('คัดลอกสำหรับระบบทะเบียน', () => registrarExport(gb, compute, maxOf)),
         actionButton('ดาวน์โหลด Excel', exportXlsx),
         actionButton('บันทึกการตั้งค่า', async () => {
           await call('updateCourse', { courseCode: gb.course.courseCode, weights, gradesVisible: visible.checked });
           toast('บันทึกแล้ว');
           await ctx.refreshMe();
         }, { class: 'primary' })),
+      h('p', { class: 'muted small' }, 'คะแนนเก็บแต่ละครึ่ง = เข้าเรียน ÷ 2 + งานของครึ่งนั้น (น้ำหนักงาน ÷ 2) · เลือกครึ่งเทอมของแต่ละงานในฟอร์มงาน · รวม = ผลรวม 4 ช่องของระบบทะเบียน'),
       h('p', { class: 'muted small' }, 'งานที่ยังไม่ถึงกำหนดและยังไม่ได้ให้คะแนนจะยังไม่นับ · งานที่เลยกำหนดแต่ไม่ส่ง = 0 · เกณฑ์เกรดแก้ได้ที่แท็บตั้งค่า')),
     holder));
   draw();
+}
+
+const REGISTRAR_COLS = [['first', 'เก็บครึ่งแรก'], ['second', 'เก็บครึ่งหลัง'], ['midterm', 'กลางภาค'], ['final', 'ปลายภาค']];
+
+/** ข้อความสำหรับวางในช่องนำเข้าคะแนนของระบบทะเบียน: รหัส⇥เก็บครึ่งแรก⇥เก็บครึ่งหลัง⇥กลางภาค⇥ปลายภาค รหัสละบรรทัด ไม่มีหัวตาราง */
+function registrarExport(gb, compute, maxOf) {
+  const integer = h('input', { type: 'checkbox', checked: true });
+  const out = h('textarea', { readonly: true, rows: 12, style: 'font-family:ui-monospace,monospace;white-space:pre;tab-size:10', 'aria-label': 'ข้อความสำหรับระบบทะเบียน' });
+  const fmt = (n) => (integer.checked ? String(Math.round(n)) : String(Grade.round2(n)));
+  const fill = () => {
+    out.value = gb.students
+      .slice().sort((a, b) => (a.studentId < b.studentId ? -1 : 1))
+      .map((s) => { const r = compute(s).halves; return [s.studentId, fmt(r.first), fmt(r.second), fmt(r.midterm), fmt(r.final)].join('\t'); })
+      .join('\n');
+  };
+  integer.addEventListener('change', fill);
+  fill();
+  const maxes = REGISTRAR_COLS.map(([k, label]) => `${label} ${fmtNum(maxOf(k))}`).join(' · ');
+  return modal('คัดลอกสำหรับระบบทะเบียน', h('div', { class: 'form' },
+    h('p', { class: 'small' }, `${gb.students.length} คน · รหัสละบรรทัด: รหัส ⇥ เก็บครึ่งแรก ⇥ เก็บครึ่งหลัง ⇥ กลางภาค ⇥ ปลายภาค (คั่นด้วยแท็บ ไม่มีหัวตาราง)`),
+    h('p', { class: 'muted small' }, `คะแนนเต็มตามน้ำหนักวิชานี้: ${maxes} — ต้องตรงกับที่ตั้งไว้ในระบบทะเบียน`),
+    out,
+    h('label', { class: 'check' }, integer, 'ปัดเป็นจำนวนเต็ม (ไม่ติ๊ก = ทศนิยม 2 ตำแหน่ง)'),
+    h('p', { class: 'muted small' }, 'ใช้คะแนนจากสัดส่วนคะแนนที่แสดงอยู่ตอนนี้ — ถ้าแก้สัดส่วน อย่าลืมกด "บันทึกการตั้งค่า"')),
+  [{
+    label: 'คัดลอก',
+    run: async () => {
+      try {
+        await navigator.clipboard.writeText(out.value);
+      } catch {
+        out.select();
+        document.execCommand('copy');
+      }
+      toast('คัดลอกแล้ว — วางในช่องนำเข้าคะแนนของระบบทะเบียน');
+      return false;
+    }
+  }]);
 }
 
 /* ---------- นักศึกษา ---------- */

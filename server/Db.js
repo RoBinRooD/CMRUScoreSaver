@@ -10,7 +10,7 @@ var SCHEMA = {
     'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks', 'syllabus', 'syllabusUpdatedAt'],
   Students: ['courseCode', 'studentId', 'name', 'group', 'email', 'boundAt', 'nickname', 'phone'],
   Assignments: ['id', 'courseCode', 'title', 'description', 'maxScore', 'dueAt', 'allowLate', 'published', 'createdAt',
-    'groupMax'],
+    'groupMax', 'half'],
   Submissions: ['id', 'assignmentId', 'studentId', 'files', 'link', 'submittedAt', 'isLate', 'score', 'feedback', 'gradedAt',
     'groupId'],
   Groups: ['id', 'assignmentId', 'name', 'members', 'createdAt'],

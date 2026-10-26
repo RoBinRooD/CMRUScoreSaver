@@ -226,18 +226,21 @@ test('teacher grades, takes attendance and exams; gradebook totals', () => {
 
   const gb = b.ok(T, 'gradebook', { courseCode: 'DEMO3314' });
   const st = gb.students.find((s) => s.studentId === '68000101');
-  // เช็คชื่อ 2.5/3 = 83.33% × 10, งาน 45/50 (A3 ยังไม่ถึงกำหนด ไม่นับ) × 50, กลางภาค 30/40 × 20, ปลายภาค 48/60 × 20
+  // น้ำหนักเริ่มต้น 10/70/10/10 · เช็คชื่อ 2.5/3 = 83.33% × 10 = 8.33 (แบ่งครึ่งละ 4.17)
+  // งาน 45/50 = 90% อยู่ครึ่งแรก × 35 = 31.5 (A3 ยังไม่ถึงกำหนด ไม่นับ · ครึ่งหลังยังไม่มีงาน = 0)
+  // กลางภาค 30/40 × 10 = 7.5 · ปลายภาค 48/60 × 10 = 8
   assert.equal(st.result.parts.attendance.points, 8.33);
-  assert.equal(st.result.parts.assignments.points, 45);
-  assert.equal(st.result.total, 8.33 + 45 + 15 + 16);
-  assert.equal(st.result.grade, 'A');
+  assert.equal(st.result.parts.assignments.points, 31.5);
+  assert.deepEqual({ ...st.result.halves, max: undefined }, { first: 35.67, second: 4.17, midterm: 7.5, final: 8, max: undefined });
+  assert.equal(st.result.total, 55.34);
+  assert.equal(st.result.grade, 'D+');
 
   // นักศึกษาเห็นเกรดเมื่ออาจารย์เปิดเผยเท่านั้น
   reg(b, '68000101');
   assert.equal(b.ok('68000101@demo.ac.th', 'myGrades', { courseCode: 'DEMO3314' }).grade, null);
   b.ok(T, 'updateCourse', { courseCode: 'DEMO3314', gradesVisible: true });
   const mine = b.ok('68000101@demo.ac.th', 'myGrades', { courseCode: 'DEMO3314' });
-  assert.equal(mine.grade, 'A');
+  assert.equal(mine.grade, 'D+');
   assert.equal(mine.exams.midterm, 30);
 });
 

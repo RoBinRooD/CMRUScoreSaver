@@ -4,7 +4,8 @@
  * จึงเขียนเป็น JavaScript ธรรมดา ไม่ใช้ import/export
  */
 var Grade = (function () {
-  var DEFAULT_WEIGHTS = { attendance: 10, assignments: 50, midterm: 20, final: 20 };
+  // คะแนนเก็บ 80 = เข้าเรียน 10 + งาน 70 → ระบบทะเบียน: เก็บครึ่งแรก 40 · เก็บครึ่งหลัง 40 · กลางภาค 10 · ปลายภาค 10
+  var DEFAULT_WEIGHTS = { attendance: 10, assignments: 70, midterm: 10, final: 10 };
   var DEFAULT_CUTOFFS = [['A', 80], ['B+', 75], ['B', 70], ['C+', 65], ['C', 60], ['D+', 55], ['D', 50], ['F', 0]];
   // P = มา, L = สาย, E = ลา, A = ขาด
   var DEFAULT_ATTENDANCE_POINTS = { P: 1, L: 0.5, E: 1, A: 0 };
@@ -63,29 +64,60 @@ var Grade = (function () {
   }
 
   /**
+   * งานแบ่งเป็นครึ่งเทอมแรก/หลัง (half: 1 | 2, ไม่ระบุ = 1) แต่ละครึ่งได้น้ำหนักงานครึ่งหนึ่ง
+   * คืน pct = ค่าเฉลี่ยของครึ่งที่มีงานนับแล้ว (สำหรับแสดง) และ points = คะแนนที่ใช้รวมจริง (ครึ่งที่ยังไม่มีงาน = 0)
+   */
+  function assignmentHalves(items, weight) {
+    var byHalf = { 1: [], 2: [] };
+    (items || []).forEach(function (it) { byHalf[Number(it.half) === 2 ? 2 : 1].push(it); });
+    var first = assignments(byHalf[1]), second = assignments(byHalf[2]);
+    var all = assignments(items);
+    var pcts = [first.pct, second.pct].filter(function (p) { return p !== null; });
+    all.first = first;
+    all.second = second;
+    all.pct = pcts.length ? round2(pcts.reduce(function (a, b) { return a + b; }, 0) / pcts.length) : null;
+    all.halfPoints = [first, second].map(function (h) { return h.pct === null ? 0 : (h.pct / 100) * (weight / 2); });
+    all.points = pcts.length ? round2(all.halfPoints[0] + all.halfPoints[1]) : null;
+    return all;
+  }
+
+  /**
    * input: { weights, cutoffs, attendancePoints, heldWeeks, attendance (marks),
-   *          assignments: [{score,maxScore,overdue}], midterm, maxMidterm, final, maxFinal }
-   * คืน: { parts: {attendance, assignments, midterm, final}, total, grade }
-   * ส่วนที่ยังไม่มีคะแนน (pct = null) นับเป็น 0 ในคะแนนรวม
+   *          assignments: [{score,maxScore,overdue,half}], midterm, maxMidterm, final, maxFinal }
+   * คืน: { parts: {attendance, assignments, midterm, final}, halves, total, grade }
+   * halves = 4 ช่องของระบบทะเบียน: เก็บครึ่งแรก/หลัง (= เข้าเรียน ÷ 2 + งานของครึ่งนั้น), กลางภาค, ปลายภาค
+   * ส่วนที่ยังไม่มีคะแนน (pct = null) นับเป็น 0 ในคะแนนรวม · total = ผลรวม 4 ช่อง
    */
   function compute(input) {
     var w = input.weights || DEFAULT_WEIGHTS;
+    var wa = num(w.assignments) || 0;
     var parts = {
       attendance: attendance(input.attendance, input.heldWeeks, input.attendancePoints),
-      assignments: assignments(input.assignments),
+      assignments: assignmentHalves(input.assignments, wa),
       midterm: exam(input.midterm, input.maxMidterm),
       final: exam(input.final, input.maxFinal)
     };
-    var total = 0;
     PARTS.forEach(function (k) {
       var weight = num(w[k]) || 0;
       var pct = parts[k].pct;
       parts[k].weight = weight;
-      parts[k].points = pct === null ? null : round2((pct / 100) * weight);
-      total += parts[k].points || 0;
+      if (k !== 'assignments') parts[k].points = pct === null ? null : round2((pct / 100) * weight);
     });
-    total = round2(total);
-    return { parts: parts, total: total, grade: letter(total, input.cutoffs) };
+    var att = parts.attendance.points || 0;
+    var halves = {
+      first: round2(att / 2 + parts.assignments.halfPoints[0]),
+      second: round2(att / 2 + parts.assignments.halfPoints[1]),
+      midterm: parts.midterm.points || 0,
+      final: parts.final.points || 0,
+      max: {
+        first: round2(((num(w.attendance) || 0) + wa) / 2),
+        second: round2(((num(w.attendance) || 0) + wa) / 2),
+        midterm: num(w.midterm) || 0,
+        final: num(w.final) || 0
+      }
+    };
+    var total = round2(halves.first + halves.second + halves.midterm + halves.final);
+    return { parts: parts, halves: halves, total: total, grade: letter(total, input.cutoffs) };
   }
 
   return {
@@ -98,6 +130,7 @@ var Grade = (function () {
     round2: round2,
     attendance: attendance,
     assignments: assignments,
+    assignmentHalves: assignmentHalves,
     exam: exam,
     letter: letter,
     compute: compute

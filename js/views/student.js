@@ -339,9 +339,9 @@ async function renderGrades(body, course) {
       h('div', { class: 'table-wrap', style: 'margin-top:.5rem' }, h('table', { class: 'att' },
         h('thead', {}, h('tr', {}, Array.from({ length: 16 }, (_, i) => h('th', {}, 'ส.' + (i + 1))))),
         h('tbody', {}, h('tr', {}, g.attendance.marks.map((m, i) => {
-          // สัปดาห์ที่ยังไม่เช็คชื่อ แสดงเฉพาะ "ลา" จากใบลาที่อนุมัติแล้ว
+          // ช่องว่าง = ยังไม่เช็ค · สัปดาห์ที่ยังไม่เช็คชื่อ แสดงเฉพาะ "ลา" จากใบลาที่อนุมัติแล้ว
           const held = g.attendance.heldWeeks.includes(i + 1);
-          const mk = held ? m || 'A' : m === 'E' ? 'E' : '';
+          const mk = held ? m || '' : m === 'E' ? 'E' : '';
           return h('td', {}, h('span', { class: 'mark btn ' + mk, title: MARK_LABEL[mk] }, mk || '·'));
         })))))),
 

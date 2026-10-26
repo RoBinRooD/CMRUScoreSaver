@@ -525,7 +525,7 @@ async function attendance(body, ctx) {
       status),
     restored && stale ? staleBanner : null,
     h('p', { class: 'muted small' }, `ขาด (นับ) = ขาด + สาย ÷ ${data.attendanceRules.latePerAbsence} ปัดลง · ลาไม่นับ · ตั้งแต่ ${data.attendanceRules.warnAt} = ติดตาม · เกิน ${data.attendanceRules.failAbove} = เกรด F (แก้เกณฑ์ที่แท็บตั้งค่า)`),
-    h('p', { class: 'muted small' }, 'บันทึกอัตโนมัติทุกครั้งที่คลิก (เก็บสำรองในเครื่องด้วย ถ้าเน็ตหลุดจะส่งให้เมื่อกลับมา) · คลิกเลขสัปดาห์ที่หัวตารางเพื่อให้ทุกคนที่ยังว่าง = มา · สัปดาห์ที่มีการเช็คชื่อแล้ว ช่องว่างจะนับเป็นขาด'),
+    h('p', { class: 'muted small' }, 'บันทึกอัตโนมัติทุกครั้งที่คลิก (เก็บสำรองในเครื่องด้วย ถ้าเน็ตหลุดจะส่งให้เมื่อกลับมา) · คลิกเลขสัปดาห์ที่หัวตารางเพื่อให้ทุกคนที่ยังว่าง = มา · ช่องว่าง = ยังไม่เช็ค ไม่นับ (คนที่ขาดต้องกดเป็น A)'),
     holder));
   draw();
   drawStatus();
@@ -851,7 +851,7 @@ async function settings(body, ctx) {
         h('label', { class: 'check' }, 'ขาดเกิน', rules.failAbove, 'ครั้ง = เกรด F'),
         h('label', { class: 'check' }, 'ขาดตั้งแต่', rules.warnAt, 'ครั้ง = ติดตาม'),
         h('label', { class: 'check' }, 'สาย', rules.latePerAbsence, 'ครั้ง = ขาด 1')),
-      h('p', { class: 'muted small' }, 'ลาไม่นับเป็นขาด · สัปดาห์ที่เช็คชื่อแล้วแต่ช่องว่าง = ขาด · ใส่ 0 ที่ "สาย" = สายไม่นับเป็นขาด · ใช้กับทุกวิชา')),
+      h('p', { class: 'muted small' }, 'ลาไม่นับเป็นขาด · ช่องว่าง = ยังไม่เช็ค ไม่นับ · ใส่ 0 ที่ "สาย" = สายไม่นับเป็นขาด · ใช้กับทุกวิชา')),
     h('div', { class: 'row' }, h('span', { class: 'spacer' }), actionButton('บันทึกการตั้งค่า', async () => {
       await call('updateSettings', {
         teacherEmails: lines(f.teacherEmails),

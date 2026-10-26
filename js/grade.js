@@ -24,26 +24,27 @@ var Grade = (function () {
     return Math.round(n * 100) / 100;
   }
 
+  /** สัปดาห์ที่นับของนักศึกษาคนนี้: อยู่ใน heldWeeks และมีเครื่องหมาย — ช่องว่าง = ยังไม่เช็ค ไม่นับ */
+  function markedWeeks(marks, heldWeeks) {
+    return (heldWeeks || []).filter(function (w) { return w >= 1 && w <= WEEKS && (marks || [])[w - 1]; });
+  }
+
   /** marks: array ยาว 16 (index 0 = สัปดาห์ 1), heldWeeks: สัปดาห์ที่มีการเช็คชื่อแล้ว (เลข 1–16) */
   function attendance(marks, heldWeeks, points) {
     points = points || DEFAULT_ATTENDANCE_POINTS;
-    var held = (heldWeeks || []).filter(function (w) { return w >= 1 && w <= WEEKS; });
-    if (!held.length) return { held: 0, earned: 0, pct: null };
+    var weeks = markedWeeks(marks, heldWeeks);
+    if (!weeks.length) return { held: 0, earned: 0, pct: null };
     var earned = 0;
-    held.forEach(function (w) {
-      var m = (marks || [])[w - 1] || 'A'; // สัปดาห์ที่เช็คแล้วแต่ไม่มีบันทึก = ขาด
-      earned += num(points[m]) || 0;
-    });
-    return { held: held.length, earned: earned, pct: round2((earned / held.length) * 100) };
+    weeks.forEach(function (w) { earned += num(points[marks[w - 1]]) || 0; });
+    return { held: weeks.length, earned: earned, pct: round2((earned / weeks.length) * 100) };
   }
 
-  /** นับการขาดเรียนตามเกณฑ์ — สัปดาห์ที่เช็คแล้วแต่ไม่มีบันทึก = ขาด */
+  /** นับการขาดเรียนตามเกณฑ์ — นับเฉพาะช่องที่เช็คแล้ว (ขาดต้องกด A) */
   function absences(marks, heldWeeks, rules) {
     var r = rules || DEFAULT_ATTENDANCE_RULES;
     var c = { A: 0, L: 0, E: 0 };
-    (heldWeeks || []).forEach(function (w) {
-      if (w < 1 || w > WEEKS) return;
-      var m = (marks || [])[w - 1] || 'A';
+    markedWeeks(marks, heldWeeks).forEach(function (w) {
+      var m = marks[w - 1];
       if (c[m] !== undefined) c[m]++;
     });
     var per = num(r.latePerAbsence) || 0;

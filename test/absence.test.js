@@ -7,9 +7,9 @@ const T = 'teacher@demo.ac.th';
 const C = 'DEMO2303';
 const weeks = (n) => Array.from({ length: n }, (_, i) => i + 1);
 
-test('absences: absent + late ÷ 2 (rounded down); leave does not count; blank in a held week = absent', () => {
-  const a = Grade.absences(['A', 'L', 'L', 'L', 'E', 'E', '', 'P'], weeks(8));
-  assert.equal(a.absent, 2); // A + ช่องว่างสัปดาห์ 7
+test('absences: absent + late ÷ 2 (rounded down); leave and blanks do not count', () => {
+  const a = Grade.absences(['A', 'L', 'L', 'L', 'E', 'E', '', 'A'], weeks(8));
+  assert.equal(a.absent, 2); // สัปดาห์ 1 และ 8 · ช่องว่างสัปดาห์ 7 = ยังไม่เช็ค
   assert.equal(a.late, 3);
   assert.equal(a.leave, 2);
   assert.equal(a.effective, 3); // 2 + floor(3/2)
@@ -17,6 +17,11 @@ test('absences: absent + late ÷ 2 (rounded down); leave does not count; blank i
   assert.equal(a.fail, false);
   // สัปดาห์ที่ยังไม่เช็ค ไม่นับ
   assert.equal(Grade.absences(['A', 'A', 'A', 'A', 'A'], [1, 2]).effective, 2);
+  // วันแรกของเทอม: เช็คชื่อไปแล้วหลายสัปดาห์ แต่นักศึกษาคนนี้ยังไม่ถูกเช็คเลย = ไม่ขาด ไม่ตก
+  const fresh = Grade.compute({ heldWeeks: weeks(10), attendance: Array(16).fill('') });
+  assert.equal(fresh.absence.effective, 0);
+  assert.equal(fresh.absence.fail, false);
+  assert.equal(fresh.parts.attendance.pct, null);
 });
 
 test('more than 4 counted absences = F whatever the score; exactly 4 is still graded by score', () => {
@@ -46,8 +51,6 @@ test('backend: rules from settings drive gradebook, dashboards and the at-risk l
     { studentId: '69000101', marks: marks(5, 0) }, // 5 → F
     { studentId: '69000102', marks: marks(2, 2) }, // 3 → ติดตาม
     { studentId: '69000103', marks: [...Array(6).fill('E'), 'P', 'P', ...Array(8).fill('')] }, // ลา 6 → ปกติ
-    // คนอื่นมาครบ (สัปดาห์ที่เช็คแล้วแต่ช่องว่าง = ขาด)
-    ...['69000104', '69000105', '69000106', '69000107', '69000108'].map((studentId) => ({ studentId, marks: marks(0, 0) }))
   ] });
   const gb = b.ok(T, 'gradebook', { courseCode: C });
   const st = (id) => gb.students.find((s) => s.studentId === id).result;

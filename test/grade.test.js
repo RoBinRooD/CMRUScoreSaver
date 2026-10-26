@@ -10,11 +10,12 @@ test('letter grade uses cutoffs (inclusive lower bound)', () => {
   assert.equal(Grade.letter(0, Grade.DEFAULT_CUTOFFS), 'F');
 });
 
-test('attendance counts only held weeks; blank in a held week = absent', () => {
+test('attendance counts only marked cells in held weeks; blank = not checked yet', () => {
   const marks = ['P', 'L', '', 'E', 'P'];
   const r = Grade.attendance(marks, [1, 2, 3, 4], Grade.DEFAULT_ATTENDANCE_POINTS);
-  assert.deepEqual(r, { held: 4, earned: 2.5, pct: 62.5 });
+  assert.deepEqual(r, { held: 3, earned: 2.5, pct: 83.33 });
   assert.equal(Grade.attendance(marks, [], null).pct, null);
+  assert.equal(Grade.attendance(['', ''], [1, 2], null).pct, null, 'never checked = no attendance score yet');
 });
 
 test('assignments skip ungraded work that is not yet due', () => {

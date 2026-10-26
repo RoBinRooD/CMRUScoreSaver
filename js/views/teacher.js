@@ -1,6 +1,6 @@
 import { h, mount, loading, errorBox, toast, actionButton, confirmBox, modal, fmtDate, fmtSize, fmtNum, toLocalInput, driveUrl, tabs, MARK_LABEL } from '../ui.js';
 import { call, beacon } from '../api.js';
-import { teacherDashboard } from './dashboard.js';
+import { teacherDashboard, absenceText } from './dashboard.js';
 import { renderSyllabus } from './syllabus.js';
 import { renderTimeline } from './timeline.js';
 import { renderBoard } from './board.js';
@@ -485,6 +485,8 @@ async function attendance(body, ctx) {
   };
 
   const draw = () => {
+    // นับขาดจากตารางตรงหน้า (สัปดาห์ที่มีคนถูกเช็คแล้ว ไม่นับสัปดาห์ที่มีแค่ "ลา")
+    const held = Array.from({ length: 16 }, (_, i) => i + 1).filter((w) => rows.some((r) => r.marks[w - 1] && r.marks[w - 1] !== 'E'));
     mount(holder, h('div', { class: 'table-wrap' }, h('table', { class: 'att' },
       h('thead', {}, h('tr', {},
         h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'),
@@ -492,7 +494,8 @@ async function attendance(body, ctx) {
           h('button', {
             class: 'sm ghost', title: `สัปดาห์ ${i + 1}: ทำเครื่องหมาย "มา" ให้ทุกคนที่ยังว่าง`,
             onclick: () => { rows.forEach((r) => { if (!r.marks[i]) setMark(r, i, 'P'); }); draw(); }
-          }, String(i + 1)))))),
+          }, String(i + 1)))),
+        h('th', { class: 'num', title: `ขาด + สาย ÷ ${data.attendanceRules.latePerAbsence} · ลาไม่นับ` }, 'ขาด (นับ)'))),
       h('tbody', {}, rows.map((r) => h('tr', {},
         h('td', { class: 'nowrap' }, r.studentId),
         h('td', { class: 'nowrap' }, r.name),
@@ -503,7 +506,12 @@ async function attendance(body, ctx) {
             'aria-label': `${r.studentId} สัปดาห์ ${i + 1}: ${MARK_LABEL[m]}`,
             onclick: () => { setMark(r, i, CYCLE[(CYCLE.indexOf(m) + 1) % CYCLE.length]); draw(); }
           }, m || '·'));
-        })))))));
+        }),
+        (() => {
+          const a = Grade.absences(r.marks, held, data.attendanceRules);
+          return h('td', { class: 'num nowrap', title: absenceText(a) },
+            h('span', { class: 'chip ' + (a.fail ? 'bad' : a.warn ? 'warn' : '') }, a.fail ? `${a.effective} · F` : String(a.effective)));
+        })()))))));
   };
   // วาดใหม่เมื่อบันทึกเสร็จ เพื่อเอาจุด "ยังไม่บันทึก" ออก
   saver.onChange = () => { drawStatus(); if (!saver.saving && holder.isConnected) draw(); };
@@ -516,6 +524,7 @@ async function attendance(body, ctx) {
       h('span', { class: 'spacer' }),
       status),
     restored && stale ? staleBanner : null,
+    h('p', { class: 'muted small' }, `ขาด (นับ) = ขาด + สาย ÷ ${data.attendanceRules.latePerAbsence} ปัดลง · ลาไม่นับ · ตั้งแต่ ${data.attendanceRules.warnAt} = ติดตาม · เกิน ${data.attendanceRules.failAbove} = เกรด F (แก้เกณฑ์ที่แท็บตั้งค่า)`),
     h('p', { class: 'muted small' }, 'บันทึกอัตโนมัติทุกครั้งที่คลิก (เก็บสำรองในเครื่องด้วย ถ้าเน็ตหลุดจะส่งให้เมื่อกลับมา) · คลิกเลขสัปดาห์ที่หัวตารางเพื่อให้ทุกคนที่ยังว่าง = มา · สัปดาห์ที่มีการเช็คชื่อแล้ว ช่องว่างจะนับเป็นขาด'),
     holder));
   draw();
@@ -582,7 +591,7 @@ async function gradebook(body, ctx) {
   const holder = h('div');
 
   const compute = (s) => Grade.compute({
-    weights, cutoffs: gb.settings.gradeCutoffs, attendancePoints: gb.settings.attendancePoints,
+    weights, cutoffs: gb.settings.gradeCutoffs, attendancePoints: gb.settings.attendancePoints, attendanceRules: gb.settings.attendanceRules,
     heldWeeks: gb.course.heldWeeks, attendance: s.attendance,
     assignments: gb.assignments.map((a) => ({ score: s.scores[a.id], maxScore: a.maxScore, overdue: a.overdue, half: a.half })),
     midterm: s.exams.midterm, maxMidterm: gb.course.maxMidterm, final: s.exams.final, maxFinal: gb.course.maxFinal
@@ -605,14 +614,16 @@ async function gradebook(body, ctx) {
           gb.assignments.map((a) => h('th', { class: 'num', title: `${a.title} · ครึ่ง${a.half === 2 ? 'หลัง' : 'แรก'}` }, `${a.title.slice(0, 14)} (/${a.maxScore})`, h('div', { class: 'muted small' }, a.half === 2 ? 'ครึ่งหลัง' : 'ครึ่งแรก'))),
           ['attendance', 'assignments'].map((k) => h('th', { class: 'num' }, `${labels[k]} ${weights[k]}%`)),
           REGISTRAR_COLS.map(([k, label]) => h('th', { class: 'num reg' }, label, h('div', { class: 'muted small' }, `/${fmtNum(maxOf(k))}`))),
-          h('th', { class: 'num' }, 'รวม'), h('th', {}, 'เกรด'))),
+          h('th', { class: 'num' }, 'ขาด (นับ)'), h('th', { class: 'num' }, 'รวม'), h('th', {}, 'เกรด'))),
         h('tbody', {}, results.map(({ s, r }) => h('tr', {},
           h('td', { class: 'nowrap' }, s.studentId), h('td', { class: 'nowrap' }, s.name),
           gb.assignments.map((a) => h('td', { class: 'num' }, fmtNum(s.scores[a.id]))),
           ['attendance', 'assignments'].map((k) => h('td', { class: 'num muted' }, fmtNum(r.parts[k].points))),
           REGISTRAR_COLS.map(([k]) => h('td', { class: 'num reg' }, fmtNum(r.halves[k]))),
+          h('td', { class: 'num nowrap', title: absenceText(r.absence) }, String(r.absence.effective)),
           h('td', { class: 'num' }, h('strong', {}, fmtNum(r.total))),
-          h('td', {}, h('span', { class: 'chip accent' }, r.grade)))))))));
+          h('td', { class: 'nowrap' }, h('span', { class: 'chip ' + (r.absence.fail ? 'bad' : 'accent') }, r.grade),
+            r.absence.fail ? h('div', { class: 'small danger' }, `ขาดเกิน ${r.absence.failAbove}`) : null))))))));
     return results;
   };
 
@@ -623,12 +634,13 @@ async function gradebook(body, ctx) {
     const XLSX = await loadXlsx();
     const head = ['รหัส', 'ชื่อ', 'หมู่เรียน', ...gb.assignments.map((a) => `${a.title} (/${a.maxScore}) ครึ่ง${a.half === 2 ? 'หลัง' : 'แรก'}`),
       ...['attendance', 'assignments'].map((k) => `${labels[k]} (${weights[k]}%)`),
-      ...REGISTRAR_COLS.map(([k, label]) => `${label} (/${maxOf(k)})`), 'รวม', 'เกรด'];
+      ...REGISTRAR_COLS.map(([k, label]) => `${label} (/${maxOf(k)})`), 'ขาดเรียน (นับ)', 'รวม', 'เกรด', 'หมายเหตุ'];
     const rows = gb.students.map((s) => {
       const r = compute(s);
       return [s.studentId, s.name, s.group, ...gb.assignments.map((a) => s.scores[a.id] ?? ''),
         ...['attendance', 'assignments'].map((k) => r.parts[k].points ?? ''),
-        ...REGISTRAR_COLS.map(([k]) => r.halves[k]), r.total, r.grade];
+        ...REGISTRAR_COLS.map(([k]) => r.halves[k]), r.absence.effective, r.total, r.grade,
+        r.absence.fail ? `ขาดเรียนเกิน ${r.absence.failAbove} ครั้ง (เกรดตามคะแนน ${r.scoreGrade})` : ''];
     });
     const ws = XLSX.utils.aoa_to_sheet([[`${gb.course.courseCode} ${gb.course.title} ภาค ${gb.course.term}`], [], head, ...rows]);
     const wb = XLSX.utils.book_new();
@@ -672,9 +684,13 @@ function registrarExport(gb, compute, maxOf) {
   integer.addEventListener('change', fill);
   fill();
   const maxes = REGISTRAR_COLS.map(([k, label]) => `${label} ${fmtNum(maxOf(k))}`).join(' · ');
+  const failed = gb.students.map((s) => ({ s, r: compute(s) })).filter(({ r }) => r.absence.fail);
   return modal('คัดลอกสำหรับระบบทะเบียน', h('div', { class: 'form' },
     h('p', { class: 'small' }, `${gb.students.length} คน · รหัสละบรรทัด: รหัส ⇥ เก็บครึ่งแรก ⇥ เก็บครึ่งหลัง ⇥ กลางภาค ⇥ ปลายภาค (คั่นด้วยแท็บ ไม่มีหัวตาราง)`),
     h('p', { class: 'muted small' }, `คะแนนเต็มตามน้ำหนักวิชานี้: ${maxes} — ต้องตรงกับที่ตั้งไว้ในระบบทะเบียน`),
+    failed.length ? h('div', { class: 'banner bad' },
+      `⚠️ ขาดเรียนเกินเกณฑ์ ${failed.length} คน — ในเว็บนี้เป็นเกรด F แต่ระบบทะเบียนคิดเกรดจากคะแนน 4 ช่อง จึงอาจได้เกรดตามคะแนน ต้องแก้เป็น F ในระบบทะเบียนเอง: `,
+      failed.map(({ s, r }) => `${s.studentId} (ขาด ${r.absence.effective} · ตามคะแนน ${r.scoreGrade})`).join(', ')) : null,
     out,
     h('label', { class: 'check' }, integer, 'ปัดเป็นจำนวนเต็ม (ไม่ติ๊ก = ทศนิยม 2 ตำแหน่ง)'),
     h('p', { class: 'muted small' }, 'ใช้คะแนนจากสัดส่วนคะแนนที่แสดงอยู่ตอนนี้ — ถ้าแก้สัดส่วน อย่าลืมกด "บันทึกการตั้งค่า"')),
@@ -812,6 +828,8 @@ async function settings(body, ctx) {
   };
   const cutoffs = s.gradeCutoffs.map(([g, min]) => ({ g: h('input', { value: g, style: 'width:4em' }), min: h('input', { type: 'number', step: 'any', value: min, style: 'width:6em' }) }));
   const pts = Object.fromEntries(['P', 'L', 'E', 'A'].map((k) => [k, h('input', { type: 'number', min: 0, max: 1, step: 0.05, value: s.attendancePoints[k] ?? 0, style: 'width:6em' })]));
+  const rule = (k) => h('input', { type: 'number', min: 0, max: 16, step: 1, value: s.attendanceRules[k], style: 'width:5em' });
+  const rules = { failAbove: rule('failAbove'), warnAt: rule('warnAt'), latePerAbsence: rule('latePerAbsence') };
   const lines = (el) => el.value.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 
   mount(body, h('div', { class: 'stack' },
@@ -827,6 +845,13 @@ async function settings(body, ctx) {
     h('section', { class: 'card form' },
       h('h2', {}, 'คะแนนการเข้าเรียนต่อครั้ง (0–1)'),
       h('div', { class: 'row' }, ['P', 'L', 'E', 'A'].map((k) => h('label', { class: 'check' }, MARK_LABEL[k], pts[k])))),
+    h('section', { class: 'card form' },
+      h('h2', {}, 'เกณฑ์การขาดเรียน'),
+      h('div', { class: 'row' },
+        h('label', { class: 'check' }, 'ขาดเกิน', rules.failAbove, 'ครั้ง = เกรด F'),
+        h('label', { class: 'check' }, 'ขาดตั้งแต่', rules.warnAt, 'ครั้ง = ติดตาม'),
+        h('label', { class: 'check' }, 'สาย', rules.latePerAbsence, 'ครั้ง = ขาด 1')),
+      h('p', { class: 'muted small' }, 'ลาไม่นับเป็นขาด · สัปดาห์ที่เช็คชื่อแล้วแต่ช่องว่าง = ขาด · ใส่ 0 ที่ "สาย" = สายไม่นับเป็นขาด · ใช้กับทุกวิชา')),
     h('div', { class: 'row' }, h('span', { class: 'spacer' }), actionButton('บันทึกการตั้งค่า', async () => {
       await call('updateSettings', {
         teacherEmails: lines(f.teacherEmails),
@@ -834,7 +859,8 @@ async function settings(body, ctx) {
         allowedOrigins: lines(f.allowedOrigins),
         uploadMaxMB: Number(f.uploadMaxMB.value),
         gradeCutoffs: cutoffs.map((c) => [c.g.value.trim(), Number(c.min.value)]),
-        attendancePoints: Object.fromEntries(Object.entries(pts).map(([k, el]) => [k, Number(el.value)]))
+        attendancePoints: Object.fromEntries(Object.entries(pts).map(([k, el]) => [k, Number(el.value)])),
+        attendanceRules: Object.fromEntries(Object.entries(rules).map(([k, el]) => [k, Number(el.value)]))
       });
       toast('บันทึกการตั้งค่าแล้ว');
       await ctx.refreshMe();

@@ -100,7 +100,7 @@ function apiStudentDashboard_(user, p) {
     parts: result.parts,
     total: d.course.gradesVisible ? result.total : null,
     grade: d.course.gradesVisible ? result.grade : null,
-    attendance: { held: held.length, tally: tally },
+    attendance: { held: held.length, tally: tally, absence: result.absence },
     tasks: tasks.slice(0, 8),
     feedback: work
       .filter(function (w) { return w.status === 'graded'; })
@@ -135,11 +135,20 @@ function apiTeacherDashboard_(user, p) {
     var att = res.parts.attendance.pct;
     if (att !== null) { attSum += att; attN++; }
     grades[res.grade] = (grades[res.grade] || 0) + 1;
-    return { studentId: r.studentId, name: r.name, registered: !!r.email, missing: missing, toGrade: toGrade, attendance: att, total: res.total, grade: res.grade };
+    return {
+      studentId: r.studentId, name: r.name, registered: !!r.email, missing: missing, toGrade: toGrade,
+      attendance: att, absence: res.absence, total: res.total, grade: res.grade
+    };
   });
+  // ขาดเกินเกณฑ์ (F) ขึ้นก่อน แล้วขาดมาก → ขาดส่งมาก → เข้าเรียนน้อย
   var risk = students
-    .filter(function (s) { return s.missing >= AT_RISK_MISSING || (s.attendance !== null && s.attendance < AT_RISK_ATTENDANCE); })
-    .sort(function (a, b) { return b.missing - a.missing || (a.attendance === null ? 101 : a.attendance) - (b.attendance === null ? 101 : b.attendance); });
+    .filter(function (s) {
+      return s.absence.warn || s.missing >= AT_RISK_MISSING || (s.attendance !== null && s.attendance < AT_RISK_ATTENDANCE);
+    })
+    .sort(function (a, b) {
+      return Number(b.absence.fail) - Number(a.absence.fail) || b.absence.effective - a.absence.effective ||
+        b.missing - a.missing || (a.attendance === null ? 101 : a.attendance) - (b.attendance === null ? 101 : b.attendance);
+    });
   var toGradeBy = {};
   published.forEach(function (a) {
     toGradeBy[a.id] = roster.filter(function (r) {
@@ -163,7 +172,10 @@ function apiTeacherDashboard_(user, p) {
       c.toGrade = toGradeBy[c.id] || 0;
       return c;
     }),
-    atRisk: { total: risk.length, list: risk.slice(0, 10), missingLimit: AT_RISK_MISSING, attendanceLimit: AT_RISK_ATTENDANCE },
+    atRisk: {
+      total: risk.length, list: risk.slice(0, 10), missingLimit: AT_RISK_MISSING, attendanceLimit: AT_RISK_ATTENDANCE,
+      failedByAbsence: students.filter(function (s) { return s.absence.fail; }).length, rules: d.settings.attendanceRules
+    },
     grades: d.settings.gradeCutoffs.map(function (g) { return { grade: g[0], count: grades[g[0]] || 0 }; })
   };
 }

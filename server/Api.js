@@ -191,6 +191,7 @@ function settingsView_() {
     allowedOrigins: String(s.allowedOrigins || '').split(/[,\s]+/).filter(Boolean),
     gradeCutoffs: jsonSetting_('gradeCutoffs', Grade.DEFAULT_CUTOFFS),
     attendancePoints: jsonSetting_('attendancePoints', Grade.DEFAULT_ATTENDANCE_POINTS),
+    attendanceRules: jsonSetting_('attendanceRules', Grade.DEFAULT_ATTENDANCE_RULES),
     uploadMaxMB: Number(s.uploadMaxMB) || 2048,
     hasDeletePin: !!s.deletePinHash
   };
@@ -230,6 +231,7 @@ function computeFor_(d, studentId) {
     weights: d.course.weights,
     cutoffs: d.settings.gradeCutoffs,
     attendancePoints: d.settings.attendancePoints,
+    attendanceRules: d.settings.attendanceRules,
     heldWeeks: d.course.heldWeeks,
     attendance: d.att[studentId] || marksOf_(null),
     assignments: d.assignments.map(function (a) {
@@ -397,7 +399,7 @@ function apiMyGrades_(user, p) {
         submitted: !!(work && work.submittedAt), score: s ? s.score : null, feedback: s ? s.feedback : ''
       };
     }),
-    attendance: { marks: d.att[id] || marksOf_(null), heldWeeks: d.course.heldWeeks },
+    attendance: { marks: d.att[id] || marksOf_(null), heldWeeks: d.course.heldWeeks, absence: result.absence },
     exams: { midterm: ex.midterm, final: ex.final, maxMidterm: d.course.maxMidterm, maxFinal: d.course.maxFinal },
     parts: result.parts,
     total: d.course.gradesVisible ? result.total : null,
@@ -677,6 +679,7 @@ function apiGetAttendance_(user, p) {
   rows_('Attendance').forEach(function (r) { if (r.courseCode === p.courseCode) att[r.studentId] = marksOf_(r); });
   return {
     heldWeeks: c.heldWeeks,
+    attendanceRules: settingsView_().attendanceRules,
     pendingLeaves: pendingLeaves_(p.courseCode),
     rows: rosterOf_(p.courseCode).map(function (r) {
       var v = studentView_(r);
@@ -880,6 +883,15 @@ function apiUpdateSettings_(user, p) {
     if (!/^\d{4,8}$/.test(pin)) throw new Error('PIN ต้องเป็นตัวเลข 4–8 หลัก');
     updates.deletePinSalt = uid_('P');
     updates.deletePinHash = hashPin_(updates.deletePinSalt, pin);
+  }
+  if (p.attendanceRules) {
+    var ar = {};
+    [['failAbove', 0, 16], ['warnAt', 0, 16], ['latePerAbsence', 0, 16]].forEach(function (x) {
+      var n = numOrNull_(p.attendanceRules[x[0]]);
+      if (n === null || n < x[1] || n > x[2] || n !== Math.floor(n)) throw new Error('เกณฑ์การขาดเรียนต้องเป็นจำนวนเต็ม 0–16');
+      ar[x[0]] = n;
+    });
+    updates.attendanceRules = JSON.stringify(ar);
   }
   if (p.uploadMaxMB !== undefined) {
     var mb = numOrNull_(p.uploadMaxMB);

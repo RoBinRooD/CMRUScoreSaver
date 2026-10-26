@@ -9,6 +9,8 @@ var Grade = (function () {
   var DEFAULT_CUTOFFS = [['A', 80], ['B+', 75], ['B', 70], ['C+', 65], ['C', 60], ['D+', 55], ['D', 50], ['F', 0]];
   // P = มา, L = สาย, E = ลา, A = ขาด
   var DEFAULT_ATTENDANCE_POINTS = { P: 1, L: 0.5, E: 1, A: 0 };
+  // ขาดที่นับ = ขาด + (สาย ÷ latePerAbsence ปัดลง) · ลาไม่นับ · ตั้งแต่ warnAt = อาจารย์ติดตาม · เกิน failAbove = F
+  var DEFAULT_ATTENDANCE_RULES = { failAbove: 4, warnAt: 3, latePerAbsence: 2 };
   var WEEKS = 16;
   var PARTS = ['attendance', 'assignments', 'midterm', 'final'];
 
@@ -33,6 +35,25 @@ var Grade = (function () {
       earned += num(points[m]) || 0;
     });
     return { held: held.length, earned: earned, pct: round2((earned / held.length) * 100) };
+  }
+
+  /** นับการขาดเรียนตามเกณฑ์ — สัปดาห์ที่เช็คแล้วแต่ไม่มีบันทึก = ขาด */
+  function absences(marks, heldWeeks, rules) {
+    var r = rules || DEFAULT_ATTENDANCE_RULES;
+    var c = { A: 0, L: 0, E: 0 };
+    (heldWeeks || []).forEach(function (w) {
+      if (w < 1 || w > WEEKS) return;
+      var m = (marks || [])[w - 1] || 'A';
+      if (c[m] !== undefined) c[m]++;
+    });
+    var per = num(r.latePerAbsence) || 0;
+    var effective = c.A + (per > 0 ? Math.floor(c.L / per) : 0);
+    return {
+      absent: c.A, late: c.L, leave: c.E, effective: effective,
+      warnAt: num(r.warnAt), failAbove: num(r.failAbove), latePerAbsence: per,
+      warn: num(r.warnAt) !== null && effective >= num(r.warnAt),
+      fail: num(r.failAbove) !== null && effective > num(r.failAbove)
+    };
   }
 
   /** items: [{score, maxScore, overdue}] — นับงานที่ให้คะแนนแล้ว หรือเลยกำหนดส่งแล้ว (ไม่ส่ง = 0) */
@@ -82,9 +103,10 @@ var Grade = (function () {
   }
 
   /**
-   * input: { weights, cutoffs, attendancePoints, heldWeeks, attendance (marks),
+   * input: { weights, cutoffs, attendancePoints, attendanceRules, heldWeeks, attendance (marks),
    *          assignments: [{score,maxScore,overdue,half}], midterm, maxMidterm, final, maxFinal }
-   * คืน: { parts: {attendance, assignments, midterm, final}, halves, total, grade }
+   * คืน: { parts: {attendance, assignments, midterm, final}, halves, absence, total, grade }
+   * ขาดเรียนเกินเกณฑ์ = เกรด F (คะแนนรวมยังแสดงตามจริง)
    * halves = 4 ช่องของระบบทะเบียน: เก็บครึ่งแรก/หลัง (= เข้าเรียน ÷ 2 + งานของครึ่งนั้น), กลางภาค, ปลายภาค
    * ส่วนที่ยังไม่มีคะแนน (pct = null) นับเป็น 0 ในคะแนนรวม · total = ผลรวม 4 ช่อง
    */
@@ -117,13 +139,22 @@ var Grade = (function () {
       }
     };
     var total = round2(halves.first + halves.second + halves.midterm + halves.final);
-    return { parts: parts, halves: halves, total: total, grade: letter(total, input.cutoffs) };
+    var absence = absences(input.attendance, input.heldWeeks, input.attendanceRules);
+    var lowest = (input.cutoffs && input.cutoffs.length ? input.cutoffs : DEFAULT_CUTOFFS)
+      .slice().sort(function (a, b) { return a[1] - b[1]; })[0][0];
+    return {
+      parts: parts, halves: halves, absence: absence, total: total,
+      grade: absence.fail ? lowest : letter(total, input.cutoffs),
+      scoreGrade: letter(total, input.cutoffs)
+    };
   }
 
   return {
     DEFAULT_WEIGHTS: DEFAULT_WEIGHTS,
     DEFAULT_CUTOFFS: DEFAULT_CUTOFFS,
     DEFAULT_ATTENDANCE_POINTS: DEFAULT_ATTENDANCE_POINTS,
+    DEFAULT_ATTENDANCE_RULES: DEFAULT_ATTENDANCE_RULES,
+    absences: absences,
     WEEKS: WEEKS,
     PARTS: PARTS,
     num: num,

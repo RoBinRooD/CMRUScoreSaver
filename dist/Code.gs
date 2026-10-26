@@ -12,6 +12,8 @@ var Grade = (function () {
   var DEFAULT_CUTOFFS = [['A', 80], ['B+', 75], ['B', 70], ['C+', 65], ['C', 60], ['D+', 55], ['D', 50], ['F', 0]];
   // P = มา, L = สาย, E = ลา, A = ขาด
   var DEFAULT_ATTENDANCE_POINTS = { P: 1, L: 0.5, E: 1, A: 0 };
+  // ขาดที่นับ = ขาด + (สาย ÷ latePerAbsence ปัดลง) · ลาไม่นับ · ตั้งแต่ warnAt = อาจารย์ติดตาม · เกิน failAbove = F
+  var DEFAULT_ATTENDANCE_RULES = { failAbove: 4, warnAt: 3, latePerAbsence: 2 };
   var WEEKS = 16;
   var PARTS = ['attendance', 'assignments', 'midterm', 'final'];
 
@@ -36,6 +38,25 @@ var Grade = (function () {
       earned += num(points[m]) || 0;
     });
     return { held: held.length, earned: earned, pct: round2((earned / held.length) * 100) };
+  }
+
+  /** นับการขาดเรียนตามเกณฑ์ — สัปดาห์ที่เช็คแล้วแต่ไม่มีบันทึก = ขาด */
+  function absences(marks, heldWeeks, rules) {
+    var r = rules || DEFAULT_ATTENDANCE_RULES;
+    var c = { A: 0, L: 0, E: 0 };
+    (heldWeeks || []).forEach(function (w) {
+      if (w < 1 || w > WEEKS) return;
+      var m = (marks || [])[w - 1] || 'A';
+      if (c[m] !== undefined) c[m]++;
+    });
+    var per = num(r.latePerAbsence) || 0;
+    var effective = c.A + (per > 0 ? Math.floor(c.L / per) : 0);
+    return {
+      absent: c.A, late: c.L, leave: c.E, effective: effective,
+      warnAt: num(r.warnAt), failAbove: num(r.failAbove), latePerAbsence: per,
+      warn: num(r.warnAt) !== null && effective >= num(r.warnAt),
+      fail: num(r.failAbove) !== null && effective > num(r.failAbove)
+    };
   }
 
   /** items: [{score, maxScore, overdue}] — นับงานที่ให้คะแนนแล้ว หรือเลยกำหนดส่งแล้ว (ไม่ส่ง = 0) */
@@ -85,9 +106,10 @@ var Grade = (function () {
   }
 
   /**
-   * input: { weights, cutoffs, attendancePoints, heldWeeks, attendance (marks),
+   * input: { weights, cutoffs, attendancePoints, attendanceRules, heldWeeks, attendance (marks),
    *          assignments: [{score,maxScore,overdue,half}], midterm, maxMidterm, final, maxFinal }
-   * คืน: { parts: {attendance, assignments, midterm, final}, halves, total, grade }
+   * คืน: { parts: {attendance, assignments, midterm, final}, halves, absence, total, grade }
+   * ขาดเรียนเกินเกณฑ์ = เกรด F (คะแนนรวมยังแสดงตามจริง)
    * halves = 4 ช่องของระบบทะเบียน: เก็บครึ่งแรก/หลัง (= เข้าเรียน ÷ 2 + งานของครึ่งนั้น), กลางภาค, ปลายภาค
    * ส่วนที่ยังไม่มีคะแนน (pct = null) นับเป็น 0 ในคะแนนรวม · total = ผลรวม 4 ช่อง
    */
@@ -120,13 +142,22 @@ var Grade = (function () {
       }
     };
     var total = round2(halves.first + halves.second + halves.midterm + halves.final);
-    return { parts: parts, halves: halves, total: total, grade: letter(total, input.cutoffs) };
+    var absence = absences(input.attendance, input.heldWeeks, input.attendanceRules);
+    var lowest = (input.cutoffs && input.cutoffs.length ? input.cutoffs : DEFAULT_CUTOFFS)
+      .slice().sort(function (a, b) { return a[1] - b[1]; })[0][0];
+    return {
+      parts: parts, halves: halves, absence: absence, total: total,
+      grade: absence.fail ? lowest : letter(total, input.cutoffs),
+      scoreGrade: letter(total, input.cutoffs)
+    };
   }
 
   return {
     DEFAULT_WEIGHTS: DEFAULT_WEIGHTS,
     DEFAULT_CUTOFFS: DEFAULT_CUTOFFS,
     DEFAULT_ATTENDANCE_POINTS: DEFAULT_ATTENDANCE_POINTS,
+    DEFAULT_ATTENDANCE_RULES: DEFAULT_ATTENDANCE_RULES,
+    absences: absences,
     WEEKS: WEEKS,
     PARTS: PARTS,
     num: num,
@@ -678,6 +709,7 @@ function settingsView_() {
     allowedOrigins: String(s.allowedOrigins || '').split(/[,\s]+/).filter(Boolean),
     gradeCutoffs: jsonSetting_('gradeCutoffs', Grade.DEFAULT_CUTOFFS),
     attendancePoints: jsonSetting_('attendancePoints', Grade.DEFAULT_ATTENDANCE_POINTS),
+    attendanceRules: jsonSetting_('attendanceRules', Grade.DEFAULT_ATTENDANCE_RULES),
     uploadMaxMB: Number(s.uploadMaxMB) || 2048,
     hasDeletePin: !!s.deletePinHash
   };
@@ -717,6 +749,7 @@ function computeFor_(d, studentId) {
     weights: d.course.weights,
     cutoffs: d.settings.gradeCutoffs,
     attendancePoints: d.settings.attendancePoints,
+    attendanceRules: d.settings.attendanceRules,
     heldWeeks: d.course.heldWeeks,
     attendance: d.att[studentId] || marksOf_(null),
     assignments: d.assignments.map(function (a) {
@@ -884,7 +917,7 @@ function apiMyGrades_(user, p) {
         submitted: !!(work && work.submittedAt), score: s ? s.score : null, feedback: s ? s.feedback : ''
       };
     }),
-    attendance: { marks: d.att[id] || marksOf_(null), heldWeeks: d.course.heldWeeks },
+    attendance: { marks: d.att[id] || marksOf_(null), heldWeeks: d.course.heldWeeks, absence: result.absence },
     exams: { midterm: ex.midterm, final: ex.final, maxMidterm: d.course.maxMidterm, maxFinal: d.course.maxFinal },
     parts: result.parts,
     total: d.course.gradesVisible ? result.total : null,
@@ -1164,6 +1197,7 @@ function apiGetAttendance_(user, p) {
   rows_('Attendance').forEach(function (r) { if (r.courseCode === p.courseCode) att[r.studentId] = marksOf_(r); });
   return {
     heldWeeks: c.heldWeeks,
+    attendanceRules: settingsView_().attendanceRules,
     pendingLeaves: pendingLeaves_(p.courseCode),
     rows: rosterOf_(p.courseCode).map(function (r) {
       var v = studentView_(r);
@@ -1367,6 +1401,15 @@ function apiUpdateSettings_(user, p) {
     if (!/^\d{4,8}$/.test(pin)) throw new Error('PIN ต้องเป็นตัวเลข 4–8 หลัก');
     updates.deletePinSalt = uid_('P');
     updates.deletePinHash = hashPin_(updates.deletePinSalt, pin);
+  }
+  if (p.attendanceRules) {
+    var ar = {};
+    [['failAbove', 0, 16], ['warnAt', 0, 16], ['latePerAbsence', 0, 16]].forEach(function (x) {
+      var n = numOrNull_(p.attendanceRules[x[0]]);
+      if (n === null || n < x[1] || n > x[2] || n !== Math.floor(n)) throw new Error('เกณฑ์การขาดเรียนต้องเป็นจำนวนเต็ม 0–16');
+      ar[x[0]] = n;
+    });
+    updates.attendanceRules = JSON.stringify(ar);
   }
   if (p.uploadMaxMB !== undefined) {
     var mb = numOrNull_(p.uploadMaxMB);
@@ -2229,7 +2272,7 @@ function apiStudentDashboard_(user, p) {
     parts: result.parts,
     total: d.course.gradesVisible ? result.total : null,
     grade: d.course.gradesVisible ? result.grade : null,
-    attendance: { held: held.length, tally: tally },
+    attendance: { held: held.length, tally: tally, absence: result.absence },
     tasks: tasks.slice(0, 8),
     feedback: work
       .filter(function (w) { return w.status === 'graded'; })
@@ -2264,11 +2307,20 @@ function apiTeacherDashboard_(user, p) {
     var att = res.parts.attendance.pct;
     if (att !== null) { attSum += att; attN++; }
     grades[res.grade] = (grades[res.grade] || 0) + 1;
-    return { studentId: r.studentId, name: r.name, registered: !!r.email, missing: missing, toGrade: toGrade, attendance: att, total: res.total, grade: res.grade };
+    return {
+      studentId: r.studentId, name: r.name, registered: !!r.email, missing: missing, toGrade: toGrade,
+      attendance: att, absence: res.absence, total: res.total, grade: res.grade
+    };
   });
+  // ขาดเกินเกณฑ์ (F) ขึ้นก่อน แล้วขาดมาก → ขาดส่งมาก → เข้าเรียนน้อย
   var risk = students
-    .filter(function (s) { return s.missing >= AT_RISK_MISSING || (s.attendance !== null && s.attendance < AT_RISK_ATTENDANCE); })
-    .sort(function (a, b) { return b.missing - a.missing || (a.attendance === null ? 101 : a.attendance) - (b.attendance === null ? 101 : b.attendance); });
+    .filter(function (s) {
+      return s.absence.warn || s.missing >= AT_RISK_MISSING || (s.attendance !== null && s.attendance < AT_RISK_ATTENDANCE);
+    })
+    .sort(function (a, b) {
+      return Number(b.absence.fail) - Number(a.absence.fail) || b.absence.effective - a.absence.effective ||
+        b.missing - a.missing || (a.attendance === null ? 101 : a.attendance) - (b.attendance === null ? 101 : b.attendance);
+    });
   var toGradeBy = {};
   published.forEach(function (a) {
     toGradeBy[a.id] = roster.filter(function (r) {
@@ -2292,7 +2344,10 @@ function apiTeacherDashboard_(user, p) {
       c.toGrade = toGradeBy[c.id] || 0;
       return c;
     }),
-    atRisk: { total: risk.length, list: risk.slice(0, 10), missingLimit: AT_RISK_MISSING, attendanceLimit: AT_RISK_ATTENDANCE },
+    atRisk: {
+      total: risk.length, list: risk.slice(0, 10), missingLimit: AT_RISK_MISSING, attendanceLimit: AT_RISK_ATTENDANCE,
+      failedByAbsence: students.filter(function (s) { return s.absence.fail; }).length, rules: d.settings.attendanceRules
+    },
     grades: d.settings.gradeCutoffs.map(function (g) { return { grade: g[0], count: grades[g[0]] || 0 }; })
   };
 }

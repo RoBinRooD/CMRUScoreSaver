@@ -209,6 +209,10 @@ tr.group-head td { background: var(--surface-2); border-top: 2px solid var(--bor
 /* dashboard */
 .meter { height: 6px; background: var(--accent-soft); border-radius: 999px; overflow: hidden; margin-top: 0.4rem; }
 .meter > div { height: 100%; background: var(--accent); border-radius: 999px; }
+.meter.warn { background: var(--warn-soft); }
+.meter.warn > div { background: var(--warn); }
+.meter.bad { background: var(--bad-soft); }
+.meter.bad > div { background: var(--bad); }
 button.stat { display: block; text-align: left; width: 100%; font: inherit; color: inherit; }
 .stat-link:hover { border-color: var(--accent); background: var(--surface); }
 .list { list-style: none; margin: 0; padding: 0; }

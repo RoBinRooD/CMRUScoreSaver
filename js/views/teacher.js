@@ -469,7 +469,10 @@ async function attendance(body, ctx) {
     const n = saver.count();
     const saveNow = h('button', { class: 'sm', onclick: () => saver.flush() }, 'บันทึกตอนนี้');
     if (saver.saving) mount(status, h('span', { class: 'chip info' }, `⏳ กำลังบันทึก ${n} ช่อง…`));
-    else if (saver.error) mount(status, h('span', { class: 'chip bad' }, `⚠️ บันทึกไม่สำเร็จ — ค้าง ${n} ช่อง (เก็บไว้ในเครื่องแล้ว ลองใหม่อัตโนมัติ)`), saveNow);
+    else if (saver.error) {
+      mount(status, h('span', { class: 'chip bad' }, `⚠️ บันทึกไม่สำเร็จ — ค้าง ${n} ช่อง (เก็บไว้ในเครื่องแล้ว ลองใหม่อัตโนมัติ)`), saveNow,
+        h('div', { class: 'small danger', style: 'flex-basis:100%;text-align:right' }, 'สาเหตุ: ', saver.error));
+    }
     else if (n) mount(status, h('span', { class: 'chip warn' }, `● รอบันทึก ${n} ช่อง`));
     else mount(status, h('span', { class: 'chip ok' }, saver.savedAt ? `✓ บันทึกแล้ว ${fmtDate(saver.savedAt)}` : '✓ บันทึกอัตโนมัติ'));
     status.title = saver.error || '';

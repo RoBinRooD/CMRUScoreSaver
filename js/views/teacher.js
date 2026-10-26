@@ -1,9 +1,17 @@
 import { h, mount, loading, errorBox, toast, actionButton, confirmBox, modal, fmtDate, fmtSize, fmtNum, toLocalInput, driveUrl, tabs, MARK_LABEL } from '../ui.js';
 import { call } from '../api.js';
+import { teacherDashboard } from './dashboard.js';
+import { renderSyllabus } from './syllabus.js';
+import { renderTimeline } from './timeline.js';
+import { renderBoard } from './board.js';
 
 const TABS = [
+  ['overview', 'ภาพรวม'],
+  ['syllabus', 'Syllabus'],
   ['assignments', 'งาน'],
   ['grading', 'ตรวจงาน'],
+  ['timeline', 'Timeline'],
+  ['board', 'บอร์ดกลุ่ม'],
   ['attendance', 'เช็คชื่อ'],
   ['exams', 'สอบ'],
   ['gradebook', 'สมุดคะแนน'],
@@ -15,7 +23,8 @@ let gradingAssignment = null; // งานที่เลือกไว้ใ�
 
 export function renderTeacher(root, ctx) {
   const { course } = ctx;
-  let tab = TABS.some(([k]) => k === ctx.tab) ? ctx.tab : 'assignments';
+  let tab = TABS.some(([k]) => k === ctx.tab) ? ctx.tab : 'overview';
+  ctx.openGrading = (id) => { gradingAssignment = id; ctx.setTab('grading'); };
   if (!course && tab !== 'settings') tab = 'students';
   const body = h('div');
   mount(root,
@@ -27,7 +36,10 @@ export function renderTeacher(root, ctx) {
       : h('h1', {}, 'เริ่มต้น: นำเข้ารายชื่อนักศึกษา'),
     tabs(course ? TABS : [['students', 'นักศึกษา'], ['settings', 'ตั้งค่า']], tab, ctx.setTab),
     body);
-  const views = { assignments, grading, attendance, exams, gradebook, students, settings };
+  const views = {
+    overview: teacherDashboard, syllabus: renderSyllabus, timeline: renderTimeline, board: renderBoard,
+    assignments, grading, attendance, exams, gradebook, students, settings
+  };
   views[tab](body, ctx).catch((e) => mount(body, errorBox(e)));
 }
 

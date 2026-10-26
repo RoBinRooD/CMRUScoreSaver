@@ -122,7 +122,9 @@ var WRITE_ACTIONS = {
   importRoster: 1, upsertAssignment: 1, deleteAssignment: 1, saveGrades: 1,
   saveAttendance: 1, saveExams: 1, updateCourse: 1, updateSettings: 1,
   setStudentEmail: 1, addStudent: 1, removeStudent: 1,
-  saveGroup: 1, leaveGroup: 1, deleteGroup: 1, deleteCourse: 1
+  saveGroup: 1, leaveGroup: 1, deleteGroup: 1, deleteCourse: 1,
+  saveSyllabus: 1, addSyllabusLink: 1, finalizeSyllabusUpload: 1, removeSyllabusAttachment: 1,
+  saveTask: 1, deleteTask: 1
 };
 
 function doGet() {
@@ -169,13 +171,14 @@ function json_(obj) {
 var SCHEMA = {
   Settings: ['key', 'value'],
   Courses: ['courseCode', 'title', 'section', 'term', 'schedule', 'credits', 'teacher',
-    'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks'],
+    'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks', 'syllabus', 'syllabusUpdatedAt'],
   Students: ['courseCode', 'studentId', 'name', 'group', 'email', 'boundAt', 'nickname', 'phone'],
   Assignments: ['id', 'courseCode', 'title', 'description', 'maxScore', 'dueAt', 'allowLate', 'published', 'createdAt',
     'groupMax'],
   Submissions: ['id', 'assignmentId', 'studentId', 'files', 'link', 'submittedAt', 'isLate', 'score', 'feedback', 'gradedAt',
     'groupId'],
   Groups: ['id', 'assignmentId', 'name', 'members', 'createdAt'],
+  Tasks: ['id', 'groupId', 'title', 'note', 'status', 'assignee', 'dueAt', 'createdBy', 'createdAt', 'updatedAt'],
   Attendance: ['courseCode', 'studentId', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8',
     'w9', 'w10', 'w11', 'w12', 'w13', 'w14', 'w15', 'w16'],
   Exams: ['courseCode', 'studentId', 'midterm', 'final']
@@ -455,9 +458,16 @@ function actions_() {
     // ทุกคน
     me: apiMe_,
     register: apiRegister_,
+    getSyllabus: apiGetSyllabus_,
+    timeline: apiTimeline_,
+    boardGroups: apiBoardGroups_,
+    groupBoard: apiGroupBoard_,
     // นักศึกษา
     myAssignments: apiMyAssignments_,
     myGrades: apiMyGrades_,
+    studentDashboard: apiStudentDashboard_,
+    saveTask: apiSaveTask_,
+    deleteTask: apiDeleteTask_,
     startUpload: apiStartUpload_,
     finalizeUpload: apiFinalizeUpload_,
     submitLink: apiSubmitLink_,
@@ -477,6 +487,12 @@ function actions_() {
     deleteAssignment: apiDeleteAssignment_,
     deleteGroup: apiDeleteGroup_,
     deleteCourse: apiDeleteCourse_,
+    teacherDashboard: apiTeacherDashboard_,
+    saveSyllabus: apiSaveSyllabus_,
+    addSyllabusLink: apiAddSyllabusLink_,
+    startSyllabusUpload: apiStartSyllabusUpload_,
+    finalizeSyllabusUpload: apiFinalizeSyllabusUpload_,
+    removeSyllabusAttachment: apiRemoveSyllabusAttachment_,
     listSubmissions: apiListSubmissions_,
     saveGrades: apiSaveGrades_,
     getAttendance: apiGetAttendance_,
@@ -952,6 +968,7 @@ function apiDeleteCourse_(user, p) {
   checkDeletePin_(user, p.pin);
   remove_('Submissions', ofWork);
   remove_('Groups', ofWork);
+  pruneTasks_();
   remove_('Assignments', inCourse);
   remove_('Attendance', inCourse);
   remove_('Exams', inCourse);
@@ -1043,6 +1060,7 @@ function apiDeleteAssignment_(user, p) {
   if (hasFiles) throw new Error('มีนักศึกษาส่งงานนี้แล้ว ลบไม่ได้ — ใช้ "ซ่อน" แทน');
   remove_('Submissions', function (s) { return s.assignmentId === p.id; });
   remove_('Groups', function (g) { return g.assignmentId === p.id; });
+  pruneTasks_();
   remove_('Assignments', function (a) { return a.id === p.id; });
   return { deleted: p.id };
 }
@@ -1499,6 +1517,19 @@ function trashFile_(id) {
   DriveApp.getFileById(id).setTrashed(true);
 }
 
+function syllabusFolderId_(courseCode) {
+  var root = settings_().rootFolderId;
+  if (!root) throw new Error('ยังไม่ได้ตั้งค่า rootFolderId — รัน setup()');
+  return ensureFolder_(ensureFolder_(root, courseCode), 'Syllabus');
+}
+
+/** ทุกคนที่มีลิงก์ดูได้ — ใช้กับไฟล์ syllabus เท่านั้น (งานของนักศึกษาแชร์เฉพาะเจ้าของ) */
+function shareAnyoneReader_(id) {
+  var res = driveFetch_('post', 'https://www.googleapis.com/drive/v3/files/' + id + '/permissions',
+    { role: 'reader', type: 'anyone' });
+  if (res.getResponseCode() !== 200) console.warn('share anyone failed ' + id + ': ' + res.getContentText());
+}
+
 /** ย้ายโฟลเดอร์ <root>/<รหัสวิชา> ไปถังขยะ — คืน true ถ้าพบโฟลเดอร์ */
 function trashCourseFolder_(courseCode) {
   var root = settings_().rootFolderId;
@@ -1703,6 +1734,7 @@ function apiSaveGroup_(user, p) {
     return x.assignmentId === a.id && !membersOf_(x).length && !hasWork_(groupSubmissionRow_(x.id));
   });
   saveAll_('Groups');
+  pruneTasks_();
   shareGroupFiles_(g, members.filter(function (id) { return before.indexOf(id) < 0; }));
   return groupView_(a, g);
 }
@@ -1728,6 +1760,7 @@ function apiLeaveGroup_(user, p) {
   else {
     remove_('Submissions', function (s) { return s.groupId === g.id && !s.studentId; });
     remove_('Groups', function (x) { return x.id === g.id; });
+    pruneTasks_();
   }
   return { left: g.id };
 }
@@ -1738,7 +1771,427 @@ function apiDeleteGroup_(user, p) {
   if (hasWork_(groupSubmissionRow_(g.id))) throw new Error('กลุ่มนี้ส่งงานแล้ว ลบไม่ได้ — ย้ายสมาชิกไปกลุ่มอื่นแทน');
   remove_('Submissions', function (s) { return s.groupId === g.id && !s.studentId; });
   remove_('Groups', function (x) { return x.id === g.id; });
+  pruneTasks_();
   return { deleted: g.id };
+}
+
+// ===== server/Syllabus.js =====
+/*
+ * Syllabus — เค้าโครงรายวิชา: เนื้อหาที่อาจารย์เขียนในเว็บ + ไฟล์/ลิงก์แนบ
+ * เก็บเป็น JSON ในคอลัมน์ Courses.syllabus (เซลล์ Google Sheet รับได้ไม่เกิน 50,000 ตัวอักษร)
+ * ไฟล์แนบอยู่ใน <root>/<รหัสวิชา>/Syllabus และแชร์แบบ "ทุกคนที่มีลิงก์ดูได้" (ไม่ใช่ข้อมูลส่วนตัว)
+ */
+
+var SYLLABUS_MAX_ATTACHMENTS = 20;
+var SYLLABUS_TEXT_FIELDS = { description: 5000, objectives: 5000, materials: 5000, contact: 2000 };
+
+function emptySyllabus_() {
+  var weeks = [];
+  for (var w = 0; w < Grade.WEEKS; w++) weeks.push({ topic: '', detail: '' });
+  return { description: '', objectives: '', materials: '', contact: '', weeks: weeks, attachments: [] };
+}
+
+function syllabusOf_(c) {
+  var s = emptySyllabus_();
+  var saved = parseJson_(c.syllabus, {});
+  Object.keys(SYLLABUS_TEXT_FIELDS).forEach(function (k) { if (saved[k]) s[k] = String(saved[k]); });
+  (saved.weeks || []).slice(0, Grade.WEEKS).forEach(function (w, i) {
+    s.weeks[i] = { topic: String((w && w.topic) || ''), detail: String((w && w.detail) || '') };
+  });
+  s.attachments = Array.isArray(saved.attachments) ? saved.attachments : [];
+  return s;
+}
+
+function writeSyllabus_(c, s) {
+  var json = JSON.stringify(s);
+  if (json.length > 45000) throw new Error('เนื้อหา syllabus ยาวเกินไป — ย่อเนื้อหา หรือแนบเป็นไฟล์แทน');
+  c.syllabus = json;
+  c.syllabusUpdatedAt = now_();
+  update_('Courses', c);
+}
+
+function syllabusView_(c) {
+  return { course: courseView_(c), syllabus: syllabusOf_(c), updatedAt: c.syllabusUpdatedAt || '', gradeCutoffs: settingsView_().gradeCutoffs };
+}
+
+function apiGetSyllabus_(user, p) {
+  checkEnrolled_(user, p.courseCode);
+  return syllabusView_(courseRow_(p.courseCode));
+}
+
+/** บันทึกเนื้อหา (ไฟล์แนบจัดการแยกด้วยคำสั่งด้านล่าง) */
+function apiSaveSyllabus_(user, p) {
+  requireTeacher_(user);
+  var c = courseRow_(p.courseCode);
+  var cur = syllabusOf_(c);
+  var inp = p.syllabus || {};
+  Object.keys(SYLLABUS_TEXT_FIELDS).forEach(function (k) {
+    if (inp[k] !== undefined) cur[k] = str_(inp[k], SYLLABUS_TEXT_FIELDS[k]);
+  });
+  if (Array.isArray(inp.weeks)) {
+    cur.weeks = emptySyllabus_().weeks.map(function (blank, i) {
+      var w = inp.weeks[i] || {};
+      return { topic: str_(w.topic, 200), detail: str_(w.detail, 1000) };
+    });
+  }
+  writeSyllabus_(c, cur);
+  return syllabusView_(c);
+}
+
+function apiAddSyllabusLink_(user, p) {
+  requireTeacher_(user);
+  var c = courseRow_(p.courseCode);
+  var s = syllabusOf_(c);
+  if (s.attachments.length >= SYLLABUS_MAX_ATTACHMENTS) throw new Error('แนบได้สูงสุด ' + SYLLABUS_MAX_ATTACHMENTS + ' รายการ');
+  var url = str_(p.url, 2000);
+  if (!/^https:\/\/[^\s]+$/.test(url)) throw new Error('ลิงก์ต้องขึ้นต้นด้วย https://');
+  s.attachments.push({ id: uid_('L'), kind: 'link', name: str_(p.name, 200) || url, url: url });
+  writeSyllabus_(c, s);
+  return syllabusView_(c);
+}
+
+function apiStartSyllabusUpload_(user, p) {
+  requireTeacher_(user);
+  var c = courseRow_(p.courseCode);
+  if (syllabusOf_(c).attachments.length >= SYLLABUS_MAX_ATTACHMENTS) throw new Error('แนบได้สูงสุด ' + SYLLABUS_MAX_ATTACHMENTS + ' รายการ');
+  var size = Number(p.size);
+  var maxMB = settingsView_().uploadMaxMB;
+  if (!(size > 0)) throw new Error('ไฟล์ว่างเปล่า');
+  if (size > maxMB * 1024 * 1024) throw new Error('ไฟล์ใหญ่เกิน ' + maxMB + ' MB');
+  var origin = String(p.origin || '').replace(/\/+$/, '');
+  if (settingsView_().allowedOrigins.indexOf(origin) < 0) {
+    throw new Error('เว็บไซต์ ' + origin + ' ไม่ได้รับอนุญาตให้อัปโหลด (ตั้งค่า allowedOrigins)');
+  }
+  return {
+    uploadUrl: startResumable_({
+      folderId: syllabusFolderId_(c.courseCode),
+      name: safeName_(p.fileName),
+      mimeType: String(p.mimeType || 'application/octet-stream'),
+      size: size,
+      origin: origin,
+      description: 'Syllabus ' + c.courseCode,
+      appProperties: { syllabusOf: c.courseCode }
+    })
+  };
+}
+
+function apiFinalizeSyllabusUpload_(user, p) {
+  requireTeacher_(user);
+  var c = courseRow_(p.courseCode);
+  var f = getDriveFile_(String(p.fileId || ''));
+  if (!f || f.trashed || (f.appProperties || {}).syllabusOf !== c.courseCode) throw new Error('ไม่พบไฟล์ที่อัปโหลด');
+  var s = syllabusOf_(c);
+  if (!s.attachments.some(function (x) { return x.id === f.id; })) {
+    shareAnyoneReader_(f.id);
+    s.attachments.push({ id: f.id, kind: 'file', name: f.name, size: Number(f.size) || 0, mimeType: f.mimeType });
+    writeSyllabus_(c, s);
+  }
+  return syllabusView_(c);
+}
+
+function apiRemoveSyllabusAttachment_(user, p) {
+  requireTeacher_(user);
+  var c = courseRow_(p.courseCode);
+  var s = syllabusOf_(c);
+  var hit = find_(s.attachments, function (x) { return x.id === p.id; });
+  if (!hit) throw new Error('ไม่พบไฟล์แนบ');
+  if (hit.kind === 'file') trashFile_(hit.id);
+  s.attachments = s.attachments.filter(function (x) { return x !== hit; });
+  writeSyllabus_(c, s);
+  return syllabusView_(c);
+}
+
+// ===== server/Board.js =====
+/*
+ * Board — บอร์ดกลุ่ม: ป้ายของทุกกลุ่มในงานกลุ่ม + Kanban วางแผนงานของแต่ละกลุ่ม (ต้องทำ / กำลังทำ / เสร็จ)
+ * แผนงานเห็นเฉพาะสมาชิกกลุ่มนั้น (แก้ไขได้) และอาจารย์ (ดูอย่างเดียว)
+ * กลุ่มอื่นเห็นแค่ชื่อกลุ่มและสมาชิก
+ */
+
+var TASK_STATUS = ['todo', 'doing', 'done'];
+var MAX_TASKS_PER_GROUP = 200;
+
+function tasksOf_(groupId) {
+  return rows_('Tasks').filter(function (t) { return t.groupId === groupId; });
+}
+
+function taskView_(t) {
+  return {
+    id: t.id, title: t.title, note: t.note, status: t.status, assignee: t.assignee, dueAt: t.dueAt,
+    createdBy: t.createdBy, createdAt: t.createdAt, updatedAt: t.updatedAt
+  };
+}
+
+/** ลบแผนงานของกลุ่มที่ไม่มีอยู่แล้ว — เรียกหลังลบกลุ่ม/งาน/วิชา */
+function pruneTasks_() {
+  var alive = {};
+  rows_('Groups').forEach(function (g) { alive[g.id] = true; });
+  remove_('Tasks', function (t) { return !alive[t.groupId]; });
+}
+
+function isMember_(user, g) {
+  return user.role === 'student' && membersOf_(g).indexOf(user.studentId) >= 0;
+}
+
+function boardGroup_(user, groupId) {
+  var g = groupRow_(groupId);
+  var a = assignmentRow_(g.assignmentId);
+  checkEnrolled_(user, a.courseCode);
+  if (user.role !== 'teacher' && !isMember_(user, g)) throw new Error('ดูได้เฉพาะแผนงานของกลุ่มตัวเอง');
+  return { g: g, a: a };
+}
+
+function taskCounts_(groupId) {
+  var c = { todo: 0, doing: 0, done: 0 };
+  tasksOf_(groupId).forEach(function (t) { if (c[t.status] !== undefined) c[t.status]++; });
+  return c;
+}
+
+/** ป้ายของทุกกลุ่ม แยกตามงานกลุ่ม */
+function apiBoardGroups_(user, p) {
+  checkEnrolled_(user, p.courseCode);
+  var teacher = user.role === 'teacher';
+  if (!teacher) requireStudent_(user);
+  return rows_('Assignments')
+    .filter(function (a) { return a.courseCode === p.courseCode && isGroupWork_(a) && (teacher || a.published === 'true'); })
+    .sort(byDue_)
+    .map(function (a) {
+      var groups = groupsOf_(a.id).map(function (g) {
+        var v = groupView_(a, g);
+        var mine = isMember_(user, g);
+        return {
+          id: g.id, name: g.name, members: v.members, mine: mine,
+          submitted: !!(v.submission && v.submission.submittedAt),
+          counts: mine || teacher ? taskCounts_(g.id) : null
+        };
+      });
+      var grouped = {};
+      groups.forEach(function (g) { g.members.forEach(function (m) { grouped[m.studentId] = true; }); });
+      return {
+        assignment: assignmentView_(a),
+        groups: groups,
+        ungrouped: rosterOf_(a.courseCode).filter(function (r) { return !grouped[r.studentId]; }).length
+      };
+    });
+}
+
+function apiGroupBoard_(user, p) {
+  var x = boardGroup_(user, p.groupId);
+  return {
+    assignment: assignmentView_(x.a),
+    group: groupView_(x.a, x.g),
+    canEdit: isMember_(user, x.g),
+    tasks: tasksOf_(x.g.id).map(taskView_)
+  };
+}
+
+/** สร้าง (ไม่มี id) หรือแก้บางช่อง (มี id) — คืนบอร์ดทั้งกลุ่ม */
+function apiSaveTask_(user, p) {
+  requireStudent_(user);
+  var x = boardGroup_(user, p.groupId);
+  var t;
+  if (p.id) {
+    t = find_(tasksOf_(x.g.id), function (r) { return r.id === p.id; });
+    if (!t) throw new Error('ไม่พบงานย่อยนี้');
+  } else {
+    if (tasksOf_(x.g.id).length >= MAX_TASKS_PER_GROUP) throw new Error('มีงานย่อยได้สูงสุด ' + MAX_TASKS_PER_GROUP + ' รายการต่อกลุ่ม');
+    t = { id: uid_('T'), groupId: x.g.id, title: '', note: '', status: 'todo', assignee: '', dueAt: '', createdBy: user.studentId, createdAt: now_() };
+  }
+  if (p.title !== undefined) t.title = str_(p.title, 200);
+  if (!t.title) throw new Error('กรุณาใส่ชื่องานย่อย');
+  if (p.note !== undefined) t.note = str_(p.note, 2000);
+  if (p.status !== undefined) {
+    if (TASK_STATUS.indexOf(p.status) < 0) throw new Error('สถานะไม่ถูกต้อง');
+    t.status = p.status;
+  }
+  if (p.assignee !== undefined) {
+    var who = str_(p.assignee, 20);
+    if (who && membersOf_(x.g).indexOf(who) < 0) throw new Error('ผู้รับผิดชอบต้องเป็นสมาชิกกลุ่ม');
+    t.assignee = who;
+  }
+  if (p.dueAt !== undefined) {
+    if (p.dueAt && isNaN(new Date(p.dueAt).getTime())) throw new Error('วันกำหนดไม่ถูกต้อง');
+    t.dueAt = p.dueAt ? new Date(p.dueAt).toISOString() : '';
+  }
+  t.updatedAt = now_();
+  if (p.id) update_('Tasks', t); else insert_('Tasks', t);
+  return apiGroupBoard_(user, { groupId: x.g.id });
+}
+
+function apiDeleteTask_(user, p) {
+  requireStudent_(user);
+  var x = boardGroup_(user, p.groupId);
+  var n = remove_('Tasks', function (t) { return t.groupId === x.g.id && t.id === p.id; });
+  if (!n) throw new Error('ไม่พบงานย่อยนี้');
+  return apiGroupBoard_(user, { groupId: x.g.id });
+}
+
+// ===== server/Dashboard.js =====
+/*
+ * Dashboard — ภาพรวมของวิชา (อาจารย์ / นักศึกษา) และข้อมูล Timeline (Gantt)
+ */
+
+/** สถานะงานของนักศึกษา 1 คน: graded | submitted | late | missing | open */
+function workStatus_(a, sub) {
+  if (sub && sub.score !== null && sub.score !== undefined) return 'graded';
+  if (sub && sub.submittedAt) return sub.isLate ? 'late' : 'submitted';
+  return isPastDue_(a) ? 'missing' : 'open';
+}
+
+function publishedOf_(code) {
+  return rows_('Assignments')
+    .filter(function (a) { return a.courseCode === code && a.published === 'true'; })
+    .sort(byDue_);
+}
+
+/** แผนงานในกลุ่มของนักศึกษาในวิชานี้ */
+function myGroupTasks_(code, studentId) {
+  var out = [];
+  publishedOf_(code).forEach(function (a) {
+    if (!isGroupWork_(a)) return;
+    var g = groupOf_(a.id, studentId);
+    if (!g) return;
+    tasksOf_(g.id).forEach(function (t) {
+      var v = taskView_(t);
+      v.groupId = g.id;
+      v.groupName = g.name;
+      v.assignmentTitle = a.title;
+      v.mine = t.assignee === studentId;
+      out.push(v);
+    });
+  });
+  return out;
+}
+
+/* ---------- Timeline ---------- */
+
+function apiTimeline_(user, p) {
+  checkEnrolled_(user, p.courseCode);
+  var teacher = user.role === 'teacher';
+  if (!teacher) requireStudent_(user);
+  var list = teacher
+    ? rows_('Assignments').filter(function (a) { return a.courseCode === p.courseCode; }).sort(byDue_)
+    : publishedOf_(p.courseCode);
+  var cards = teacher ? apiListAssignments_(user, { courseCode: p.courseCode }) : [];
+  var items = list.map(function (a) {
+    var v = assignmentView_(a);
+    var item = {
+      kind: 'assignment', id: a.id, title: a.title, start: a.createdAt || a.dueAt || now_(), end: a.dueAt,
+      groupMax: v.groupMax, published: v.published, overdue: v.overdue
+    };
+    if (teacher) item.counts = find_(cards, function (c) { return c.id === a.id; }).counts;
+    else item.status = workStatus_(a, mergedSubmission_(a, user.studentId));
+    return item;
+  });
+  var tasks = teacher ? [] : myGroupTasks_(p.courseCode, user.studentId)
+    .filter(function (t) { return t.dueAt; })
+    .map(function (t) {
+      return {
+        kind: 'task', id: t.id, title: t.title, start: t.createdAt || t.dueAt, end: t.dueAt, status: t.status,
+        mine: t.mine, groupId: t.groupId, groupName: t.groupName, assignmentTitle: t.assignmentTitle
+      };
+    });
+  return { now: now_(), items: items, tasks: tasks };
+}
+
+/* ---------- Dashboard นักศึกษา ---------- */
+
+function apiStudentDashboard_(user, p) {
+  requireStudent_(user);
+  checkEnrolled_(user, p.courseCode);
+  var d = courseData_(p.courseCode);
+  var id = user.studentId;
+  var result = computeFor_(d, id);
+  var work = publishedOf_(p.courseCode).map(function (a) {
+    var sub = mergedSubmission_(a, id);
+    var v = assignmentView_(a);
+    v.status = workStatus_(a, sub);
+    v.score = sub ? sub.score : null;
+    v.feedback = sub ? sub.feedback : '';
+    v.gradedAt = sub ? sub.gradedAt : '';
+    return v;
+  });
+  var count = function (st) { return work.filter(function (w) { return st.indexOf(w.status) >= 0; }).length; };
+  var tasks = myGroupTasks_(p.courseCode, id)
+    .filter(function (t) { return t.status !== 'done' && (t.mine || !t.assignee); })
+    .sort(function (a, b) { return (a.dueAt || '9999') < (b.dueAt || '9999') ? -1 : 1; });
+  var marks = d.att[id] || marksOf_(null);
+  var held = d.course.heldWeeks;
+  var tally = { P: 0, L: 0, E: 0, A: 0 };
+  held.forEach(function (w) { tally[marks[w - 1] || 'A']++; });
+  return {
+    course: d.course,
+    todo: work.filter(function (w) { return w.status === 'open' || (w.status === 'missing' && w.allowLate); }).slice(0, 6),
+    missing: work.filter(function (w) { return w.status === 'missing'; }).map(function (w) { return { id: w.id, title: w.title, dueAt: w.dueAt, allowLate: w.allowLate }; }),
+    counts: { total: work.length, submitted: count(['submitted', 'late', 'graded']), graded: count(['graded']), missing: count(['missing']) },
+    parts: result.parts,
+    total: d.course.gradesVisible ? result.total : null,
+    grade: d.course.gradesVisible ? result.grade : null,
+    attendance: { held: held.length, tally: tally },
+    tasks: tasks.slice(0, 8),
+    feedback: work
+      .filter(function (w) { return w.status === 'graded'; })
+      .sort(function (a, b) { return (a.gradedAt || '') > (b.gradedAt || '') ? -1 : 1; })
+      .slice(0, 3)
+      .map(function (w) { return { id: w.id, title: w.title, score: w.score, maxScore: w.maxScore, feedback: w.feedback, gradedAt: w.gradedAt }; })
+  };
+}
+
+/* ---------- Dashboard อาจารย์ ---------- */
+
+var AT_RISK_MISSING = 2;
+var AT_RISK_ATTENDANCE = 80;
+
+function apiTeacherDashboard_(user, p) {
+  requireTeacher_(user);
+  var d = courseData_(p.courseCode);
+  var roster = rosterOf_(p.courseCode);
+  var published = publishedOf_(p.courseCode);
+  var cards = apiListAssignments_(user, { courseCode: p.courseCode });
+  var grades = {};
+  var attSum = 0, attN = 0;
+  var students = roster.map(function (r) {
+    var res = computeFor_(d, r.studentId);
+    var missing = 0;
+    var toGrade = 0;
+    published.forEach(function (a) {
+      var st = workStatus_(a, mergedSubmission_(a, r.studentId));
+      if (st === 'missing') missing++;
+      if (st === 'submitted' || st === 'late') toGrade++;
+    });
+    var att = res.parts.attendance.pct;
+    if (att !== null) { attSum += att; attN++; }
+    grades[res.grade] = (grades[res.grade] || 0) + 1;
+    return { studentId: r.studentId, name: r.name, registered: !!r.email, missing: missing, toGrade: toGrade, attendance: att, total: res.total, grade: res.grade };
+  });
+  var risk = students
+    .filter(function (s) { return s.missing >= AT_RISK_MISSING || (s.attendance !== null && s.attendance < AT_RISK_ATTENDANCE); })
+    .sort(function (a, b) { return b.missing - a.missing || (a.attendance === null ? 101 : a.attendance) - (b.attendance === null ? 101 : b.attendance); });
+  var toGradeBy = {};
+  published.forEach(function (a) {
+    toGradeBy[a.id] = roster.filter(function (r) {
+      var st = workStatus_(a, mergedSubmission_(a, r.studentId));
+      return st === 'submitted' || st === 'late';
+    }).length;
+  });
+  return {
+    course: d.course,
+    counts: {
+      students: roster.length,
+      registered: roster.filter(function (r) { return r.email; }).length,
+      assignments: published.length,
+      hidden: cards.length - published.length,
+      toGrade: students.reduce(function (n, s) { return n + s.toGrade; }, 0),
+      heldWeeks: d.course.heldWeeks.length
+    },
+    attendanceAvg: attN ? Grade.round2(attSum / attN) : null,
+    assignments: cards.filter(function (c) { return c.published; }).map(function (c) {
+      c.toGrade = toGradeBy[c.id] || 0;
+      return c;
+    }),
+    atRisk: { total: risk.length, list: risk.slice(0, 10), missingLimit: AT_RISK_MISSING, attendanceLimit: AT_RISK_ATTENDANCE },
+    grades: d.settings.gradeCutoffs.map(function (g) { return { grade: g[0], count: grades[g[0]] || 0 }; })
+  };
 }
 
 // ===== server/Setup.js =====

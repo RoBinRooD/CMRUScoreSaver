@@ -188,6 +188,7 @@ function apiSaveGroup_(user, p) {
     return x.assignmentId === a.id && !membersOf_(x).length && !hasWork_(groupSubmissionRow_(x.id));
   });
   saveAll_('Groups');
+  pruneTasks_();
   shareGroupFiles_(g, members.filter(function (id) { return before.indexOf(id) < 0; }));
   return groupView_(a, g);
 }
@@ -213,6 +214,7 @@ function apiLeaveGroup_(user, p) {
   else {
     remove_('Submissions', function (s) { return s.groupId === g.id && !s.studentId; });
     remove_('Groups', function (x) { return x.id === g.id; });
+    pruneTasks_();
   }
   return { left: g.id };
 }
@@ -223,5 +225,6 @@ function apiDeleteGroup_(user, p) {
   if (hasWork_(groupSubmissionRow_(g.id))) throw new Error('กลุ่มนี้ส่งงานแล้ว ลบไม่ได้ — ย้ายสมาชิกไปกลุ่มอื่นแทน');
   remove_('Submissions', function (s) { return s.groupId === g.id && !s.studentId; });
   remove_('Groups', function (x) { return x.id === g.id; });
+  pruneTasks_();
   return { deleted: g.id };
 }

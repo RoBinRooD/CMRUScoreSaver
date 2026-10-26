@@ -3,9 +3,14 @@ import { call } from './api.js';
 
 const CHUNK = 8 * 1024 * 1024; // ต้องเป็นทวีคูณของ 256 KB
 
-export async function uploadFile(file, assignmentId, onProgress) {
-  const { uploadUrl } = await call('startUpload', {
-    assignmentId,
+export function uploadFile(file, assignmentId, onProgress) {
+  return uploadVia(file, { start: 'startUpload', finalize: 'finalizeUpload', params: { assignmentId } }, onProgress);
+}
+
+/** อัปโหลดผ่านคำสั่งคู่ใดก็ได้ที่ backend เปิด session ให้ เช่น startSyllabusUpload / finalizeSyllabusUpload */
+export async function uploadVia(file, { start, finalize, params }, onProgress) {
+  const { uploadUrl } = await call(start, {
+    ...params,
     fileName: file.name,
     mimeType: file.type || 'application/octet-stream',
     size: file.size,
@@ -14,7 +19,7 @@ export async function uploadFile(file, assignmentId, onProgress) {
   const meta = uploadUrl.startsWith('demo-upload://')
     ? await fakeUpload(uploadUrl, file, onProgress)
     : await putChunks(uploadUrl, file, onProgress);
-  return call('finalizeUpload', { assignmentId, fileId: meta.id });
+  return call(finalize, { ...params, fileId: meta.id });
 }
 
 async function putChunks(url, file, onProgress) {

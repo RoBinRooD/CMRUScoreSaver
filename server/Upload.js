@@ -220,6 +220,19 @@ function trashFile_(id) {
   DriveApp.getFileById(id).setTrashed(true);
 }
 
+function syllabusFolderId_(courseCode) {
+  var root = settings_().rootFolderId;
+  if (!root) throw new Error('ยังไม่ได้ตั้งค่า rootFolderId — รัน setup()');
+  return ensureFolder_(ensureFolder_(root, courseCode), 'Syllabus');
+}
+
+/** ทุกคนที่มีลิงก์ดูได้ — ใช้กับไฟล์ syllabus เท่านั้น (งานของนักศึกษาแชร์เฉพาะเจ้าของ) */
+function shareAnyoneReader_(id) {
+  var res = driveFetch_('post', 'https://www.googleapis.com/drive/v3/files/' + id + '/permissions',
+    { role: 'reader', type: 'anyone' });
+  if (res.getResponseCode() !== 200) console.warn('share anyone failed ' + id + ': ' + res.getContentText());
+}
+
 /** ย้ายโฟลเดอร์ <root>/<รหัสวิชา> ไปถังขยะ — คืน true ถ้าพบโฟลเดอร์ */
 function trashCourseFolder_(courseCode) {
   var root = settings_().rootFolderId;

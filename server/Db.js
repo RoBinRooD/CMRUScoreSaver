@@ -7,13 +7,14 @@
 var SCHEMA = {
   Settings: ['key', 'value'],
   Courses: ['courseCode', 'title', 'section', 'term', 'schedule', 'credits', 'teacher',
-    'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks'],
+    'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks', 'syllabus', 'syllabusUpdatedAt'],
   Students: ['courseCode', 'studentId', 'name', 'group', 'email', 'boundAt', 'nickname', 'phone'],
   Assignments: ['id', 'courseCode', 'title', 'description', 'maxScore', 'dueAt', 'allowLate', 'published', 'createdAt',
     'groupMax'],
   Submissions: ['id', 'assignmentId', 'studentId', 'files', 'link', 'submittedAt', 'isLate', 'score', 'feedback', 'gradedAt',
     'groupId'],
   Groups: ['id', 'assignmentId', 'name', 'members', 'createdAt'],
+  Tasks: ['id', 'groupId', 'title', 'note', 'status', 'assignee', 'dueAt', 'createdBy', 'createdAt', 'updatedAt'],
   Attendance: ['courseCode', 'studentId', 'w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8',
     'w9', 'w10', 'w11', 'w12', 'w13', 'w14', 'w15', 'w16'],
   Exams: ['courseCode', 'studentId', 'midterm', 'final']

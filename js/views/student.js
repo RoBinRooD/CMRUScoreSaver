@@ -1,6 +1,19 @@
 import { h, mount, loading, errorBox, toast, actionButton, confirmBox, modal, fmtDate, fmtSize, fmtNum, driveUrl, tabs, MARK_LABEL } from '../ui.js';
 import { call } from '../api.js';
 import { uploadFile } from '../upload.js';
+import { studentDashboard } from './dashboard.js';
+import { renderSyllabus } from './syllabus.js';
+import { renderTimeline } from './timeline.js';
+import { renderBoard } from './board.js';
+
+const TABS = [
+  ['overview', 'ภาพรวม'],
+  ['syllabus', 'Syllabus'],
+  ['work', 'งานที่ต้องส่ง'],
+  ['timeline', 'Timeline'],
+  ['board', 'บอร์ดกลุ่ม'],
+  ['grades', 'คะแนนของฉัน']
+];
 
 export function renderStudent(root, ctx) {
   const { me, course } = ctx;
@@ -10,17 +23,24 @@ export function renderStudent(root, ctx) {
       h('h2', {}, 'ยังไม่มีวิชา'),
       h('p', { class: 'muted' }, `รหัส ${me.studentId} ยังไม่อยู่ในรายชื่อวิชาใด กรุณาติดต่ออาจารย์`)));
   }
-  const tab = ['work', 'grades'].includes(ctx.tab) ? ctx.tab : 'work';
+  const tab = TABS.some(([k]) => k === ctx.tab) ? ctx.tab : 'overview';
   const body = h('div');
   mount(root,
     h('div', { class: 'row', style: 'margin-bottom:.5rem' },
       h('div', {},
         h('h1', {}, course.title),
         h('div', { class: 'muted small' }, `${course.courseCode} · Sec ${course.section} · ภาค ${course.term} · ${course.schedule}`))),
-    tabs([['work', 'งานที่ต้องส่ง'], ['grades', 'คะแนนของฉัน']], tab, ctx.setTab),
+    tabs(TABS, tab, ctx.setTab),
     body);
-  if (tab === 'grades') renderGrades(body, course);
-  else renderWork(body, course, me.studentId);
+  const views = {
+    overview: () => studentDashboard(body, ctx),
+    syllabus: () => renderSyllabus(body, ctx),
+    work: () => renderWork(body, course, me.studentId),
+    timeline: () => renderTimeline(body, ctx),
+    board: () => renderBoard(body, ctx),
+    grades: () => renderGrades(body, course)
+  };
+  Promise.resolve(views[tab]()).catch((e) => mount(body, errorBox(e)));
 }
 
 /* ---------- สมัครเข้าใช้งาน ---------- */

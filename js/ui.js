@@ -116,3 +116,48 @@ export function tabs(list, current, onPick) {
 }
 
 export const MARK_LABEL = { P: 'มา', L: 'สาย', A: 'ขาด', E: 'ลา', '': '·' };
+
+const dayFmt = new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' });
+export function fmtDay(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return isNaN(d) ? '-' : dayFmt.format(d);
+}
+
+/** "อีก 3 วัน" / "เลยมา 2 วัน" / "วันนี้" */
+export function fmtLeft(iso, now = Date.now()) {
+  if (!iso) return 'ไม่มีกำหนด';
+  const ms = new Date(iso) - now;
+  const days = Math.round(Math.abs(ms) / 86400000);
+  if (ms >= 0 && ms < 86400000) return 'ภายใน 24 ชม.';
+  if (days === 0) return 'วันนี้';
+  return ms > 0 ? `อีก ${days} วัน` : `เลยมา ${days} วัน`;
+}
+
+/** ข้อความหลายบรรทัด + ทำลิงก์ https:// ให้คลิกได้ (ไม่ใช้ innerHTML) */
+export function richText(text, cls = 'desc') {
+  const el = h('div', { class: cls, style: 'white-space:pre-wrap' });
+  String(text || '').split(/(https:\/\/[^\s]+)/g).forEach((part, i) => {
+    el.append(i % 2 ? h('a', { href: part, target: '_blank', rel: 'noopener' }, part) : document.createTextNode(part));
+  });
+  return el;
+}
+
+/** tooltip ที่ตามเมาส์ / โฟกัสคีย์บอร์ด — content เป็นฟังก์ชันที่คืน Node หรือข้อความ */
+let tipEl = null;
+export function tip(el, content) {
+  const show = (x, y) => {
+    tipEl ??= document.body.appendChild(h('div', { class: 'tooltip', role: 'tooltip' }));
+    mount(tipEl, content());
+    tipEl.hidden = false;
+    const r = tipEl.getBoundingClientRect();
+    tipEl.style.left = Math.min(Math.max(8, x + 12), window.innerWidth - r.width - 8) + 'px';
+    tipEl.style.top = (y + 16 + r.height > window.innerHeight ? y - r.height - 12 : y + 16) + 'px';
+  };
+  const hide = () => { if (tipEl) tipEl.hidden = true; };
+  el.addEventListener('mousemove', (e) => show(e.clientX, e.clientY));
+  el.addEventListener('mouseleave', hide);
+  el.addEventListener('focus', () => { const r = el.getBoundingClientRect(); show(r.left, r.bottom - 8); });
+  el.addEventListener('blur', hide);
+  return el;
+}

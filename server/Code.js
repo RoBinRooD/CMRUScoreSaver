@@ -10,7 +10,9 @@ var WRITE_ACTIONS = {
   importRoster: 1, upsertAssignment: 1, deleteAssignment: 1, saveGrades: 1,
   saveAttendance: 1, saveExams: 1, updateCourse: 1, updateSettings: 1,
   setStudentEmail: 1, addStudent: 1, removeStudent: 1,
-  saveGroup: 1, leaveGroup: 1, deleteGroup: 1, deleteCourse: 1
+  saveGroup: 1, leaveGroup: 1, deleteGroup: 1, deleteCourse: 1,
+  saveSyllabus: 1, addSyllabusLink: 1, finalizeSyllabusUpload: 1, removeSyllabusAttachment: 1,
+  saveTask: 1, deleteTask: 1
 };
 
 function doGet() {

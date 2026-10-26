@@ -7,9 +7,16 @@ function actions_() {
     // ทุกคน
     me: apiMe_,
     register: apiRegister_,
+    getSyllabus: apiGetSyllabus_,
+    timeline: apiTimeline_,
+    boardGroups: apiBoardGroups_,
+    groupBoard: apiGroupBoard_,
     // นักศึกษา
     myAssignments: apiMyAssignments_,
     myGrades: apiMyGrades_,
+    studentDashboard: apiStudentDashboard_,
+    saveTask: apiSaveTask_,
+    deleteTask: apiDeleteTask_,
     startUpload: apiStartUpload_,
     finalizeUpload: apiFinalizeUpload_,
     submitLink: apiSubmitLink_,
@@ -29,6 +36,12 @@ function actions_() {
     deleteAssignment: apiDeleteAssignment_,
     deleteGroup: apiDeleteGroup_,
     deleteCourse: apiDeleteCourse_,
+    teacherDashboard: apiTeacherDashboard_,
+    saveSyllabus: apiSaveSyllabus_,
+    addSyllabusLink: apiAddSyllabusLink_,
+    startSyllabusUpload: apiStartSyllabusUpload_,
+    finalizeSyllabusUpload: apiFinalizeSyllabusUpload_,
+    removeSyllabusAttachment: apiRemoveSyllabusAttachment_,
     listSubmissions: apiListSubmissions_,
     saveGrades: apiSaveGrades_,
     getAttendance: apiGetAttendance_,
@@ -504,6 +517,7 @@ function apiDeleteCourse_(user, p) {
   checkDeletePin_(user, p.pin);
   remove_('Submissions', ofWork);
   remove_('Groups', ofWork);
+  pruneTasks_();
   remove_('Assignments', inCourse);
   remove_('Attendance', inCourse);
   remove_('Exams', inCourse);
@@ -595,6 +609,7 @@ function apiDeleteAssignment_(user, p) {
   if (hasFiles) throw new Error('มีนักศึกษาส่งงานนี้แล้ว ลบไม่ได้ — ใช้ "ซ่อน" แทน');
   remove_('Submissions', function (s) { return s.assignmentId === p.id; });
   remove_('Groups', function (g) { return g.assignmentId === p.id; });
+  pruneTasks_();
   remove_('Assignments', function (a) { return a.id === p.id; });
   return { deleted: p.id };
 }

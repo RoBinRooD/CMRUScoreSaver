@@ -63,15 +63,36 @@ function memorySeed_() {
   var day = 24 * 3600 * 1000;
   db.Assignments.push(
     { id: 'A1', courseCode: 'DEMO2303', title: 'งานที่ 1: โลโก้', description: 'ออกแบบโลโก้ร้านกาแฟ ส่งไฟล์ .ai และ .png',
-      maxScore: '10', dueAt: new Date(Date.now() - 3 * day).toISOString(), allowLate: 'true', published: 'true', createdAt: '' },
+      maxScore: '10', dueAt: new Date(Date.now() - 3 * day).toISOString(), allowLate: 'true', published: 'true', createdAt: new Date(Date.now() - 20 * day).toISOString() },
     { id: 'A2', courseCode: 'DEMO2303', title: 'งานที่ 2: โปสเตอร์', description: 'โปสเตอร์ A3 ขนาด 300dpi',
-      maxScore: '20', dueAt: new Date(Date.now() + 7 * day).toISOString(), allowLate: 'false', published: 'true', createdAt: '' },
+      maxScore: '20', dueAt: new Date(Date.now() + 7 * day).toISOString(), allowLate: 'false', published: 'true', createdAt: new Date(Date.now() - 6 * day).toISOString() },
     { id: 'A3', courseCode: 'DEMO3314', title: 'งานที่ 1: โมเดลแก้วน้ำ', description: 'ส่งไฟล์ .blend และภาพเรนเดอร์',
-      maxScore: '10', dueAt: new Date(Date.now() + 5 * day).toISOString(), allowLate: 'true', published: 'true', createdAt: '' },
+      maxScore: '10', dueAt: new Date(Date.now() + 5 * day).toISOString(), allowLate: 'true', published: 'true', createdAt: new Date(Date.now() - 8 * day).toISOString() },
     { id: 'A4', courseCode: 'DEMO2303', title: 'งานกลุ่ม: แบรนด์ร้านค้า', description: 'กลุ่มละไม่เกิน 3 คน ส่งไฟล์ brand book (.pdf)',
-      maxScore: '30', dueAt: new Date(Date.now() + 10 * day).toISOString(), allowLate: 'true', published: 'true', createdAt: '', groupMax: '3' }
+      maxScore: '30', dueAt: new Date(Date.now() + 10 * day).toISOString(), allowLate: 'true', published: 'true', createdAt: new Date(Date.now() - 4 * day).toISOString(), groupMax: '3' }
   );
   db.Groups.push({ id: 'G1', assignmentId: 'A4', name: 'กาแฟดี', members: JSON.stringify(['69000101', '69000102']), createdAt: '' });
+  [['ค้นคว้าแบรนด์คู่แข่ง', 'done', '69000102', -2], ['ออกแบบโลโก้ 3 แบบ', 'doing', '69000101', 2],
+    ['เลือกชุดสี + ฟอนต์', 'todo', '', 4], ['รวมเล่ม brand book', 'todo', '69000102', 9]].forEach(function (t, i) {
+    db.Tasks.push({
+      id: 'T' + (i + 1), groupId: 'G1', title: t[0], note: '', status: t[1], assignee: t[2],
+      dueAt: new Date(Date.now() + t[3] * day).toISOString(), createdBy: '69000101',
+      createdAt: new Date(Date.now() - (3 - i) * day).toISOString(), updatedAt: ''
+    });
+  });
+  var weeks = ['แนะนำรายวิชา · หลักการออกแบบกราฟิก', 'เครื่องมือพื้นฐาน Illustrator', 'การจัดองค์ประกอบ', 'ทฤษฎีสี',
+    'ตัวอักษรและการจัดวาง', 'การออกแบบโลโก้', 'งานที่ 1: โลโก้ (ส่ง)', 'สอบกลางภาค', 'โปสเตอร์และสื่อสิ่งพิมพ์',
+    'Photoshop เบื้องต้น', 'การตกแต่งภาพ', 'งานที่ 2: โปสเตอร์ (ส่ง)', 'อัตลักษณ์แบรนด์', 'งานกลุ่ม: แบรนด์ร้านค้า',
+    'นำเสนองานกลุ่ม', 'สอบปลายภาค'];
+  db.Courses[0].syllabus = JSON.stringify({
+    description: 'ศึกษาหลักการและการใช้โปรแกรมคอมพิวเตอร์กราฟิกเพื่องานออกแบบสองมิติ ทั้งภาพเวกเตอร์และภาพบิตแมป',
+    objectives: '1. ใช้โปรแกรมกราฟิกสร้างงานออกแบบได้\n2. เข้าใจหลักการจัดองค์ประกอบ สี และตัวอักษร\n3. ทำงานเป็นทีมและนำเสนองานได้',
+    materials: 'Adobe Illustrator, Adobe Photoshop (ห้องปฏิบัติการคอมพิวเตอร์)\nหนังสือ: หลักการออกแบบกราฟิก',
+    contact: 'ห้องพักอาจารย์ อาคาร 12 ชั้น 3 · วันพฤหัสบดี 13:00–15:00',
+    weeks: weeks.map(function (w) { return { topic: w, detail: '' }; }),
+    attachments: [{ id: 'Ldemo1', kind: 'link', name: 'ตัวอย่างผลงานรุ่นพี่', url: 'https://www.behance.net/' }]
+  });
+  db.Courses[0].syllabusUpdatedAt = new Date().toISOString();
   db.Submissions.push(
     { id: 'S1', assignmentId: 'A1', studentId: '69000101', files: JSON.stringify([{ id: 'demo-file-1', name: 'logo.png', size: 524288, mimeType: 'image/png' }]),
       link: '', submittedAt: new Date(Date.now() - 4 * day).toISOString(), isLate: 'false', score: '8', feedback: 'สีสวย ตัวอักษรอ่านง่าย', gradedAt: new Date().toISOString() },
@@ -204,6 +225,16 @@ function getDriveFile_(id) {
 function shareReader_(id, email) {
   var f = memoryLoad_()._files[id];
   if (f && f.shared.indexOf(email) < 0) f.shared.push(email);
+  memoryPersist_();
+}
+
+function syllabusFolderId_(courseCode) {
+  return courseCode + '/Syllabus';
+}
+
+function shareAnyoneReader_(id) {
+  var f = memoryLoad_()._files[id];
+  if (f) f.public = true;
   memoryPersist_();
 }
 

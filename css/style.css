@@ -203,6 +203,9 @@ tr.group-head td { background: var(--surface-2); border-top: 2px solid var(--bor
 .toast { background: var(--text); color: var(--bg); padding: 0.6rem 1rem; border-radius: 8px; max-width: 420px; pointer-events: auto; box-shadow: var(--shadow); }
 .toast.bad { background: var(--bad); color: #fff; }
 
+.danger-zone { border-color: var(--bad); }
+.danger-zone h2 { color: var(--bad); }
+
 .banner { background: var(--warn-soft); color: var(--warn); padding: 0.6rem 1rem; border-radius: 8px; margin-bottom: 1rem; }
 
 @media (max-width: 600px) {

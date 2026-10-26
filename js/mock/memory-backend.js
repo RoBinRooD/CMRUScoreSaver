@@ -167,6 +167,10 @@ function verifyIdToken_(token) {
   return { email: m[1].toLowerCase(), name: m[1].split('@')[0] };
 }
 
+function hashPin_(salt, pin) {
+  return 'demo-hash:' + salt + ':' + pin;
+}
+
 function rateLimit_(key, max, seconds, message) {
   var db = memoryLoad_();
   db._rate = db._rate || {};
@@ -201,6 +205,13 @@ function shareReader_(id, email) {
   var f = memoryLoad_()._files[id];
   if (f && f.shared.indexOf(email) < 0) f.shared.push(email);
   memoryPersist_();
+}
+
+function trashCourseFolder_(courseCode) {
+  var db = memoryLoad_();
+  db._trashedFolders = (db._trashedFolders || []).concat([courseCode]);
+  memoryPersist_();
+  return true;
 }
 
 function trashFile_(id) {

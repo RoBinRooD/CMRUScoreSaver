@@ -122,7 +122,7 @@ var WRITE_ACTIONS = {
   importRoster: 1, upsertAssignment: 1, deleteAssignment: 1, saveGrades: 1,
   saveAttendance: 1, saveExams: 1, updateCourse: 1, updateSettings: 1,
   setStudentEmail: 1, addStudent: 1, removeStudent: 1,
-  saveGroup: 1, leaveGroup: 1, deleteGroup: 1
+  saveGroup: 1, leaveGroup: 1, deleteGroup: 1, deleteCourse: 1
 };
 
 function doGet() {
@@ -415,6 +415,27 @@ function rateLimit_(key, max, seconds, message) {
   };
 }
 
+/** PIN ยืนยันการลบ — เก็บเฉพาะ hash + salt ในแท็บ Settings */
+function hashPin_(salt, pin) {
+  return Utilities.base64EncodeWebSafe(
+    Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + ':' + pin, Utilities.Charset.UTF_8));
+}
+
+function hasDeletePin_() {
+  return !!settings_().deletePinHash;
+}
+
+/** ผิดเกิน 5 ครั้ง/ชม. ต่อบัญชี → ล็อก 1 ชม. */
+function checkDeletePin_(user, pin) {
+  if (!hasDeletePin_()) throw new Error('ยังไม่ได้ตั้ง PIN สำหรับลบ — ตั้งได้ที่แท็บ ตั้งค่า');
+  var hit = rateLimit_('pin_' + user.email, 5, 3600, 'ใส่ PIN ผิดหลายครั้งเกินไป กรุณารอ 1 ชั่วโมง');
+  var s = settings_();
+  if (hashPin_(s.deletePinSalt || '', String(pin || '')) !== s.deletePinHash) {
+    hit();
+    throw new Error('PIN ไม่ถูกต้อง');
+  }
+}
+
 function requireTeacher_(user) {
   if (user.role !== 'teacher') throw new Error('เฉพาะอาจารย์เท่านั้น');
 }
@@ -455,6 +476,7 @@ function actions_() {
     upsertAssignment: apiUpsertAssignment_,
     deleteAssignment: apiDeleteAssignment_,
     deleteGroup: apiDeleteGroup_,
+    deleteCourse: apiDeleteCourse_,
     listSubmissions: apiListSubmissions_,
     saveGrades: apiSaveGrades_,
     getAttendance: apiGetAttendance_,
@@ -595,7 +617,8 @@ function settingsView_() {
     allowedOrigins: String(s.allowedOrigins || '').split(/[,\s]+/).filter(Boolean),
     gradeCutoffs: jsonSetting_('gradeCutoffs', Grade.DEFAULT_CUTOFFS),
     attendancePoints: jsonSetting_('attendancePoints', Grade.DEFAULT_ATTENDANCE_POINTS),
-    uploadMaxMB: Number(s.uploadMaxMB) || 2048
+    uploadMaxMB: Number(s.uploadMaxMB) || 2048,
+    hasDeletePin: !!s.deletePinHash
   };
 }
 
@@ -907,6 +930,37 @@ function apiAddStudent_(user, p) {
   return studentView_(row);
 }
 
+/**
+ * ลบวิชาและข้อมูลทั้งหมดของวิชา (รายชื่อ งาน การส่งงาน กลุ่ม เช็คชื่อ คะแนนสอบ) — ต้องใส่ PIN
+ * preview: true = นับจำนวนที่จะถูกลบ ไม่ต้องใส่ PIN · trashFiles: ย้ายโฟลเดอร์งานใน Drive ไปถังขยะด้วย (กู้คืนได้ 30 วัน)
+ */
+function apiDeleteCourse_(user, p) {
+  requireTeacher_(user);
+  var code = courseRow_(p.courseCode).courseCode;
+  var ids = {};
+  rows_('Assignments').forEach(function (a) { if (a.courseCode === code) ids[a.id] = true; });
+  var inCourse = function (r) { return r.courseCode === code; };
+  var ofWork = function (r) { return !!ids[r.assignmentId]; };
+  var counts = {
+    students: rows_('Students').filter(inCourse).length,
+    assignments: Object.keys(ids).length,
+    submissions: rows_('Submissions').filter(function (s) { return ofWork(s) && (s.submittedAt || s.score !== ''); }).length,
+    groups: rows_('Groups').filter(ofWork).length
+  };
+  if (p.preview) return counts;
+
+  checkDeletePin_(user, p.pin);
+  remove_('Submissions', ofWork);
+  remove_('Groups', ofWork);
+  remove_('Assignments', inCourse);
+  remove_('Attendance', inCourse);
+  remove_('Exams', inCourse);
+  remove_('Students', inCourse);
+  remove_('Courses', inCourse);
+  counts.filesTrashed = p.trashFiles ? trashCourseFolder_(code) : false;
+  return counts;
+}
+
 function apiRemoveStudent_(user, p) {
   requireTeacher_(user);
   var n = remove_('Students', function (r) { return r.courseCode === p.courseCode && r.studentId === p.studentId; });
@@ -1195,6 +1249,14 @@ function apiUpdateSettings_(user, p) {
     });
     updates.attendancePoints = JSON.stringify(pts);
   }
+  if (p.deletePin) {
+    // เปลี่ยน PIN ต้องใส่ PIN เดิมก่อน (ลืม PIN: ลบค่า deletePinHash ในแท็บ Settings ของ Google Sheet)
+    if (hasDeletePin_()) checkDeletePin_(user, p.deletePin.current);
+    var pin = str_(p.deletePin.next, 20);
+    if (!/^\d{4,8}$/.test(pin)) throw new Error('PIN ต้องเป็นตัวเลข 4–8 หลัก');
+    updates.deletePinSalt = uid_('P');
+    updates.deletePinHash = hashPin_(updates.deletePinSalt, pin);
+  }
   if (p.uploadMaxMB !== undefined) {
     var mb = numOrNull_(p.uploadMaxMB);
     if (!(mb > 0)) throw new Error('ขนาดไฟล์สูงสุดไม่ถูกต้อง');
@@ -1435,6 +1497,19 @@ function shareReader_(id, email) {
 
 function trashFile_(id) {
   DriveApp.getFileById(id).setTrashed(true);
+}
+
+/** ย้ายโฟลเดอร์ <root>/<รหัสวิชา> ไปถังขยะ — คืน true ถ้าพบโฟลเดอร์ */
+function trashCourseFolder_(courseCode) {
+  var root = settings_().rootFolderId;
+  if (!root) return false;
+  var it = DriveApp.getFolderById(root).getFoldersByName(courseCode);
+  var found = false;
+  while (it.hasNext()) {
+    it.next().setTrashed(true);
+    found = true;
+  }
+  return found;
 }
 
 // ===== server/Groups.js =====

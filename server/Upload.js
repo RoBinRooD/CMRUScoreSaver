@@ -219,3 +219,16 @@ function shareReader_(id, email) {
 function trashFile_(id) {
   DriveApp.getFileById(id).setTrashed(true);
 }
+
+/** ย้ายโฟลเดอร์ <root>/<รหัสวิชา> ไปถังขยะ — คืน true ถ้าพบโฟลเดอร์ */
+function trashCourseFolder_(courseCode) {
+  var root = settings_().rootFolderId;
+  if (!root) return false;
+  var it = DriveApp.getFolderById(root).getFoldersByName(courseCode);
+  var found = false;
+  while (it.hasNext()) {
+    it.next().setTrashed(true);
+    found = true;
+  }
+  return found;
+}

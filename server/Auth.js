@@ -110,6 +110,27 @@ function rateLimit_(key, max, seconds, message) {
   };
 }
 
+/** PIN ยืนยันการลบ — เก็บเฉพาะ hash + salt ในแท็บ Settings */
+function hashPin_(salt, pin) {
+  return Utilities.base64EncodeWebSafe(
+    Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + ':' + pin, Utilities.Charset.UTF_8));
+}
+
+function hasDeletePin_() {
+  return !!settings_().deletePinHash;
+}
+
+/** ผิดเกิน 5 ครั้ง/ชม. ต่อบัญชี → ล็อก 1 ชม. */
+function checkDeletePin_(user, pin) {
+  if (!hasDeletePin_()) throw new Error('ยังไม่ได้ตั้ง PIN สำหรับลบ — ตั้งได้ที่แท็บ ตั้งค่า');
+  var hit = rateLimit_('pin_' + user.email, 5, 3600, 'ใส่ PIN ผิดหลายครั้งเกินไป กรุณารอ 1 ชั่วโมง');
+  var s = settings_();
+  if (hashPin_(s.deletePinSalt || '', String(pin || '')) !== s.deletePinHash) {
+    hit();
+    throw new Error('PIN ไม่ถูกต้อง');
+  }
+}
+
 function requireTeacher_(user) {
   if (user.role !== 'teacher') throw new Error('เฉพาะอาจารย์เท่านั้น');
 }

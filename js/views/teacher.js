@@ -621,5 +621,70 @@ async function settings(body, ctx) {
       });
       toast('บันทึกการตั้งค่าแล้ว');
       await ctx.refreshMe();
-    }, { class: 'primary' }))));
+    }, { class: 'primary' })),
+    pinSection(s, () => settings(body, ctx)),
+    ctx.course ? deleteCourseSection(ctx, s) : null));
+}
+
+const pinInput = (label) => h('input', {
+  type: 'password', inputmode: 'numeric', autocomplete: 'new-password', maxlength: 8, placeholder: '4–8 หลัก', 'aria-label': label, style: 'width:9em'
+});
+
+/** PIN ที่ต้องใส่ทุกครั้งก่อนลบวิชา — เปลี่ยนต้องใส่ PIN เดิม */
+function pinSection(s, reload) {
+  const current = pinInput('PIN เดิม');
+  const next = pinInput('PIN ใหม่');
+  const again = pinInput('PIN ใหม่อีกครั้ง');
+  return h('section', { class: 'card form' },
+    h('h2', {}, 'PIN สำหรับลบข้อมูล'),
+    h('p', { class: 'muted small' }, s.hasDeletePin
+      ? 'ตั้ง PIN แล้ว — ต้องใส่ทุกครั้งที่ลบวิชา · ลืม PIN: ลบค่า deletePinHash ในแท็บ Settings ของ Google Sheet แล้วตั้งใหม่'
+      : 'ยังไม่ได้ตั้ง PIN — ต้องตั้งก่อนจึงจะลบวิชาได้ (ตัวเลข 4–8 หลัก ระบบเก็บแบบเข้ารหัส ไม่มีใครเห็น PIN)'),
+    h('div', { class: 'row' },
+      s.hasDeletePin ? h('label', { class: 'field' }, h('span', {}, 'PIN เดิม'), current) : null,
+      h('label', { class: 'field' }, h('span', {}, 'PIN ใหม่'), next),
+      h('label', { class: 'field' }, h('span', {}, 'ใส่ PIN ใหม่อีกครั้ง'), again)),
+    h('div', {}, actionButton(s.hasDeletePin ? 'เปลี่ยน PIN' : 'ตั้ง PIN', async () => {
+      if (!/^\d{4,8}$/.test(next.value)) throw new Error('PIN ต้องเป็นตัวเลข 4–8 หลัก');
+      if (next.value !== again.value) throw new Error('PIN ใหม่ทั้งสองช่องไม่ตรงกัน');
+      await call('updateSettings', { deletePin: { current: current.value, next: next.value } });
+      toast(s.hasDeletePin ? 'เปลี่ยน PIN แล้ว' : 'ตั้ง PIN แล้ว');
+      reload();
+    })));
+}
+
+function deleteCourseSection(ctx, s) {
+  const c = ctx.course;
+  return h('section', { class: 'card form danger-zone' },
+    h('h2', {}, 'ลบวิชา'),
+    h('p', { class: 'muted small' }, 'ลบวิชาที่เลือกอยู่และข้อมูลทั้งหมดของวิชานี้ออกจากระบบ — ย้อนกลับไม่ได้ (วิชาอื่นไม่กระทบ)'),
+    h('div', {}, actionButton(`ลบวิชา ${c.courseCode}…`, async () => {
+      if (!s.hasDeletePin) throw new Error('ตั้ง PIN สำหรับลบข้อมูลด้านบนก่อน');
+      if (await deleteCourseForm(c)) await ctx.refreshMe();
+    }, { class: 'danger' })));
+}
+
+async function deleteCourseForm(c) {
+  const n = await call('deleteCourse', { courseCode: c.courseCode, preview: true });
+  const pin = pinInput('PIN');
+  const trash = h('input', { type: 'checkbox' });
+  return modal(`ลบวิชา ${c.courseCode}`, h('div', { class: 'form' },
+    h('p', {}, h('strong', {}, `${c.courseCode} ${c.title}`), ` · Sec ${c.section} · ภาค ${c.term}`),
+    h('p', {}, 'ข้อมูลที่จะถูกลบถาวร:'),
+    h('ul', { style: 'margin:0;padding-left:1.2rem' },
+      h('li', {}, `รายชื่อนักศึกษา ${n.students} คน (บัญชีที่สมัครไว้ในวิชาอื่นยังอยู่)`),
+      h('li', {}, `งาน ${n.assignments} งาน · งานที่ส่ง/ให้คะแนนแล้ว ${n.submissions} รายการ · กลุ่ม ${n.groups} กลุ่ม`),
+      h('li', {}, 'การเช็คชื่อ คะแนนสอบ และสมุดคะแนนของวิชานี้')),
+    h('p', { class: 'muted small' }, 'แนะนำ: ดาวน์โหลด Excel จากแท็บสมุดคะแนนเก็บไว้ก่อน'),
+    h('label', { class: 'check' }, trash, `ย้ายไฟล์งานของวิชานี้ใน Google Drive ไปถังขยะด้วย (กู้คืนได้ภายใน 30 วัน) — ไม่ติ๊ก = ไฟล์ยังอยู่ใน Drive`),
+    h('label', { class: 'field' }, h('span', {}, 'ใส่ PIN เพื่อยืนยัน'), pin)),
+  [{
+    label: 'ลบถาวร',
+    class: 'danger',
+    run: async () => {
+      if (!pin.value) throw new Error('กรุณาใส่ PIN');
+      const res = await call('deleteCourse', { courseCode: c.courseCode, pin: pin.value, trashFiles: trash.checked });
+      toast(`ลบวิชา ${c.courseCode} แล้ว${res.filesTrashed ? ' · ย้ายไฟล์ไปถังขยะแล้ว' : ''}`);
+    }
+  }]);
 }

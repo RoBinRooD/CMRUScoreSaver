@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const FILES = ['js/grade.js', 'server/Code.js', 'server/Db.js', 'server/Auth.js', 'server/Api.js',
-  'server/Upload.js', 'server/Setup.js', 'js/mock/memory-backend.js'];
+  'server/Upload.js', 'server/Groups.js', 'server/Setup.js', 'js/mock/memory-backend.js'];
 
 function loadBackend() {
   const ctx = vm.createContext({ console });

@@ -150,6 +150,9 @@ td.nowrap { white-space: nowrap; }
 td input.score { width: 5.5em; text-align: right; }
 td input.wide { width: 100%; min-width: 12em; }
 tr.dirty td { background: var(--warn-soft); }
+tr.group-head td { background: var(--surface-2); border-top: 2px solid var(--border); }
+.pick-list { display: grid; gap: 0.35rem; max-height: 45vh; overflow: auto; border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; }
+.pick-list .check { align-items: flex-start; }
 
 /* attendance grid */
 .att td, .att th { padding: 0.3rem; text-align: center; }

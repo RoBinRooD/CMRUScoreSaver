@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const SERVER_FILES = ['js/grade.js', 'server/Code.js', 'server/Db.js', 'server/Auth.js',
-  'server/Api.js', 'server/Upload.js', 'server/Setup.js'];
+  'server/Api.js', 'server/Upload.js', 'server/Groups.js', 'server/Setup.js'];
 
 export function bundle() {
   const header = '// ไฟล์นี้สร้างอัตโนมัติจาก server/*.js และ js/grade.js — อย่าแก้ที่นี่ ให้แก้ไฟล์ต้นทางแล้วรัน node scripts/build-gas.mjs\n';

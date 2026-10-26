@@ -67,8 +67,11 @@ function memorySeed_() {
     { id: 'A2', courseCode: 'DEMO2303', title: 'งานที่ 2: โปสเตอร์', description: 'โปสเตอร์ A3 ขนาด 300dpi',
       maxScore: '20', dueAt: new Date(Date.now() + 7 * day).toISOString(), allowLate: 'false', published: 'true', createdAt: '' },
     { id: 'A3', courseCode: 'DEMO3314', title: 'งานที่ 1: โมเดลแก้วน้ำ', description: 'ส่งไฟล์ .blend และภาพเรนเดอร์',
-      maxScore: '10', dueAt: new Date(Date.now() + 5 * day).toISOString(), allowLate: 'true', published: 'true', createdAt: '' }
+      maxScore: '10', dueAt: new Date(Date.now() + 5 * day).toISOString(), allowLate: 'true', published: 'true', createdAt: '' },
+    { id: 'A4', courseCode: 'DEMO2303', title: 'งานกลุ่ม: แบรนด์ร้านค้า', description: 'กลุ่มละไม่เกิน 3 คน ส่งไฟล์ brand book (.pdf)',
+      maxScore: '30', dueAt: new Date(Date.now() + 10 * day).toISOString(), allowLate: 'true', published: 'true', createdAt: '', groupMax: '3' }
   );
+  db.Groups.push({ id: 'G1', assignmentId: 'A4', name: 'กาแฟดี', members: JSON.stringify(['69000101', '69000102']), createdAt: '' });
   db.Submissions.push(
     { id: 'S1', assignmentId: 'A1', studentId: '69000101', files: JSON.stringify([{ id: 'demo-file-1', name: 'logo.png', size: 524288, mimeType: 'image/png' }]),
       link: '', submittedAt: new Date(Date.now() - 4 * day).toISOString(), isLate: 'false', score: '8', feedback: 'สีสวย ตัวอักษรอ่านง่าย', gradedAt: new Date().toISOString() },
@@ -176,8 +179,8 @@ function rateLimit_(key, max, seconds, message) {
 
 /* ---------- เขียนทับ Drive ---------- */
 
-function submissionFolderId_(a, st) {
-  return a.courseCode + '/' + a.id + '/' + st.studentId;
+function submissionFolderId_(a, folderName) {
+  return a.courseCode + '/' + a.id + '/' + folderName;
 }
 
 function startResumable_(o) {
@@ -196,7 +199,7 @@ function getDriveFile_(id) {
 
 function shareReader_(id, email) {
   var f = memoryLoad_()._files[id];
-  if (f) f.shared.push(email);
+  if (f && f.shared.indexOf(email) < 0) f.shared.push(email);
   memoryPersist_();
 }
 

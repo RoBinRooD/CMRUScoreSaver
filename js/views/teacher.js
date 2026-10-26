@@ -54,6 +54,7 @@ async function assignments(body, ctx) {
       h('div', { class: 'muted small' }, `กำหนดส่ง ${fmtDate(a.dueAt)} · เต็ม ${a.maxScore} · ${a.allowLate ? 'รับงานช้า' : 'ไม่รับงานช้า'}`),
       a.description ? h('p', { class: 'desc' }, a.description) : null,
       h('div', { class: 'row small', style: 'margin:.5rem 0' },
+        a.groupMax ? h('span', { class: 'chip' }, `งานกลุ่ม ≤${a.groupMax} คน · ${a.counts.groups} กลุ่ม`) : null,
         h('span', { class: 'chip accent' }, `ส่งแล้ว ${a.counts.submitted}/${a.counts.roster}`),
         h('span', { class: 'chip ok' }, `ตรวจแล้ว ${a.counts.graded}`)),
       h('div', { class: 'row' },
@@ -75,8 +76,14 @@ function assignmentForm(course, a) {
     maxScore: h('input', { type: 'number', min: 1, step: 'any', value: a?.maxScore ?? 10 }),
     dueAt: h('input', { type: 'datetime-local', value: toLocalInput(a?.dueAt) }),
     allowLate: h('input', { type: 'checkbox', checked: a ? a.allowLate : true }),
-    published: h('input', { type: 'checkbox', checked: a ? a.published : true })
+    published: h('input', { type: 'checkbox', checked: a ? a.published : true }),
+    isGroup: h('input', { type: 'checkbox', checked: !!a?.groupMax }),
+    groupMax: h('input', { type: 'number', min: 2, max: 50, step: 1, value: a?.groupMax || 4, style: 'width:5em' })
   };
+  const groupMaxField = h('label', { class: 'check' }, 'สมาชิกสูงสุด', f.groupMax, 'คน');
+  const syncGroup = () => { groupMaxField.hidden = !f.isGroup.checked; };
+  f.isGroup.addEventListener('change', syncGroup);
+  syncGroup();
   const body = h('div', { class: 'form' },
     h('label', { class: 'field' }, h('span', {}, 'ชื่องาน'), f.title),
     h('label', { class: 'field' }, h('span', {}, 'รายละเอียด'), f.description),
@@ -84,14 +91,16 @@ function assignmentForm(course, a) {
       h('label', { class: 'field' }, h('span', {}, 'คะแนนเต็ม'), f.maxScore),
       h('label', { class: 'field' }, h('span', {}, 'กำหนดส่ง'), f.dueAt)),
     h('label', { class: 'check' }, f.allowLate, 'รับงานหลังกำหนด (ทำเครื่องหมายว่าส่งช้า)'),
-    h('label', { class: 'check' }, f.published, 'แสดงให้นักศึกษาเห็น'));
+    h('label', { class: 'check' }, f.published, 'แสดงให้นักศึกษาเห็น'),
+    h('div', { class: 'row' }, h('label', { class: 'check' }, f.isGroup, 'งานกลุ่ม (นักศึกษาจับกลุ่มเอง)'), groupMaxField));
   return modal(a ? 'แก้ไขงาน' : 'สร้างงานใหม่', body, [{
     label: 'บันทึก',
     run: async () => {
       await call('upsertAssignment', {
         id: a?.id, courseCode: course.courseCode, title: f.title.value, description: f.description.value,
         maxScore: Number(f.maxScore.value), dueAt: f.dueAt.value ? new Date(f.dueAt.value).toISOString() : '',
-        allowLate: f.allowLate.checked, published: f.published.checked
+        allowLate: f.allowLate.checked, published: f.published.checked,
+        groupMax: f.isGroup.checked ? Number(f.groupMax.value) : 0
       });
       toast('บันทึกงานแล้ว');
     }
@@ -122,7 +131,9 @@ async function grading(body, ctx) {
     draw();
   };
 
-  const draw = () => {
+  const draw = () => (data.groups ? drawGroups() : drawSingle());
+
+  const drawSingle = () => {
     const a = data.assignment;
     const rows = data.rows.filter((r) => {
       const s = r.submission;
@@ -172,10 +183,131 @@ async function grading(body, ctx) {
       h('div', { class: 'row' }, h('span', { class: 'spacer' }), save)));
   };
 
+  /** งานกลุ่ม: แถวหัวกลุ่ม (ไฟล์ + คะแนนกลุ่มที่เติมให้ทุกคน) ตามด้วยสมาชิกแต่ละคน (ปรับคะแนนรายคนได้) */
+  const drawGroups = () => {
+    const a = data.assignment;
+    const byId = new Map(data.rows.map((r) => [r.studentId, r]));
+    const dirty = new Map();
+    const save = actionButton('บันทึกคะแนน', async () => {
+      if (!dirty.size) return toast('ไม่มีอะไรเปลี่ยน');
+      data = await call('saveGrades', { assignmentId: a.id, items: [...dirty.values()] });
+      toast(`บันทึก ${dirty.size} รายการแล้ว`);
+      draw();
+    }, { class: 'primary' });
+    const editGroup = async (g) => {
+      if (await teacherGroupForm(a, data, g)) await load();
+    };
+
+    const memberRow = (r) => {
+      const s = r.submission;
+      const score = h('input', { class: 'score', type: 'number', min: 0, max: a.maxScore, step: 'any', value: s?.score ?? '', 'aria-label': 'คะแนน ' + r.studentId });
+      const fb = h('input', { class: 'wide', value: s?.feedback || '', placeholder: 'ความเห็น', 'aria-label': 'ความเห็น ' + r.studentId });
+      const tr = h('tr', {},
+        h('td', { class: 'nowrap' }, r.studentId), h('td', {}, r.name), h('td', {}), h('td', {}),
+        h('td', { class: 'num' }, score), h('td', {}, fb));
+      const mark = () => {
+        dirty.set(r.studentId, { studentId: r.studentId, score: score.value, feedback: fb.value });
+        tr.classList.add('dirty');
+      };
+      score.addEventListener('input', mark);
+      fb.addEventListener('input', mark);
+      return { tr, score, fb, mark };
+    };
+
+    const groupRows = (g) => {
+      const s = g.submission;
+      const members = g.members.map((m) => byId.get(m.studentId)).filter(Boolean).map(memberRow);
+      const gScore = h('input', { class: 'score', type: 'number', min: 0, max: a.maxScore, step: 'any', placeholder: 'ทั้งกลุ่ม', 'aria-label': 'คะแนนกลุ่ม ' + g.name });
+      const gFb = h('input', { class: 'wide', placeholder: 'ความเห็นถึงทั้งกลุ่ม', 'aria-label': 'ความเห็นกลุ่ม ' + g.name });
+      gScore.addEventListener('input', () => members.forEach((m) => { m.score.value = gScore.value; m.mark(); }));
+      gFb.addEventListener('input', () => members.forEach((m) => { m.fb.value = gFb.value; m.mark(); }));
+      const head = h('tr', { class: 'group-head' },
+        h('td', { colspan: 2 },
+          h('strong', {}, g.name), ' ', h('span', { class: 'muted small' }, `${g.members.length} คน`), ' ',
+          h('button', { class: 'sm ghost', onclick: () => editGroup(g) }, 'แก้กลุ่ม')),
+        h('td', { class: 'nowrap' }, s?.submittedAt
+          ? h('span', { class: 'chip ' + (s.isLate ? 'warn' : 'info'), title: fmtDate(s.submittedAt) }, s.isLate ? 'ส่งช้า' : 'ส่งแล้ว')
+          : h('span', { class: 'chip' }, 'ยังไม่ส่ง')),
+        h('td', {}, h('ul', { class: 'files' },
+          (s?.files || []).map((f) => h('li', {}, h('a', { href: driveUrl(f.id), target: '_blank', rel: 'noopener', title: f.name }, f.name), h('span', { class: 'muted small' }, fmtSize(f.size)))),
+          s?.link ? h('li', {}, h('a', { href: s.link, target: '_blank', rel: 'noopener' }, '🔗 ลิงก์')) : null)),
+        h('td', { class: 'num' }, gScore),
+        h('td', {}, gFb));
+      return [head, members.map((m) => m.tr)];
+    };
+
+    const sent = (g) => !!g.submission?.submittedAt;
+    const groups = data.groups.filter((g) => {
+      if (filter.value === 'submitted') return sent(g);
+      if (filter.value === 'ungraded') return sent(g) && g.members.some((m) => byId.get(m.studentId)?.submission?.score == null);
+      if (filter.value === 'missing') return !sent(g);
+      return true;
+    });
+    const loners = data.rows.filter((r) => !r.groupId);
+    const showLoners = loners.length && (filter.value === 'all' || filter.value === 'missing');
+
+    mount(holder, h('div', { class: 'stack' },
+      h('div', { class: 'row' },
+        h('span', { class: 'muted small' }, `กำหนดส่ง ${fmtDate(a.dueAt)} · คะแนนเต็ม ${a.maxScore} · งานกลุ่ม ≤${a.groupMax} คน · ${data.groups.length} กลุ่ม (ส่งแล้ว ${data.groups.filter(sent).length}) · ยังไม่มีกลุ่ม ${loners.length} คน`),
+        h('span', { class: 'spacer' }),
+        h('button', { class: 'sm', onclick: () => editGroup(null) }, '+ สร้างกลุ่ม')),
+      h('p', { class: 'muted small' }, 'ใส่คะแนนในแถวกลุ่ม = เติมให้สมาชิกทุกคน แล้วปรับรายคนได้ในแถวของแต่ละคน'),
+      h('div', { class: 'table-wrap' }, h('table', {},
+        h('thead', {}, h('tr', {},
+          h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'), h('th', {}, 'สถานะ'), h('th', {}, 'ไฟล์ / ลิงก์'),
+          h('th', { class: 'num' }, `คะแนน (/${a.maxScore})`), h('th', {}, 'ความเห็น'))),
+        h('tbody', {},
+          groups.map(groupRows),
+          showLoners ? [
+            h('tr', { class: 'group-head' }, h('td', { colspan: 6 }, h('strong', {}, 'ยังไม่มีกลุ่ม'), ' ', h('span', { class: 'muted small' }, `${loners.length} คน`))),
+            loners.map((r) => memberRow(r).tr)] : null))),
+      h('div', { class: 'row' }, h('span', { class: 'spacer' }), save)));
+  };
+
   pick.addEventListener('change', () => load().catch((e) => mount(holder, errorBox(e))));
   filter.addEventListener('change', () => data && draw());
   mount(body, h('div', { class: 'stack' }, h('div', { class: 'row' }, pick, filter), holder));
   await load();
+}
+
+/** อาจารย์สร้าง/แก้กลุ่ม: เลือกใครก็ได้ในวิชา (คนที่อยู่กลุ่มอื่นจะถูกย้ายมา) และเกินจำนวนสูงสุดได้ */
+function teacherGroupForm(a, data, g) {
+  const groupName = new Map(data.groups.map((x) => [x.id, x.name]));
+  const name = h('input', { value: g?.name || '', maxlength: 100 });
+  const count = h('span', { class: 'muted small' });
+  const boxes = data.rows.map((r) => {
+    const input = h('input', { type: 'checkbox', checked: !!g && r.groupId === g.id });
+    const other = r.groupId && (!g || r.groupId !== g.id) ? groupName.get(r.groupId) : null;
+    return { r, input, row: h('label', { class: 'check' }, input, `${r.studentId} ${r.name}`, other ? h('span', { class: 'chip' }, other) : null) };
+  });
+  const sync = () => {
+    const n = boxes.filter((b) => b.input.checked).length;
+    count.textContent = `${n} คน${n > a.groupMax ? ` (เกินที่กำหนด ${a.groupMax})` : ''}`;
+  };
+  boxes.forEach((b) => b.input.addEventListener('change', sync));
+  sync();
+  const actions = [{
+    label: 'บันทึก',
+    run: async () => {
+      await call('saveGroup', { assignmentId: a.id, groupId: g?.id, name: name.value.trim(), members: boxes.filter((b) => b.input.checked).map((b) => b.r.studentId) });
+      toast('บันทึกกลุ่มแล้ว');
+    }
+  }];
+  if (g) {
+    actions.unshift({
+      label: 'ลบกลุ่ม', class: 'ghost danger',
+      run: async () => {
+        await call('deleteGroup', { groupId: g.id });
+        toast('ลบกลุ่มแล้ว');
+      }
+    });
+  }
+  return modal(g ? `แก้กลุ่ม ${g.name}` : 'สร้างกลุ่ม', h('div', { class: 'form' },
+    h('label', { class: 'field' }, h('span', {}, 'ชื่อกลุ่ม'), name),
+    h('div', { class: 'row' }, h('strong', {}, 'สมาชิก'), h('span', { class: 'spacer' }), count),
+    h('div', { class: 'pick-list' }, boxes.map((b) => b.row)),
+    h('p', { class: 'muted small' }, 'เลือกคนที่อยู่กลุ่มอื่น = ย้ายมากลุ่มนี้ · คะแนนที่ให้ไว้แล้วเป็นของแต่ละคน ไม่ย้ายตามกลุ่ม')),
+  actions);
 }
 
 /* ---------- เช็คชื่อ ---------- */

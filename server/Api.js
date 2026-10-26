@@ -14,6 +14,10 @@ function actions_() {
     finalizeUpload: apiFinalizeUpload_,
     submitLink: apiSubmitLink_,
     removeFile: apiRemoveFile_,
+    leaveGroup: apiLeaveGroup_,
+    // นักศึกษา + อาจารย์ (งานกลุ่ม)
+    groupOptions: apiGroupOptions_,
+    saveGroup: apiSaveGroup_,
     // อาจารย์
     importRoster: apiImportRoster_,
     listStudents: apiListStudents_,
@@ -23,6 +27,7 @@ function actions_() {
     listAssignments: apiListAssignments_,
     upsertAssignment: apiUpsertAssignment_,
     deleteAssignment: apiDeleteAssignment_,
+    deleteGroup: apiDeleteGroup_,
     listSubmissions: apiListSubmissions_,
     saveGrades: apiSaveGrades_,
     getAttendance: apiGetAttendance_,
@@ -95,6 +100,7 @@ function assignmentView_(a) {
     allowLate: a.allowLate === 'true',
     published: a.published === 'true',
     createdAt: a.createdAt,
+    groupMax: isGroupWork_(a) ? Number(a.groupMax) : 0,
     overdue: isPastDue_(a)
   };
 }
@@ -126,7 +132,7 @@ function submissionView_(s) {
 function newSubmission_(assignmentId, studentId) {
   return {
     id: uid_('S'), assignmentId: assignmentId, studentId: studentId, files: '[]', link: '',
-    submittedAt: '', isLate: '', score: '', feedback: '', gradedAt: ''
+    submittedAt: '', isLate: '', score: '', feedback: '', gradedAt: '', groupId: ''
   };
 }
 
@@ -324,6 +330,7 @@ function apiRegister_(user, p) {
     throw new Error('รหัสนี้ถูกสมัครด้วยบัญชีอื่นแล้ว กรุณาติดต่ออาจารย์');
   }
   bindRows_(rows, user.email, { nickname: str_(p.nickname, 50), phone: phone });
+  shareGroupFilesWithStudent_(rows[0].studentId);
   user.studentId = rows[0].studentId;
   user.studentName = rows[0].name;
   user.courses = rows.map(function (r) { return r.courseCode; });
@@ -339,7 +346,11 @@ function apiMyAssignments_(user, p) {
     .filter(function (a) { return a.courseCode === p.courseCode && a.published === 'true'; })
     .map(function (a) {
       var v = assignmentView_(a);
-      v.submission = submissionView_(submissionRow_(a.id, user.studentId));
+      v.submission = mergedSubmission_(a, user.studentId);
+      if (isGroupWork_(a)) {
+        var g = groupOf_(a.id, user.studentId);
+        v.group = g ? groupView_(a, g) : null;
+      }
       return v;
     })
     .sort(byDue_);
@@ -356,9 +367,10 @@ function apiMyGrades_(user, p) {
     course: d.course,
     assignments: d.assignments.map(function (a) {
       var s = d.subs[a.id + '|' + id];
+      var work = a.groupMax ? mergedSubmission_(assignmentRow_(a.id), id) : s;
       return {
-        id: a.id, title: a.title, maxScore: a.maxScore, dueAt: a.dueAt, overdue: a.overdue,
-        submitted: !!(s && s.submittedAt), score: s ? s.score : null, feedback: s ? s.feedback : ''
+        id: a.id, title: a.title, maxScore: a.maxScore, dueAt: a.dueAt, overdue: a.overdue, groupMax: a.groupMax,
+        submitted: !!(work && work.submittedAt), score: s ? s.score : null, feedback: s ? s.feedback : ''
       };
     }),
     attendance: { marks: d.att[id] || marksOf_(null), heldWeeks: d.course.heldWeeks },
@@ -442,6 +454,7 @@ function apiSetStudentEmail_(user, p) {
   var mine = rows.filter(function (r) { return r.studentId === id; });
   if (!mine.length) throw new Error('ไม่พบรหัสนักศึกษา');
   bindRows_(mine, email);
+  if (email) shareGroupFilesWithStudent_(id);
   return studentView_(mine[0]);
 }
 
@@ -470,6 +483,12 @@ function apiAddStudent_(user, p) {
 function apiRemoveStudent_(user, p) {
   requireTeacher_(user);
   var n = remove_('Students', function (r) { return r.courseCode === p.courseCode && r.studentId === p.studentId; });
+  var ids = {};
+  rows_('Assignments').forEach(function (a) { if (a.courseCode === p.courseCode) ids[a.id] = true; });
+  rows_('Groups').forEach(function (g) {
+    if (ids[g.assignmentId]) g.members = JSON.stringify(membersOf_(g).filter(function (m) { return m !== p.studentId; }));
+  });
+  saveAll_('Groups');
   return { removed: n };
 }
 
@@ -486,9 +505,18 @@ function apiListAssignments_(user, p) {
       var mine = subs.filter(function (s) { return s.assignmentId === a.id; });
       v.counts = {
         roster: roster,
-        submitted: mine.filter(function (s) { return s.submittedAt; }).length,
-        graded: mine.filter(function (s) { return s.score !== ''; }).length
+        submitted: mine.filter(function (s) { return s.submittedAt && s.studentId; }).length,
+        graded: mine.filter(function (s) { return s.score !== '' && s.studentId; }).length
       };
+      if (isGroupWork_(a)) {
+        // งานกลุ่ม: นับคนที่กลุ่มส่งแล้ว
+        var groups = groupsOf_(a.id);
+        v.counts.groups = groups.length;
+        v.counts.submitted = groups.reduce(function (n, g) {
+          var gs = groupSubmissionRow_(g.id);
+          return n + (gs && gs.submittedAt ? membersOf_(g).length : 0);
+        }, 0);
+      }
       return v;
     })
     .sort(byDue_);
@@ -502,14 +530,25 @@ function apiUpsertAssignment_(user, p) {
   var max = numOrNull_(p.maxScore);
   if (!(max > 0)) throw new Error('คะแนนเต็มต้องมากกว่า 0');
   if (p.dueAt && isNaN(new Date(p.dueAt).getTime())) throw new Error('กำหนดส่งไม่ถูกต้อง');
+  var groupMax = numOrNull_(p.groupMax) || 0;
+  if (groupMax && (groupMax < 2 || groupMax > 50 || groupMax !== Math.floor(groupMax))) {
+    throw new Error('จำนวนสมาชิกสูงสุดต้องเป็นจำนวนเต็ม 2–50');
+  }
 
   var a = p.id ? assignmentRow_(p.id) : { id: uid_('A'), courseCode: p.courseCode, createdAt: now_() };
+  if (p.id && !!groupMax !== isGroupWork_(a)) {
+    var used = groupsOf_(a.id).length || rows_('Submissions').some(function (s) {
+      return s.assignmentId === a.id && (s.submittedAt || s.score !== '');
+    });
+    if (used) throw new Error('มีการส่งงานหรือจับกลุ่มแล้ว เปลี่ยนระหว่างงานเดี่ยว/งานกลุ่มไม่ได้ — สร้างงานใหม่แทน');
+  }
   a.title = title;
   a.description = str_(p.description, 5000);
   a.maxScore = String(max);
   a.dueAt = p.dueAt ? new Date(p.dueAt).toISOString() : '';
   a.allowLate = p.allowLate ? 'true' : 'false';
   a.published = p.published ? 'true' : 'false';
+  a.groupMax = groupMax ? String(groupMax) : '';
   if (p.id) update_('Assignments', a); else insert_('Assignments', a);
   return assignmentView_(a);
 }
@@ -522,6 +561,7 @@ function apiDeleteAssignment_(user, p) {
   });
   if (hasFiles) throw new Error('มีนักศึกษาส่งงานนี้แล้ว ลบไม่ได้ — ใช้ "ซ่อน" แทน');
   remove_('Submissions', function (s) { return s.assignmentId === p.id; });
+  remove_('Groups', function (g) { return g.assignmentId === p.id; });
   remove_('Assignments', function (a) { return a.id === p.id; });
   return { deleted: p.id };
 }
@@ -529,11 +569,17 @@ function apiDeleteAssignment_(user, p) {
 function apiListSubmissions_(user, p) {
   requireTeacher_(user);
   var a = assignmentRow_(p.assignmentId);
+  var group = isGroupWork_(a);
   return {
     assignment: assignmentView_(a),
+    groups: group ? groupsOf_(a.id).map(function (g) { return groupView_(a, g); }) : null,
     rows: rosterOf_(a.courseCode).map(function (r) {
       var v = studentView_(r);
-      v.submission = submissionView_(submissionRow_(a.id, r.studentId));
+      v.submission = mergedSubmission_(a, r.studentId);
+      if (group) {
+        var g = groupOf_(a.id, r.studentId);
+        v.groupId = g ? g.id : null;
+      }
       return v;
     })
   };

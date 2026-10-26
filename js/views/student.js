@@ -1,4 +1,4 @@
-import { h, mount, loading, errorBox, toast, actionButton, confirmBox, fmtDate, fmtSize, fmtNum, driveUrl, tabs, MARK_LABEL } from '../ui.js';
+import { h, mount, loading, errorBox, toast, actionButton, confirmBox, modal, fmtDate, fmtSize, fmtNum, driveUrl, tabs, MARK_LABEL } from '../ui.js';
 import { call } from '../api.js';
 import { uploadFile } from '../upload.js';
 
@@ -20,7 +20,7 @@ export function renderStudent(root, ctx) {
     tabs([['work', 'งานที่ต้องส่ง'], ['grades', 'คะแนนของฉัน']], tab, ctx.setTab),
     body);
   if (tab === 'grades') renderGrades(body, course);
-  else renderWork(body, course);
+  else renderWork(body, course, me.studentId);
 }
 
 /* ---------- สมัครเข้าใช้งาน ---------- */
@@ -100,7 +100,7 @@ function statusChip(a) {
   return h('span', { class: 'chip' }, 'ยังไม่ส่ง');
 }
 
-async function renderWork(body, course) {
+async function renderWork(body, course, myId) {
   mount(body, loading());
   let list;
   try {
@@ -109,29 +109,95 @@ async function renderWork(body, course) {
     return mount(body, errorBox(e));
   }
   if (!list.length) return mount(body, h('p', { class: 'muted center pad' }, 'ยังไม่มีงานในวิชานี้'));
-  mount(body, h('div', { class: 'grid' }, list.map((a) => assignmentCard(a))));
+  const reload = () => renderWork(body, course, myId);
+  mount(body, h('div', { class: 'grid' }, list.map((a) => assignmentCard(a, myId, reload))));
 }
 
-function assignmentCard(a) {
+function assignmentCard(a, myId, reload) {
   const card = h('article', { class: 'card' });
   const draw = () => {
     const s = a.submission;
     const locked = (s && s.score !== null) || (a.overdue && !a.allowLate);
+    const needsGroup = a.groupMax && !a.group;
     mount(card,
       h('div', { class: 'card-head' },
         h('h3', {}, a.title),
         h('span', { class: 'spacer' }),
+        a.groupMax ? h('span', { class: 'chip accent' }, `งานกลุ่ม ≤${a.groupMax} คน`) : null,
         statusChip(a)),
       h('div', { class: 'muted small' }, `กำหนดส่ง ${fmtDate(a.dueAt)} · คะแนนเต็ม ${a.maxScore}`),
       a.description ? h('p', { class: 'desc' }, a.description) : null,
+      a.groupMax ? groupBox(a, myId, locked, reload) : null,
       s && s.feedback ? h('div', { class: 'feedback' }, h('strong', {}, 'ความเห็นอาจารย์: '), s.feedback) : null,
       fileList(a, locked, (next) => { a.submission = next; draw(); }),
       s && s.link ? h('p', { class: 'small' }, 'ลิงก์: ', h('a', { href: s.link, target: '_blank', rel: 'noopener' }, s.link)) : null,
       s && s.submittedAt ? h('p', { class: 'muted small' }, 'ส่งล่าสุด ' + fmtDate(s.submittedAt)) : null,
-      locked ? null : uploader(a, (next) => { a.submission = next; draw(); }));
+      locked || needsGroup ? null : uploader(a, (next) => { a.submission = next; draw(); }));
   };
   draw();
   return card;
+}
+
+/* ---------- งานกลุ่ม ---------- */
+
+function groupBox(a, myId, locked, reload) {
+  const g = a.group;
+  if (!g) {
+    return h('div', { class: 'feedback stack' },
+      h('div', {}, h('strong', {}, 'ยังไม่มีกลุ่ม'), ' — สร้างกลุ่มแล้วเลือกเพื่อน หรือให้เพื่อนที่สร้างกลุ่มแล้วเพิ่มคุณเข้ากลุ่ม'),
+      locked ? null : h('div', {}, actionButton('สร้างกลุ่ม', async () => { if (await groupForm(a, myId, null)) reload(); }, { class: 'primary sm' })));
+  }
+  return h('div', { class: 'feedback' },
+    h('div', { class: 'row' },
+      h('strong', {}, 'กลุ่ม ', g.name),
+      h('span', { class: 'muted small' }, `${g.members.length}/${a.groupMax} คน`),
+      h('span', { class: 'spacer' }),
+      locked ? null : actionButton('แก้ไขกลุ่ม', async () => { if (await groupForm(a, myId, g)) reload(); }, { class: 'sm' }),
+      locked ? null : actionButton('ออกจากกลุ่ม', async () => {
+        if (!(await confirmBox(`ออกจากกลุ่ม "${g.name}"? งานที่กลุ่มส่งไว้จะไม่ใช่งานของคุณแล้ว`, 'ออกจากกลุ่ม', 'danger'))) return;
+        await call('leaveGroup', { assignmentId: a.id });
+        toast('ออกจากกลุ่มแล้ว');
+        reload();
+      }, { class: 'sm ghost danger' })),
+    h('ul', { class: 'small', style: 'margin:.35rem 0 0;padding-left:1.2rem' },
+      g.members.map((m) => h('li', {}, `${m.studentId} ${m.name}`))),
+    h('div', { class: 'muted small' }, 'ไฟล์ที่ส่งเป็นของทั้งกลุ่ม — สมาชิกทุกคนเห็นและแก้ไขได้'));
+}
+
+/** สร้าง/แก้กลุ่ม: ตั้งชื่อ + เลือกเพื่อนที่ยังไม่มีกลุ่ม (ตัวเองอยู่ในกลุ่มเสมอ) */
+async function groupForm(a, myId, g) {
+  const opts = await call('groupOptions', { assignmentId: a.id });
+  const name = h('input', { value: g?.name || '', maxlength: 100, placeholder: 'เช่น ทีมกาแฟ' });
+  const count = h('span', { class: 'muted small' });
+  const boxes = opts.students.filter((s) => s.studentId !== myId).map((s) => {
+    const mine = g ? s.groupId === g.id : false;
+    const taken = !!s.groupId && !mine;
+    const input = h('input', { type: 'checkbox', checked: mine, disabled: taken, value: s.studentId });
+    return { s, input, taken, row: h('label', { class: 'check' + (taken ? ' muted' : '') }, input,
+      `${s.studentId} ${s.name}`, taken ? h('span', { class: 'chip' }, s.groupName) : null) };
+  });
+  const sync = () => {
+    const n = boxes.filter((b) => b.input.checked).length + 1;
+    count.textContent = `${n}/${opts.groupMax} คน (รวมคุณ)`;
+    boxes.forEach((b) => { if (!b.taken) b.input.disabled = !b.input.checked && n >= opts.groupMax; });
+  };
+  boxes.forEach((b) => b.input.addEventListener('change', sync));
+  sync();
+  return modal(g ? 'แก้ไขกลุ่ม' : 'สร้างกลุ่ม', h('div', { class: 'form' },
+    h('label', { class: 'field' }, h('span', {}, 'ชื่อกลุ่ม'), name),
+    h('div', { class: 'row' }, h('strong', {}, 'สมาชิก'), h('span', { class: 'spacer' }), count),
+    h('div', { class: 'pick-list' }, boxes.map((b) => b.row)),
+    h('p', { class: 'muted small' }, 'คนที่อยู่กลุ่มอื่นแล้วเลือกไม่ได้ — ให้เขาออกจากกลุ่มเดิมก่อน')),
+  [{
+    label: 'บันทึก',
+    run: async () => {
+      await call('saveGroup', {
+        assignmentId: a.id, groupId: g?.id, name: name.value.trim(),
+        members: boxes.filter((b) => b.input.checked).map((b) => b.s.studentId)
+      });
+      toast(g ? 'บันทึกกลุ่มแล้ว' : 'สร้างกลุ่มแล้ว');
+    }
+  }]);
 }
 
 function fileList(a, locked, onChange) {

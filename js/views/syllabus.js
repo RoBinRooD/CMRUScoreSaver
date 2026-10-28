@@ -1,5 +1,5 @@
 // Syllabus — นักศึกษาอ่าน, อาจารย์แก้ไขในหน้าเดียวกัน
-import { h, mount, loading, errorBox, toast, actionButton, confirmBox, fmtDate, fmtSize, driveUrl, richText } from '../ui.js';
+import { h, mount, loading, errorBox, toast, actionButton, confirmBox, modal, fmtDate, fmtSize, driveUrl, richText } from '../ui.js';
 import { call } from '../api.js';
 import { uploadVia } from '../upload.js';
 
@@ -69,6 +69,36 @@ function attachmentList(list, onRemove) {
     h('a', { href: a.kind === 'file' ? driveUrl(a.id) : a.url, target: '_blank', rel: 'noopener', title: a.name }, a.name),
     a.size ? h('span', { class: 'muted small' }, fmtSize(a.size)) : null,
     onRemove ? actionButton('ลบ', () => onRemove(a), { class: 'sm ghost danger' }) : null)));
+}
+
+/**
+ * วางแผนการสอนทีเดียว: บรรทัดละ 1 สัปดาห์ (บรรทัดแรก = สัปดาห์ 1) "หัวข้อ | รายละเอียด"
+ * คั่นด้วย | หรือแท็บ (คัดลอกจาก Excel/Word ได้) · บรรทัดว่าง = สัปดาห์ว่าง · สัปดาห์ที่เกินจำนวนบรรทัดถูกล้าง
+ */
+function pasteWeeks(weeks, markDirty) {
+  const area = h('textarea', {
+    style: 'min-height:260px;font-size:.9rem',
+    placeholder: 'แนะนำรายวิชา | หลักการออกแบบกราฟิก 2 มิติ\nInfographic | การจัดลำดับข้อมูล ไอคอน แผนภูมิ\n…',
+    value: weeks.map((w) => [w.topic.value, w.detail.value].filter(Boolean).join(' | ')).join('\n').replace(/\n+$/, '')
+  });
+  return modal('วางแผนการสอนทั้งตาราง', h('div', { class: 'form' },
+    h('p', { class: 'muted small' }, 'บรรทัดละ 1 สัปดาห์ (บรรทัดแรก = สัปดาห์ 1) · หัวข้อ | รายละเอียด (คั่นด้วย | หรือแท็บ) · บรรทัดว่าง = สัปดาห์ว่าง · กด "ใช้ข้อความนี้" แล้วอย่าลืมกดบันทึก syllabus'),
+    area),
+  [{
+    label: 'ใช้ข้อความนี้',
+    run: () => {
+      const lines = area.value.replace(/\r/g, '').split('\n');
+      while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+      if (lines.length > weeks.length) throw new Error(`มี ${lines.length} บรรทัด — ได้ไม่เกิน ${weeks.length} สัปดาห์`);
+      weeks.forEach((w, i) => {
+        const [topic, ...rest] = (lines[i] || '').split(/\t| \| |\|/);
+        w.topic.value = (topic || '').trim().slice(0, 200);
+        w.detail.value = rest.join(' | ').trim().slice(0, 1000);
+      });
+      markDirty();
+      toast(`ใส่แผนการสอน ${lines.length} สัปดาห์แล้ว — กดบันทึกเพื่อบันทึก`);
+    }
+  }]);
 }
 
 function editView(data, onSaved, onCancel) {
@@ -145,7 +175,10 @@ function editView(data, onSaved, onCancel) {
       }, { class: 'primary' })),
     sectionsIn('before').map(([k, label]) => h('section', { class: 'card form' }, h('label', { class: 'field' }, h('span', {}, label), texts[k]))),
     h('section', { class: 'card stack' },
-      h('h2', {}, 'แผนการสอน 16 สัปดาห์'),
+      h('div', { class: 'row' },
+        h('h2', { style: 'margin:0' }, 'แผนการสอน 16 สัปดาห์'),
+        h('span', { class: 'spacer' }),
+        h('button', { class: 'sm', onclick: () => pasteWeeks(weeks, markDirty) }, 'วางทั้งตาราง')),
       h('p', { class: 'muted small' }, 'เว้นว่างสัปดาห์ที่ไม่ต้องการแสดง · ลิงก์ https:// ในรายละเอียดจะกดได้'),
       h('div', { class: 'table-wrap' }, h('table', {},
         h('thead', {}, h('tr', {}, h('th', { class: 'num' }, 'สัปดาห์'), h('th', {}, 'หัวข้อ'), h('th', {}, 'รายละเอียด'))),

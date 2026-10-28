@@ -54,7 +54,8 @@ export function signIn(container, message) {
     const card = h('div', { class: 'card' },
       h('h1', {}, 'เข้าสู่ระบบ'),
       h('p', { class: 'muted' }, message || 'ใช้บัญชี Google ของมหาวิทยาลัยเพื่อส่งงานและดูคะแนน'),
-      btn);
+      btn,
+      h('p', { class: 'small', style: 'margin:.75rem 0 0' }, h('a', { href: 'manual.html', target: '_blank', rel: 'noopener' }, 'คู่มือการใช้งาน')));
     mount(container, h('div', { class: 'signin' }, card));
 
     if (DEMO) {

@@ -52,6 +52,7 @@ function renderTop() {
     DEMO ? h('span', { class: 'chip warn' }, 'โหมดทดลอง') : null,
     h('span', { class: 'who', title: me.email }, me.role === 'teacher' ? 'อาจารย์ · ' + me.email : (me.studentId || '') + ' ' + (me.studentName || me.email)),
     DEMO ? h('button', { class: 'sm ghost', onclick: () => { resetDemo(); location.reload(); }, title: 'ล้างข้อมูลทดลอง' }, 'รีเซ็ต') : null,
+    h('a', { class: 'btn sm ghost', href: 'manual.html#' + (me.role === 'teacher' ? 'teacher' : 'student'), target: '_blank', rel: 'noopener' }, 'คู่มือ'),
     h('button', { class: 'sm', onclick: () => { signOut(); location.reload(); } }, 'ออกจากระบบ'));
 }
 

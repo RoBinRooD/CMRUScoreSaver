@@ -25,6 +25,9 @@ test('syllabus: teacher edits, enrolled students read, others cannot', () => {
   assert.equal(saved.syllabus.weeks[0].detail.length, 1000, 'trimmed');
   assert.equal(saved.syllabus.contact, 'ห้อง 12');
   assert.ok(saved.updatedAt);
+  // หัวข้อตามแนวการสอนของมหาวิทยาลัย
+  const more = b.ok(T, 'saveSyllabus', { courseCode: 'DEMO3314', syllabus: { scope: 'ขอบเขต', activities: 'กิจกรรม', assessment: 'ประเมิน', rules: 'ห้ามนำอาหาร' } });
+  assert.deepEqual([more.syllabus.scope, more.syllabus.activities, more.syllabus.assessment, more.syllabus.rules], ['ขอบเขต', 'กิจกรรม', 'ประเมิน', 'ห้ามนำอาหาร']);
   // บันทึกบางช่อง ไม่ลบช่องอื่น
   assert.equal(b.ok(T, 'saveSyllabus', { courseCode: 'DEMO3314', syllabus: { objectives: 'ข้อ 1' } }).syllabus.description, 'คำอธิบาย');
 

@@ -1927,7 +1927,11 @@ function apiDeleteGroup_(user, p) {
  */
 
 var SYLLABUS_MAX_ATTACHMENTS = 20;
-var SYLLABUS_TEXT_FIELDS = { description: 5000, objectives: 5000, materials: 5000, contact: 2000 };
+// ตามหัวข้อแนวการสอนของมหาวิทยาลัย
+var SYLLABUS_TEXT_FIELDS = {
+  description: 5000, objectives: 5000, scope: 5000, activities: 5000, materials: 5000,
+  assessment: 3000, rules: 3000, contact: 2000
+};
 
 function emptySyllabus_() {
   var weeks = [];

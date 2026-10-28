@@ -4,12 +4,18 @@ import { call } from '../api.js';
 import { uploadVia } from '../upload.js';
 
 const PART_LABEL = { attendance: 'การเข้าเรียน', assignments: 'งาน', midterm: 'สอบกลางภาค', final: 'สอบปลายภาค' };
+// ตามหัวข้อแนวการสอนของมหาวิทยาลัย · before = ก่อนแผนการสอน, after = หลังการวัดผล
 const TEXT_SECTIONS = [
-  ['description', 'คำอธิบายรายวิชา', 5000],
-  ['objectives', 'วัตถุประสงค์ / ผลลัพธ์การเรียนรู้', 5000],
-  ['materials', 'สื่อ อุปกรณ์ และหนังสือ', 5000],
-  ['contact', 'ติดต่ออาจารย์ / เวลาให้คำปรึกษา', 2000]
+  ['description', 'คำอธิบายรายวิชา', 5000, 'before'],
+  ['objectives', 'จุดมุ่งหมาย / วัตถุประสงค์', 5000, 'before'],
+  ['scope', 'ขอบเขตเนื้อหา', 5000, 'before'],
+  ['activities', 'กิจกรรมการเรียนการสอน', 5000, 'before'],
+  ['materials', 'สื่อการเรียนการสอน', 5000, 'before'],
+  ['assessment', 'การประเมินผล', 3000, 'assessment'],
+  ['rules', 'ข้อตกลงในชั้นเรียน / หมายเหตุ', 3000, 'after'],
+  ['contact', 'ติดต่ออาจารย์ / เวลาให้คำปรึกษา', 2000, 'after']
 ];
+const sectionsIn = (group) => TEXT_SECTIONS.filter((x) => x[3] === group);
 
 export async function renderSyllabus(body, ctx) {
   mount(body, loading());
@@ -42,19 +48,18 @@ function readView(data, teacher, onEdit) {
         teacher ? h('button', { class: 'primary sm', onclick: onEdit }, 'แก้ไข syllabus') : null),
       data.updatedAt ? h('div', { class: 'muted small', style: 'margin-top:.35rem' }, 'ปรับปรุงล่าสุด ' + fmtDate(data.updatedAt)) : null),
     empty ? h('p', { class: 'muted center pad' }, teacher ? 'ยังไม่มีเนื้อหา — กด "แก้ไข syllabus" เพื่อเริ่มเขียน' : 'อาจารย์ยังไม่ได้ใส่ syllabus ของวิชานี้') : null,
-    has('description') ? section('คำอธิบายรายวิชา', richText(s.description)) : null,
-    has('objectives') ? section('วัตถุประสงค์ / ผลลัพธ์การเรียนรู้', richText(s.objectives)) : null,
+    sectionsIn('before').map(([k, label]) => (has(k) ? section(label, richText(s[k])) : null)),
     weeks.length ? section('แผนการสอน',
       h('div', { class: 'table-wrap' }, h('table', {},
         h('thead', {}, h('tr', {}, h('th', { class: 'num' }, 'สัปดาห์'), h('th', {}, 'หัวข้อ'), h('th', {}, 'รายละเอียด'))),
         h('tbody', {}, weeks.map((w) => h('tr', {},
           h('td', { class: 'num' }, w.n), h('td', {}, w.topic), h('td', {}, w.detail ? richText(w.detail, 'small') : null))))))) : null,
     section('การวัดและประเมินผล',
+      has('assessment') ? richText(s.assessment) : null,
       h('div', { class: 'stats' }, Object.entries(c.weights).map(([k, v]) => h('div', { class: 'stat' },
         h('div', { class: 'label' }, PART_LABEL[k] || k), h('div', { class: 'value' }, `${v}%`)))),
       h('p', { class: 'muted small' }, 'เกณฑ์เกรด: ' + data.gradeCutoffs.map(([g, min]) => `${g} ≥ ${min}`).join(' · '))),
-    has('materials') ? section('สื่อ อุปกรณ์ และหนังสือ', richText(s.materials)) : null,
-    has('contact') ? section('ติดต่ออาจารย์', richText(s.contact)) : null,
+    sectionsIn('after').map(([k, label]) => (has(k) ? section(label, richText(s[k])) : null)),
     s.attachments.length ? section('ไฟล์และลิงก์', attachmentList(s.attachments)) : null);
 }
 
@@ -138,7 +143,7 @@ function editView(data, onSaved, onCancel) {
         toast('บันทึก syllabus แล้ว');
         onSaved(next);
       }, { class: 'primary' })),
-    TEXT_SECTIONS.slice(0, 2).map(([k, label]) => h('section', { class: 'card form' }, h('label', { class: 'field' }, h('span', {}, label), texts[k]))),
+    sectionsIn('before').map(([k, label]) => h('section', { class: 'card form' }, h('label', { class: 'field' }, h('span', {}, label), texts[k]))),
     h('section', { class: 'card stack' },
       h('h2', {}, 'แผนการสอน 16 สัปดาห์'),
       h('p', { class: 'muted small' }, 'เว้นว่างสัปดาห์ที่ไม่ต้องการแสดง · ลิงก์ https:// ในรายละเอียดจะกดได้'),
@@ -148,8 +153,9 @@ function editView(data, onSaved, onCancel) {
           h('td', { class: 'num' }, i + 1), h('td', {}, w.topic), h('td', {}, w.detail))))))),
     h('section', { class: 'card stack' },
       h('h2', {}, 'การวัดและประเมินผล'),
-      h('p', { class: 'muted small' }, 'ดึงจากน้ำหนักคะแนน (แท็บสมุดคะแนน) และเกณฑ์เกรด (แท็บตั้งค่า) อัตโนมัติ — แก้ที่นั่น')),
-    TEXT_SECTIONS.slice(2).map(([k, label]) => h('section', { class: 'card form' }, h('label', { class: 'field' }, h('span', {}, label), texts[k]))),
+      h('label', { class: 'field' }, h('span', {}, 'การประเมินผล (ข้อความ เช่น เกณฑ์การให้คะแนนผลงาน)'), texts.assessment),
+      h('p', { class: 'muted small' }, 'สัดส่วนคะแนนและเกณฑ์เกรดแสดงต่อท้ายอัตโนมัติ — ดึงจากแท็บสมุดคะแนนและแท็บตั้งค่า (แก้ที่นั่น)')),
+    sectionsIn('after').map(([k, label]) => h('section', { class: 'card form' }, h('label', { class: 'field' }, h('span', {}, label), texts[k]))),
     h('section', { class: 'card stack' },
       h('h2', {}, 'ไฟล์และลิงก์'),
       h('p', { class: 'muted small' }, 'บันทึกทันทีที่เพิ่ม/ลบ · ไฟล์เก็บใน Drive ของอาจารย์และเปิดได้ทุกคนที่มีลิงก์ (อย่าแนบข้อมูลส่วนตัว)'),

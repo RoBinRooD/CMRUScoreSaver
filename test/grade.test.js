@@ -18,6 +18,15 @@ test('attendance counts only marked cells in held weeks; blank = not checked yet
   assert.equal(Grade.attendance(['', ''], [1, 2], null).pct, null, 'never checked = no attendance score yet');
 });
 
+test('submitted but not yet graded work is not counted, even after the deadline', () => {
+  const r = Grade.assignments([
+    { score: 8, maxScore: 10, overdue: true },
+    { score: null, maxScore: 20, overdue: true, submitted: true }, // ส่งแล้ว รอตรวจ
+    { score: null, maxScore: 5, overdue: true, submitted: false } // ไม่ส่ง = 0
+  ]);
+  assert.deepEqual(r, { counted: 2, earned: 8, max: 15, pct: 53.33 });
+});
+
 test('assignments skip ungraded work that is not yet due', () => {
   const r = Grade.assignments([
     { score: 8, maxScore: 10 },
@@ -59,8 +68,41 @@ test('a half with no counted work is zero; work without half counts as the first
   assert.equal(r.halves.second, 0);
   assert.equal(r.total, 35);
   assert.equal(r.parts.midterm.pct, null);
-  assert.equal(r.grade, 'F');
+  assert.equal(r.grade, null, 'no grade until every weighted part has a score');
+  assert.equal(r.complete, false);
+  assert.equal(r.projectedGrade, 'A', '100% of the work counted so far');
   assert.equal(Grade.compute({}).parts.assignments.points, null);
+  assert.equal(Grade.compute({}).projectedGrade, null);
+});
+
+test('early in term: no F from missing parts; projected grade from parts with scores', () => {
+  const early = Grade.compute({
+    heldWeeks: [1, 2, 3], attendance: ['P', 'P', 'P'],
+    assignments: [{ score: 7, maxScore: 10, half: 1 }]
+  });
+  assert.equal(early.grade, null);
+  assert.equal(early.scoreGrade, 'F', 'raw total is still low');
+  // เข้าเรียน 100% × 10 + งาน 70% × 70 = 59 จาก 80 → 73.75 = B
+  assert.equal(early.projectedTotal, 73.75);
+  assert.equal(early.projectedGrade, 'B');
+
+  const full = Grade.compute({
+    heldWeeks: [1], attendance: ['P'], assignments: [{ score: 7, maxScore: 10, half: 1 }, { score: 7, maxScore: 10, half: 2 }],
+    midterm: 7, maxMidterm: 10, final: 7, maxFinal: 10
+  });
+  assert.equal(full.complete, true);
+  assert.equal(full.grade, Grade.letter(full.total, Grade.DEFAULT_CUTOFFS));
+  // ส่วนที่น้ำหนัก 0 ไม่ต้องมีคะแนน
+  const noMid = Grade.compute({
+    weights: { attendance: 10, assignments: 70, midterm: 0, final: 20 },
+    heldWeeks: [1], attendance: ['P'], assignments: [{ score: 10, maxScore: 10 }], final: 10, maxFinal: 10
+  });
+  assert.equal(noMid.complete, true);
+  assert.ok(noMid.grade);
+  // ขาดเกินเกณฑ์ = F ทันที แม้คะแนนยังไม่ครบ
+  const absent = Grade.compute({ heldWeeks: [1, 2, 3, 4, 5], attendance: ['A', 'A', 'A', 'A', 'A'] });
+  assert.equal(absent.grade, 'F');
+  assert.equal(absent.projectedGrade, 'F');
 });
 
 test('total is the sum of the four registrar columns', () => {

@@ -236,13 +236,23 @@ function computeFor_(d, studentId) {
     attendance: d.att[studentId] || marksOf_(null),
     assignments: d.assignments.map(function (a) {
       var sub = d.subs[a.id + '|' + studentId];
-      return { score: sub ? sub.score : null, maxScore: a.maxScore, overdue: a.overdue, half: a.half };
+      return { score: sub ? sub.score : null, maxScore: a.maxScore, overdue: a.overdue, half: a.half, submitted: submittedFor_(d, a, studentId) };
     }),
     midterm: ex.midterm,
     maxMidterm: d.course.maxMidterm,
     final: ex.final,
     maxFinal: d.course.maxFinal
   });
+}
+
+/** ส่งงานแล้วหรือยัง — งานกลุ่มดูจากงานที่กลุ่มส่ง */
+function submittedFor_(d, a, studentId) {
+  if (a.groupMax) {
+    var m = mergedSubmission_(assignmentRow_(a.id), studentId);
+    return !!(m && m.submittedAt);
+  }
+  var s = d.subs[a.id + '|' + studentId];
+  return !!(s && s.submittedAt);
 }
 
 function byDue_(a, b) {
@@ -403,7 +413,8 @@ function apiMyGrades_(user, p) {
     exams: { midterm: ex.midterm, final: ex.final, maxMidterm: d.course.maxMidterm, maxFinal: d.course.maxFinal },
     parts: result.parts,
     total: d.course.gradesVisible ? result.total : null,
-    grade: d.course.gradesVisible ? result.grade : null
+    grade: d.course.gradesVisible ? result.grade : null,
+    gradePending: d.course.gradesVisible && result.grade === null
   };
 }
 
@@ -819,9 +830,11 @@ function apiGradebook_(user, p) {
       v.attendance = d.att[r.studentId] || marksOf_(null);
       v.exams = d.exams[r.studentId] || { midterm: null, final: null };
       v.scores = {};
+      v.submitted = {};
       d.assignments.forEach(function (a) {
         var s = d.subs[a.id + '|' + r.studentId];
         v.scores[a.id] = s ? s.score : null;
+        v.submitted[a.id] = submittedFor_(d, a, r.studentId);
       });
       v.result = computeFor_(d, r.studentId);
       return v;

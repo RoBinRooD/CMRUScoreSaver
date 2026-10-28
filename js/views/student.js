@@ -311,7 +311,7 @@ async function renderGrades(body, course) {
     h('div', { class: 'stats' },
       h('div', { class: 'stat' },
         h('div', { class: 'label' }, 'เกรด'),
-        g.grade ? h('div', { class: 'bigGrade' }, g.grade) : h('div', { class: 'muted' }, 'อาจารย์ยังไม่ประกาศ'),
+        g.grade ? h('div', { class: 'bigGrade' }, g.grade) : h('div', { class: 'muted' }, g.gradePending ? 'รอคะแนนครบทุกส่วน' : 'อาจารย์ยังไม่ประกาศ'),
         g.total !== null ? h('div', { class: 'muted small' }, `รวม ${fmtNum(g.total)} คะแนน`) : null),
       part('attendance', 'เข้าเรียน'),
       part('assignments', 'งาน'),

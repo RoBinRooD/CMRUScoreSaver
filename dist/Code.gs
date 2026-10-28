@@ -60,13 +60,16 @@ var Grade = (function () {
     };
   }
 
-  /** items: [{score, maxScore, overdue}] — นับงานที่ให้คะแนนแล้ว หรือเลยกำหนดส่งแล้ว (ไม่ส่ง = 0) */
+  /**
+   * items: [{score, maxScore, overdue, submitted}] — นับงานที่ให้คะแนนแล้ว หรือเลยกำหนดแล้วไม่ได้ส่ง (= 0)
+   * ส่งแล้วแต่ยังไม่ตรวจ = ยังไม่นับ
+   */
   function assignments(items) {
     var got = 0, max = 0, counted = 0;
     (items || []).forEach(function (it) {
       var s = num(it.score), m = num(it.maxScore);
       if (!m || m <= 0) return;
-      if (s === null && !it.overdue) return;
+      if (s === null && (!it.overdue || it.submitted)) return;
       got += s || 0;
       max += m;
       counted++;
@@ -111,6 +114,8 @@ var Grade = (function () {
    *          assignments: [{score,maxScore,overdue,half}], midterm, maxMidterm, final, maxFinal }
    * คืน: { parts: {attendance, assignments, midterm, final}, halves, absence, total, grade }
    * ขาดเรียนเกินเกณฑ์ = เกรด F (คะแนนรวมยังแสดงตามจริง)
+   * grade = null จนกว่าทุกส่วนที่มีน้ำหนักจะมีคะแนน (ต้นเทอมไม่ขึ้น F เพราะส่วนที่ยังไม่มีคะแนนนับเป็น 0)
+   * projectedGrade = แนวโน้มจากเฉพาะส่วนที่มีคะแนนแล้ว (เทียบเป็น 100)
    * halves = 4 ช่องของระบบทะเบียน: เก็บครึ่งแรก/หลัง (= เข้าเรียน ÷ 2 + งานของครึ่งนั้น), กลางภาค, ปลายภาค
    * ส่วนที่ยังไม่มีคะแนน (pct = null) นับเป็น 0 ในคะแนนรวม · total = ผลรวม 4 ช่อง
    */
@@ -146,10 +151,20 @@ var Grade = (function () {
     var absence = absences(input.attendance, input.heldWeeks, input.attendanceRules);
     var lowest = (input.cutoffs && input.cutoffs.length ? input.cutoffs : DEFAULT_CUTOFFS)
       .slice().sort(function (a, b) { return a[1] - b[1]; })[0][0];
+    var got = 0, of = 0, complete = true;
+    PARTS.forEach(function (k) {
+      if (!parts[k].weight) return;
+      if (parts[k].pct === null) { complete = false; return; }
+      got += (parts[k].pct / 100) * parts[k].weight;
+      of += parts[k].weight;
+    });
+    var projectedTotal = of ? round2((got / of) * 100) : null;
     return {
-      parts: parts, halves: halves, absence: absence, total: total,
-      grade: absence.fail ? lowest : letter(total, input.cutoffs),
-      scoreGrade: letter(total, input.cutoffs)
+      parts: parts, halves: halves, absence: absence, total: total, complete: complete,
+      grade: absence.fail ? lowest : complete ? letter(total, input.cutoffs) : null,
+      scoreGrade: letter(total, input.cutoffs),
+      projectedTotal: projectedTotal,
+      projectedGrade: absence.fail ? lowest : projectedTotal === null ? null : letter(projectedTotal, input.cutoffs)
     };
   }
 
@@ -755,13 +770,23 @@ function computeFor_(d, studentId) {
     attendance: d.att[studentId] || marksOf_(null),
     assignments: d.assignments.map(function (a) {
       var sub = d.subs[a.id + '|' + studentId];
-      return { score: sub ? sub.score : null, maxScore: a.maxScore, overdue: a.overdue, half: a.half };
+      return { score: sub ? sub.score : null, maxScore: a.maxScore, overdue: a.overdue, half: a.half, submitted: submittedFor_(d, a, studentId) };
     }),
     midterm: ex.midterm,
     maxMidterm: d.course.maxMidterm,
     final: ex.final,
     maxFinal: d.course.maxFinal
   });
+}
+
+/** ส่งงานแล้วหรือยัง — งานกลุ่มดูจากงานที่กลุ่มส่ง */
+function submittedFor_(d, a, studentId) {
+  if (a.groupMax) {
+    var m = mergedSubmission_(assignmentRow_(a.id), studentId);
+    return !!(m && m.submittedAt);
+  }
+  var s = d.subs[a.id + '|' + studentId];
+  return !!(s && s.submittedAt);
 }
 
 function byDue_(a, b) {
@@ -922,7 +947,8 @@ function apiMyGrades_(user, p) {
     exams: { midterm: ex.midterm, final: ex.final, maxMidterm: d.course.maxMidterm, maxFinal: d.course.maxFinal },
     parts: result.parts,
     total: d.course.gradesVisible ? result.total : null,
-    grade: d.course.gradesVisible ? result.grade : null
+    grade: d.course.gradesVisible ? result.grade : null,
+    gradePending: d.course.gradesVisible && result.grade === null
   };
 }
 
@@ -1338,9 +1364,11 @@ function apiGradebook_(user, p) {
       v.attendance = d.att[r.studentId] || marksOf_(null);
       v.exams = d.exams[r.studentId] || { midterm: null, final: null };
       v.scores = {};
+      v.submitted = {};
       d.assignments.forEach(function (a) {
         var s = d.subs[a.id + '|' + r.studentId];
         v.scores[a.id] = s ? s.score : null;
+        v.submitted[a.id] = submittedFor_(d, a, r.studentId);
       });
       v.result = computeFor_(d, r.studentId);
       return v;
@@ -2277,6 +2305,7 @@ function apiStudentDashboard_(user, p) {
     parts: result.parts,
     total: d.course.gradesVisible ? result.total : null,
     grade: d.course.gradesVisible ? result.grade : null,
+    gradePending: d.course.gradesVisible && result.grade === null,
     attendance: { held: held.length, tally: tally, absence: result.absence },
     tasks: tasks.slice(0, 8),
     feedback: work
@@ -2311,7 +2340,9 @@ function apiTeacherDashboard_(user, p) {
     });
     var att = res.parts.attendance.pct;
     if (att !== null) { attSum += att; attN++; }
-    grades[res.grade] = (grades[res.grade] || 0) + 1;
+    // ระหว่างเทอมใช้แนวโน้ม (คิดจากส่วนที่มีคะแนนแล้ว) — ยังไม่มีคะแนนเลย = ไม่นับ
+    var g = res.grade || res.projectedGrade;
+    grades[g || '-'] = (grades[g || '-'] || 0) + 1;
     return {
       studentId: r.studentId, name: r.name, registered: !!r.email, missing: missing, toGrade: toGrade,
       attendance: att, absence: res.absence, total: res.total, grade: res.grade
@@ -2353,7 +2384,8 @@ function apiTeacherDashboard_(user, p) {
       total: risk.length, list: risk.slice(0, 10), missingLimit: AT_RISK_MISSING, attendanceLimit: AT_RISK_ATTENDANCE,
       failedByAbsence: students.filter(function (s) { return s.absence.fail; }).length, rules: d.settings.attendanceRules
     },
-    grades: d.settings.gradeCutoffs.map(function (g) { return { grade: g[0], count: grades[g[0]] || 0 }; })
+    grades: d.settings.gradeCutoffs.map(function (g) { return { grade: g[0], count: grades[g[0]] || 0 }; }),
+    noScores: grades['-'] || 0
   };
 }
 

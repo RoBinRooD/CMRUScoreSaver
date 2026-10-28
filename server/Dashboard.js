@@ -100,6 +100,7 @@ function apiStudentDashboard_(user, p) {
     parts: result.parts,
     total: d.course.gradesVisible ? result.total : null,
     grade: d.course.gradesVisible ? result.grade : null,
+    gradePending: d.course.gradesVisible && result.grade === null,
     attendance: { held: held.length, tally: tally, absence: result.absence },
     tasks: tasks.slice(0, 8),
     feedback: work
@@ -134,7 +135,9 @@ function apiTeacherDashboard_(user, p) {
     });
     var att = res.parts.attendance.pct;
     if (att !== null) { attSum += att; attN++; }
-    grades[res.grade] = (grades[res.grade] || 0) + 1;
+    // ระหว่างเทอมใช้แนวโน้ม (คิดจากส่วนที่มีคะแนนแล้ว) — ยังไม่มีคะแนนเลย = ไม่นับ
+    var g = res.grade || res.projectedGrade;
+    grades[g || '-'] = (grades[g || '-'] || 0) + 1;
     return {
       studentId: r.studentId, name: r.name, registered: !!r.email, missing: missing, toGrade: toGrade,
       attendance: att, absence: res.absence, total: res.total, grade: res.grade
@@ -176,6 +179,7 @@ function apiTeacherDashboard_(user, p) {
       total: risk.length, list: risk.slice(0, 10), missingLimit: AT_RISK_MISSING, attendanceLimit: AT_RISK_ATTENDANCE,
       failedByAbsence: students.filter(function (s) { return s.absence.fail; }).length, rules: d.settings.attendanceRules
     },
-    grades: d.settings.gradeCutoffs.map(function (g) { return { grade: g[0], count: grades[g[0]] || 0 }; })
+    grades: d.settings.gradeCutoffs.map(function (g) { return { grade: g[0], count: grades[g[0]] || 0 }; }),
+    noScores: grades['-'] || 0
   };
 }

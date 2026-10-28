@@ -57,13 +57,16 @@ var Grade = (function () {
     };
   }
 
-  /** items: [{score, maxScore, overdue}] — นับงานที่ให้คะแนนแล้ว หรือเลยกำหนดส่งแล้ว (ไม่ส่ง = 0) */
+  /**
+   * items: [{score, maxScore, overdue, submitted}] — นับงานที่ให้คะแนนแล้ว หรือเลยกำหนดแล้วไม่ได้ส่ง (= 0)
+   * ส่งแล้วแต่ยังไม่ตรวจ = ยังไม่นับ
+   */
   function assignments(items) {
     var got = 0, max = 0, counted = 0;
     (items || []).forEach(function (it) {
       var s = num(it.score), m = num(it.maxScore);
       if (!m || m <= 0) return;
-      if (s === null && !it.overdue) return;
+      if (s === null && (!it.overdue || it.submitted)) return;
       got += s || 0;
       max += m;
       counted++;
@@ -108,6 +111,8 @@ var Grade = (function () {
    *          assignments: [{score,maxScore,overdue,half}], midterm, maxMidterm, final, maxFinal }
    * คืน: { parts: {attendance, assignments, midterm, final}, halves, absence, total, grade }
    * ขาดเรียนเกินเกณฑ์ = เกรด F (คะแนนรวมยังแสดงตามจริง)
+   * grade = null จนกว่าทุกส่วนที่มีน้ำหนักจะมีคะแนน (ต้นเทอมไม่ขึ้น F เพราะส่วนที่ยังไม่มีคะแนนนับเป็น 0)
+   * projectedGrade = แนวโน้มจากเฉพาะส่วนที่มีคะแนนแล้ว (เทียบเป็น 100)
    * halves = 4 ช่องของระบบทะเบียน: เก็บครึ่งแรก/หลัง (= เข้าเรียน ÷ 2 + งานของครึ่งนั้น), กลางภาค, ปลายภาค
    * ส่วนที่ยังไม่มีคะแนน (pct = null) นับเป็น 0 ในคะแนนรวม · total = ผลรวม 4 ช่อง
    */
@@ -143,10 +148,20 @@ var Grade = (function () {
     var absence = absences(input.attendance, input.heldWeeks, input.attendanceRules);
     var lowest = (input.cutoffs && input.cutoffs.length ? input.cutoffs : DEFAULT_CUTOFFS)
       .slice().sort(function (a, b) { return a[1] - b[1]; })[0][0];
+    var got = 0, of = 0, complete = true;
+    PARTS.forEach(function (k) {
+      if (!parts[k].weight) return;
+      if (parts[k].pct === null) { complete = false; return; }
+      got += (parts[k].pct / 100) * parts[k].weight;
+      of += parts[k].weight;
+    });
+    var projectedTotal = of ? round2((got / of) * 100) : null;
     return {
-      parts: parts, halves: halves, absence: absence, total: total,
-      grade: absence.fail ? lowest : letter(total, input.cutoffs),
-      scoreGrade: letter(total, input.cutoffs)
+      parts: parts, halves: halves, absence: absence, total: total, complete: complete,
+      grade: absence.fail ? lowest : complete ? letter(total, input.cutoffs) : null,
+      scoreGrade: letter(total, input.cutoffs),
+      projectedTotal: projectedTotal,
+      projectedGrade: absence.fail ? lowest : projectedTotal === null ? null : letter(projectedTotal, input.cutoffs)
     };
   }
 

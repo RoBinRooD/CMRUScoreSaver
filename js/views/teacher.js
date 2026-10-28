@@ -593,7 +593,7 @@ async function gradebook(body, ctx) {
   const compute = (s) => Grade.compute({
     weights, cutoffs: gb.settings.gradeCutoffs, attendancePoints: gb.settings.attendancePoints, attendanceRules: gb.settings.attendanceRules,
     heldWeeks: gb.course.heldWeeks, attendance: s.attendance,
-    assignments: gb.assignments.map((a) => ({ score: s.scores[a.id], maxScore: a.maxScore, overdue: a.overdue, half: a.half })),
+    assignments: gb.assignments.map((a) => ({ score: s.scores[a.id], maxScore: a.maxScore, overdue: a.overdue, half: a.half, submitted: s.submitted?.[a.id] })),
     midterm: s.exams.midterm, maxMidterm: gb.course.maxMidterm, final: s.exams.final, maxFinal: gb.course.maxFinal
   });
 
@@ -605,9 +605,10 @@ async function gradebook(body, ctx) {
     sumLabel.className = 'chip ' + (sum === 100 ? 'ok' : 'warn');
     const results = gb.students.map((s) => ({ s, r: compute(s) }));
     const dist = {};
-    results.forEach(({ r }) => { dist[r.grade] = (dist[r.grade] || 0) + 1; });
+    results.forEach(({ r }) => { dist[r.grade || '-'] = (dist[r.grade || '-'] || 0) + 1; });
     mount(holder, h('div', { class: 'stack' },
-      h('div', { class: 'dist' }, (gb.settings.gradeCutoffs).map(([g]) => h('span', { class: 'chip accent' }, `${g}: ${dist[g] || 0}`))),
+      h('div', { class: 'dist' }, (gb.settings.gradeCutoffs).map(([g]) => h('span', { class: 'chip accent' }, `${g}: ${dist[g] || 0}`)),
+        dist['-'] ? h('span', { class: 'chip' }, `รอคะแนนครบ: ${dist['-']}`) : null),
       h('div', { class: 'table-wrap' }, h('table', {},
         h('thead', {}, h('tr', {},
           h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'),
@@ -622,8 +623,10 @@ async function gradebook(body, ctx) {
           REGISTRAR_COLS.map(([k]) => h('td', { class: 'num reg' }, fmtNum(r.halves[k]))),
           h('td', { class: 'num nowrap', title: absenceText(r.absence) }, String(r.absence.effective)),
           h('td', { class: 'num' }, h('strong', {}, fmtNum(r.total))),
-          h('td', { class: 'nowrap' }, h('span', { class: 'chip ' + (r.absence.fail ? 'bad' : 'accent') }, r.grade),
-            r.absence.fail ? h('div', { class: 'small danger' }, `ขาดเกิน ${r.absence.failAbove}`) : null))))))));
+          h('td', { class: 'nowrap' },
+            r.grade ? h('span', { class: 'chip ' + (r.absence.fail ? 'bad' : 'accent') }, r.grade) : h('span', { class: 'chip', title: 'เกรดออกเมื่อคะแนนครบทุกส่วน (เข้าเรียน งาน กลางภาค ปลายภาค)' }, 'รอคะแนน'),
+            r.absence.fail ? h('div', { class: 'small danger' }, `ขาดเกิน ${r.absence.failAbove}`)
+              : !r.grade && r.projectedGrade ? h('div', { class: 'muted small' }, `แนวโน้ม ${r.projectedGrade}`) : null))))))));
     return results;
   };
 
@@ -639,8 +642,9 @@ async function gradebook(body, ctx) {
       const r = compute(s);
       return [s.studentId, s.name, s.group, ...gb.assignments.map((a) => s.scores[a.id] ?? ''),
         ...['attendance', 'assignments'].map((k) => r.parts[k].points ?? ''),
-        ...REGISTRAR_COLS.map(([k]) => r.halves[k]), r.absence.effective, r.total, r.grade,
-        r.absence.fail ? `ขาดเรียนเกิน ${r.absence.failAbove} ครั้ง (เกรดตามคะแนน ${r.scoreGrade})` : ''];
+        ...REGISTRAR_COLS.map(([k]) => r.halves[k]), r.absence.effective, r.total, r.grade || '',
+        r.absence.fail ? `ขาดเรียนเกิน ${r.absence.failAbove} ครั้ง (เกรดตามคะแนน ${r.scoreGrade})`
+          : r.grade ? '' : `คะแนนยังไม่ครบ${r.projectedGrade ? ` · แนวโน้ม ${r.projectedGrade}` : ''}`];
     });
     const ws = XLSX.utils.aoa_to_sheet([[`${gb.course.courseCode} ${gb.course.title} ภาค ${gb.course.term}`], [], head, ...rows]);
     const wb = XLSX.utils.book_new();

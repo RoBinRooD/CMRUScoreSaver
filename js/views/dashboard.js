@@ -47,7 +47,7 @@ export async function studentDashboard(body, ctx) {
       tile('ส่งงานแล้ว', `${d.counts.submitted}/${d.counts.total}`, `ตรวจแล้ว ${d.counts.graded} งาน`, meter(d.counts.submitted, d.counts.total, 'ส่งงานแล้ว')),
       tile('คะแนนงาน', p.assignments.pct === null ? '-' : `${fmtNum(p.assignments.pct, 0)}%`, p.assignments.counted ? `จาก ${p.assignments.counted} งานที่นับแล้ว` : 'ยังไม่มีงานที่นับคะแนน'),
       tile('การเข้าเรียน', p.attendance.pct === null ? '-' : `${fmtNum(p.attendance.pct, 0)}%`, att.held ? `เช็คชื่อแล้ว ${att.held} สัปดาห์` : 'ยังไม่มีการเช็คชื่อ'),
-      tile('เกรด', d.grade || '-', d.grade ? `รวม ${fmtNum(d.total)} คะแนน` : 'อาจารย์ยังไม่ประกาศ')),
+      tile('เกรด', d.grade || '-', d.grade ? `รวม ${fmtNum(d.total)} คะแนน` : d.gradePending ? 'รอคะแนนครบทุกส่วน' : 'อาจารย์ยังไม่ประกาศ')),
 
     section('ต้องส่งเร็วๆ นี้', go('work'),
       d.todo.length ? h('ul', { class: 'list' }, d.todo.map((a) => h('li', {},
@@ -114,7 +114,8 @@ export async function teacherDashboard(body, ctx) {
           h('td', {}, absenceChip(s.absence), s.registered ? null : h('span', { class: 'chip' }, 'ยังไม่สมัคร')))))))
         : h('p', { class: 'muted' }, 'ไม่มีนักศึกษาที่น่าเป็นห่วงตอนนี้')),
     section('การกระจายเกรด (คาดการณ์จากคะแนนตอนนี้)', h('button', { class: 'sm ghost', onclick: () => ctx.setTab('gradebook') }, 'สมุดคะแนน →'),
-      h('p', { class: 'muted small' }, 'คำนวณจากคะแนนที่มีอยู่ — ส่วนที่ยังไม่มีคะแนนนับเป็น 0 จึงต่ำกว่าจริงในช่วงต้นเทอม'),
+      h('p', { class: 'muted small' }, 'แนวโน้มจากเฉพาะส่วนที่มีคะแนนแล้ว (ยังไม่ใช่เกรดจริง — เกรดจริงออกเมื่อคะแนนครบทุกส่วน)' +
+        (d.noScores ? ` · ยังไม่มีคะแนนเลย ${d.noScores} คน` : '')),
       columns(d.grades.map((g) => ({ label: g.grade, value: g.count })), 'คน'))));
 }
 

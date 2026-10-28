@@ -10,8 +10,7 @@ var Grade = (function () {
   // P = มา, L = สาย, E = ลา, A = ขาด
   var DEFAULT_ATTENDANCE_POINTS = { P: 1, L: 0.5, E: 1, A: 0 };
   // ขาดที่นับ = ขาด + (สาย ÷ latePerAbsence ปัดลง) · ลาไม่นับ · ตั้งแต่ warnAt = อาจารย์ติดตาม · เกิน failAbove = F
-  // ค่าเริ่มต้นตามแนวการสอน: มาสายหรือขาดรวมกัน 4 ครั้ง หมดสิทธิ์สอบ (สาย 1 = ขาด 1 · ครบ 4 = เกิน 3)
-  var DEFAULT_ATTENDANCE_RULES = { failAbove: 3, warnAt: 3, latePerAbsence: 1 };
+  var DEFAULT_ATTENDANCE_RULES = { failAbove: 4, warnAt: 3, latePerAbsence: 2 };
   var WEEKS = 16;
   var PARTS = ['attendance', 'assignments', 'midterm', 'final'];
 
@@ -52,7 +51,7 @@ var Grade = (function () {
     var effective = c.A + (per > 0 ? Math.floor(c.L / per) : 0);
     return {
       absent: c.A, late: c.L, leave: c.E, effective: effective,
-      warnAt: num(r.warnAt), failAbove: num(r.failAbove), failAt: num(r.failAbove) + 1, latePerAbsence: per,
+      warnAt: num(r.warnAt), failAbove: num(r.failAbove), latePerAbsence: per,
       warn: num(r.warnAt) !== null && effective >= num(r.warnAt),
       fail: num(r.failAbove) !== null && effective > num(r.failAbove)
     };

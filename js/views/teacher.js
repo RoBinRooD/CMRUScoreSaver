@@ -1,6 +1,6 @@
 import { h, mount, loading, errorBox, toast, actionButton, confirmBox, modal, fmtDate, fmtSize, fmtNum, toLocalInput, driveUrl, tabs, MARK_LABEL } from '../ui.js';
 import { call, beacon } from '../api.js';
-import { teacherDashboard, absenceText, absenceRuleText, lateText } from './dashboard.js';
+import { teacherDashboard, absenceText } from './dashboard.js';
 import { renderSyllabus } from './syllabus.js';
 import { renderTimeline } from './timeline.js';
 import { renderBoard } from './board.js';
@@ -495,7 +495,7 @@ async function attendance(body, ctx) {
             class: 'sm ghost', title: `สัปดาห์ ${i + 1}: ทำเครื่องหมาย "มา" ให้ทุกคนที่ยังว่าง`,
             onclick: () => { rows.forEach((r) => { if (!r.marks[i]) setMark(r, i, 'P'); }); draw(); }
           }, String(i + 1)))),
-        h('th', { class: 'num', title: `${lateText(data.attendanceRules.latePerAbsence)} · ลาไม่นับ` }, 'ขาด (นับ)'))),
+        h('th', { class: 'num', title: `ขาด + สาย ÷ ${data.attendanceRules.latePerAbsence} · ลาไม่นับ` }, 'ขาด (นับ)'))),
       h('tbody', {}, rows.map((r) => h('tr', {},
         h('td', { class: 'nowrap' }, r.studentId),
         h('td', { class: 'nowrap' }, r.name),
@@ -524,7 +524,7 @@ async function attendance(body, ctx) {
       h('span', { class: 'spacer' }),
       status),
     restored && stale ? staleBanner : null,
-    h('p', { class: 'muted small' }, `ขาด (นับ): ${absenceRuleText({ failAt: data.attendanceRules.failAbove + 1, latePerAbsence: data.attendanceRules.latePerAbsence })} · ตั้งแต่ ${data.attendanceRules.warnAt} = ติดตาม (แก้เกณฑ์ที่แท็บตั้งค่า)`),
+    h('p', { class: 'muted small' }, `ขาด (นับ) = ขาด + สาย ÷ ${data.attendanceRules.latePerAbsence} ปัดลง · ลาไม่นับ · ตั้งแต่ ${data.attendanceRules.warnAt} = ติดตาม · เกิน ${data.attendanceRules.failAbove} = เกรด F (แก้เกณฑ์ที่แท็บตั้งค่า)`),
     h('p', { class: 'muted small' }, 'บันทึกอัตโนมัติทุกครั้งที่คลิก (เก็บสำรองในเครื่องด้วย ถ้าเน็ตหลุดจะส่งให้เมื่อกลับมา) · คลิกเลขสัปดาห์ที่หัวตารางเพื่อให้ทุกคนที่ยังว่าง = มา · ช่องว่าง = ยังไม่เช็ค ไม่นับ (คนที่ขาดต้องกดเป็น A)'),
     holder));
   draw();
@@ -623,7 +623,7 @@ async function gradebook(body, ctx) {
           h('td', { class: 'num nowrap', title: absenceText(r.absence) }, String(r.absence.effective)),
           h('td', { class: 'num' }, h('strong', {}, fmtNum(r.total))),
           h('td', { class: 'nowrap' }, h('span', { class: 'chip ' + (r.absence.fail ? 'bad' : 'accent') }, r.grade),
-            r.absence.fail ? h('div', { class: 'small danger' }, `ขาดครบ ${r.absence.failAt} หมดสิทธิ์สอบ`) : null))))))));
+            r.absence.fail ? h('div', { class: 'small danger' }, `ขาดเกิน ${r.absence.failAbove}`) : null))))))));
     return results;
   };
 
@@ -640,7 +640,7 @@ async function gradebook(body, ctx) {
       return [s.studentId, s.name, s.group, ...gb.assignments.map((a) => s.scores[a.id] ?? ''),
         ...['attendance', 'assignments'].map((k) => r.parts[k].points ?? ''),
         ...REGISTRAR_COLS.map(([k]) => r.halves[k]), r.absence.effective, r.total, r.grade,
-        r.absence.fail ? `ขาดเรียนครบ ${r.absence.failAt} ครั้ง หมดสิทธิ์สอบ (เกรดตามคะแนน ${r.scoreGrade})` : ''];
+        r.absence.fail ? `ขาดเรียนเกิน ${r.absence.failAbove} ครั้ง (เกรดตามคะแนน ${r.scoreGrade})` : ''];
     });
     const ws = XLSX.utils.aoa_to_sheet([[`${gb.course.courseCode} ${gb.course.title} ภาค ${gb.course.term}`], [], head, ...rows]);
     const wb = XLSX.utils.book_new();
@@ -829,9 +829,7 @@ async function settings(body, ctx) {
   const cutoffs = s.gradeCutoffs.map(([g, min]) => ({ g: h('input', { value: g, style: 'width:4em' }), min: h('input', { type: 'number', step: 'any', value: min, style: 'width:6em' }) }));
   const pts = Object.fromEntries(['P', 'L', 'E', 'A'].map((k) => [k, h('input', { type: 'number', min: 0, max: 1, step: 0.05, value: s.attendancePoints[k] ?? 0, style: 'width:6em' })]));
   const rule = (k) => h('input', { type: 'number', min: 0, max: 16, step: 1, value: s.attendanceRules[k], style: 'width:5em' });
-  // แสดงเป็น "ขาดครบ n ครั้ง" ตามแนวการสอน (เก็บเป็น failAbove = n − 1)
-  const failAt = h('input', { type: 'number', min: 1, max: 17, step: 1, value: s.attendanceRules.failAbove + 1, style: 'width:5em' });
-  const rules = { warnAt: rule('warnAt'), latePerAbsence: rule('latePerAbsence') };
+  const rules = { failAbove: rule('failAbove'), warnAt: rule('warnAt'), latePerAbsence: rule('latePerAbsence') };
   const lines = (el) => el.value.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 
   mount(body, h('div', { class: 'stack' },
@@ -850,7 +848,7 @@ async function settings(body, ctx) {
     h('section', { class: 'card form' },
       h('h2', {}, 'เกณฑ์การขาดเรียน'),
       h('div', { class: 'row' },
-        h('label', { class: 'check' }, 'ขาด (นับ) ครบ', failAt, 'ครั้ง = หมดสิทธิ์สอบ (F)'),
+        h('label', { class: 'check' }, 'ขาดเกิน', rules.failAbove, 'ครั้ง = เกรด F'),
         h('label', { class: 'check' }, 'ขาดตั้งแต่', rules.warnAt, 'ครั้ง = ติดตาม'),
         h('label', { class: 'check' }, 'สาย', rules.latePerAbsence, 'ครั้ง = ขาด 1')),
       h('p', { class: 'muted small' }, 'ลาไม่นับเป็นขาด · ช่องว่าง = ยังไม่เช็ค ไม่นับ · ใส่ 0 ที่ "สาย" = สายไม่นับเป็นขาด · ใช้กับทุกวิชา')),
@@ -862,7 +860,7 @@ async function settings(body, ctx) {
         uploadMaxMB: Number(f.uploadMaxMB.value),
         gradeCutoffs: cutoffs.map((c) => [c.g.value.trim(), Number(c.min.value)]),
         attendancePoints: Object.fromEntries(Object.entries(pts).map(([k, el]) => [k, Number(el.value)])),
-        attendanceRules: { failAbove: Number(failAt.value) - 1, ...Object.fromEntries(Object.entries(rules).map(([k, el]) => [k, Number(el.value)])) }
+        attendanceRules: Object.fromEntries(Object.entries(rules).map(([k, el]) => [k, Number(el.value)]))
       });
       toast('บันทึกการตั้งค่าแล้ว');
       await ctx.refreshMe();

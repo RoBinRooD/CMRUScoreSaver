@@ -39,8 +39,8 @@ export async function studentDashboard(body, ctx) {
   const ab = att.absence;
 
   mount(body, h('div', { class: 'stack' },
-    ab.fail ? h('div', { class: 'banner bad' }, `⚠️ ขาดเรียน ${absenceText(ab)} เกิน ${ab.failAbove} ครั้ง — ตามเกณฑ์ของวิชาจะได้เกรด F กรุณาติดต่ออาจารย์`)
-      : ab.warn ? h('div', { class: 'banner' }, `ขาดเรียนแล้ว ${absenceText(ab)} — ขาดเกิน ${ab.failAbove} ครั้งจะได้เกรด F (สาย ${ab.latePerAbsence} ครั้ง = ขาด 1 · ลาไม่นับ)`) : null,
+    ab.fail ? h('div', { class: 'banner bad' }, `⚠️ ขาดเรียน ${absenceText(ab)} ครบ ${ab.failAt} ครั้ง — หมดสิทธิ์สอบ (เกรด F) กรุณาติดต่ออาจารย์`)
+      : ab.warn ? h('div', { class: 'banner' }, `ขาดเรียนแล้ว ${absenceText(ab)} — ${absenceRuleText(ab)}`) : null,
     d.missing.length ? h('div', { class: 'banner bad' }, '⚠️ ยังไม่ได้ส่ง ', d.missing.length, ' งานที่เลยกำหนด: ',
       d.missing.map((m) => m.title + (m.allowLate ? ' (ยังส่งได้)' : '')).join(', ')) : null,
     h('div', { class: 'stats' },
@@ -73,9 +73,9 @@ export async function studentDashboard(body, ctx) {
 
     att.held ? section('การเข้าเรียน', go('grades'),
       h('div', { class: 'legend' }, ['P', 'L', 'E', 'A'].map((k) => h('span', {}, h('span', { class: 'mark btn ' + k }, k), ` ${MARK_LABEL[k]} ${att.tally[k]} ครั้ง`))),
-      h('div', { class: 'row' }, h('span', {}, 'ขาดเรียน (นับ): ', h('strong', {}, absenceText(ab)), ` จากที่ขาดได้ ${ab.failAbove} ครั้ง`), absenceChip(ab)),
-      severityMeter(meter(Math.min(ab.effective, ab.failAbove + 1), ab.failAbove + 1, 'ขาดเรียนที่นับ'), ab),
-      h('p', { class: 'muted small' }, `สาย ${ab.latePerAbsence} ครั้ง = ขาด 1 ครั้ง · ลาไม่นับ · ขาดเกิน ${ab.failAbove} ครั้ง = เกรด F`)) : null));
+      h('div', { class: 'row' }, h('span', {}, 'ขาดเรียน (นับ): ', h('strong', {}, absenceText(ab)), ` · ครบ ${ab.failAt} ครั้ง = หมดสิทธิ์สอบ`), absenceChip(ab)),
+      severityMeter(meter(Math.min(ab.effective, ab.failAt), ab.failAt, 'ขาดเรียนที่นับ'), ab),
+      h('p', { class: 'muted small' }, absenceRuleText(ab))) : null));
 }
 
 /* ---------- อาจารย์ ---------- */
@@ -101,9 +101,9 @@ export async function teacherDashboard(body, ctx) {
     section('ความคืบหน้าแต่ละงาน', h('button', { class: 'sm ghost', onclick: () => ctx.setTab('assignments') }, 'จัดการงาน →'),
       d.assignments.length ? [progressLegend(), d.assignments.map((a) => progressRow(a, ctx))] : h('p', { class: 'muted' }, 'ยังไม่มีงานที่เปิดให้นักศึกษาเห็น')),
     section('นักศึกษาที่ควรติดตาม', null,
-      d.atRisk.failedByAbsence ? h('div', { class: 'banner bad' }, `⚠️ ขาดเรียนเกิน ${d.atRisk.rules.failAbove} ครั้ง ${d.atRisk.failedByAbsence} คน — เกรด F`) : null,
+      d.atRisk.failedByAbsence ? h('div', { class: 'banner bad' }, `⚠️ ขาดเรียนครบ ${d.atRisk.rules.failAbove + 1} ครั้ง ${d.atRisk.failedByAbsence} คน — หมดสิทธิ์สอบ (เกรด F)`) : null,
       h('p', { class: 'muted small' }, `ขาดเรียน (นับ) ตั้งแต่ ${d.atRisk.rules.warnAt} ครั้ง · ขาดส่งตั้งแต่ ${d.atRisk.missingLimit} งาน · หรือเข้าเรียนต่ำกว่า ${d.atRisk.attendanceLimit}%` +
-        ` — ขาดเกิน ${d.atRisk.rules.failAbove} = F · สาย ${d.atRisk.rules.latePerAbsence} = ขาด 1 · ลาไม่นับ` + (d.atRisk.total > d.atRisk.list.length ? ` · แสดง ${d.atRisk.list.length} จาก ${d.atRisk.total} คน` : '')),
+        ` — ${absenceRuleText({ failAt: d.atRisk.rules.failAbove + 1, latePerAbsence: d.atRisk.rules.latePerAbsence })}` + (d.atRisk.total > d.atRisk.list.length ? ` · แสดง ${d.atRisk.list.length} จาก ${d.atRisk.total} คน` : '')),
       d.atRisk.list.length ? h('div', { class: 'table-wrap' }, h('table', {},
         h('thead', {}, h('tr', {}, h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'), h('th', { class: 'num' }, 'ขาดเรียน (นับ)'), h('th', { class: 'num' }, 'ขาดส่ง'), h('th', { class: 'num' }, 'เข้าเรียน'), h('th', {}, 'สถานะ'))),
         h('tbody', {}, d.atRisk.list.map((s) => h('tr', {},
@@ -124,6 +124,17 @@ function severityMeter(el, a) {
   return el;
 }
 
+/** "มาสายหรือขาดรวมกันครบ 4 ครั้ง = หมดสิทธิ์สอบ (F) · ลาไม่นับ" — ตามเกณฑ์ที่ตั้งไว้ */
+export function lateText(per) {
+  if (!per) return 'สายไม่นับเป็นขาด';
+  return per === 1 ? 'สายนับเป็นขาด' : `สาย ${per} ครั้ง = ขาด 1 ครั้ง`;
+}
+
+export function absenceRuleText(a) {
+  const who = a.latePerAbsence === 1 ? 'มาสายหรือขาดรวมกัน' : 'ขาด';
+  return `${who}ครบ ${a.failAt} ครั้ง = หมดสิทธิ์สอบ (เกรด F) · ${lateText(a.latePerAbsence)} · ลาไม่นับ`;
+}
+
 /** "3 ครั้ง (ขาด 2 · สาย 2)" */
 export function absenceText(a) {
   const detail = [a.absent && `ขาด ${a.absent}`, a.late && `สาย ${a.late}`].filter(Boolean).join(' · ');
@@ -131,8 +142,8 @@ export function absenceText(a) {
 }
 
 export function absenceChip(a) {
-  if (a.fail) return h('span', { class: 'chip bad' }, `ขาดเกิน ${a.failAbove} = F`);
-  if (a.warn) return h('span', { class: 'chip warn' }, `ขาด ${a.effective}/${a.failAbove} ติดตาม`);
+  if (a.fail) return h('span', { class: 'chip bad' }, `หมดสิทธิ์สอบ · F`);
+  if (a.warn) return h('span', { class: 'chip warn' }, `ขาด ${a.effective}/${a.failAt} ติดตาม`);
   return null;
 }
 

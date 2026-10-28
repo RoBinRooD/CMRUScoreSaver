@@ -7,14 +7,21 @@ const T = 'teacher@demo.ac.th';
 const C = 'DEMO2303';
 const weeks = (n) => Array.from({ length: n }, (_, i) => i + 1);
 
-test('absences: absent + late ÷ 2 (rounded down); leave and blanks do not count', () => {
-  const a = Grade.absences(['A', 'L', 'L', 'L', 'E', 'E', '', 'A'], weeks(8));
+test('absences: late ÷ latePerAbsence (rounded down) + absent; leave and blanks do not count', () => {
+  const marks = ['A', 'L', 'L', 'L', 'E', 'E', '', 'A'];
+  // ตั้ง "สาย 2 = ขาด 1"
+  const a = Grade.absences(marks, weeks(8), { failAbove: 4, warnAt: 3, latePerAbsence: 2 });
   assert.equal(a.absent, 2); // สัปดาห์ 1 และ 8 · ช่องว่างสัปดาห์ 7 = ยังไม่เช็ค
   assert.equal(a.late, 3);
   assert.equal(a.leave, 2);
   assert.equal(a.effective, 3); // 2 + floor(3/2)
   assert.equal(a.warn, true);
   assert.equal(a.fail, false);
+  // ค่าเริ่มต้นตามแนวการสอน: สายนับเท่ากับขาด → 2 + 3 = 5 ครบ 4 แล้ว
+  const d = Grade.absences(marks, weeks(8));
+  assert.equal(d.effective, 5);
+  assert.equal(d.fail, true);
+  assert.equal(d.failAt, 4);
   // สัปดาห์ที่ยังไม่เช็ค ไม่นับ
   assert.equal(Grade.absences(['A', 'A', 'A', 'A', 'A'], [1, 2]).effective, 2);
   // วันแรกของเทอม: เช็คชื่อไปแล้วหลายสัปดาห์ แต่นักศึกษาคนนี้ยังไม่ถูกเช็คเลย = ไม่ขาด ไม่ตก
@@ -24,38 +31,41 @@ test('absences: absent + late ÷ 2 (rounded down); leave and blanks do not count
   assert.equal(fresh.parts.attendance.pct, null);
 });
 
-test('more than 4 counted absences = F whatever the score; exactly 4 is still graded by score', () => {
+test('default rule: late or absent 4 times in total = F whatever the score; 3 = follow-up', () => {
+  assert.deepEqual({ ...Grade.DEFAULT_ATTENDANCE_RULES }, { failAbove: 3, warnAt: 3, latePerAbsence: 1 });
   const full = { weights: Grade.DEFAULT_WEIGHTS, assignments: [{ score: 10, maxScore: 10, half: 1 }, { score: 10, maxScore: 10, half: 2 }], midterm: 10, maxMidterm: 10, final: 10, maxFinal: 10 };
   const marks = (a, l) => [...Array(a).fill('A'), ...Array(l).fill('L'), ...Array(16 - a - l).fill('P')];
-  const four = Grade.compute({ ...full, heldWeeks: weeks(16), attendance: marks(2, 4) }); // 2 + 4/2 = 4
+  const three = Grade.compute({ ...full, heldWeeks: weeks(16), attendance: marks(2, 1) });
+  assert.equal(three.absence.effective, 3);
+  assert.equal(three.absence.warn, true);
+  assert.equal(three.absence.fail, false);
+  assert.equal(three.grade, 'A');
+  const four = Grade.compute({ ...full, heldWeeks: weeks(16), attendance: marks(2, 2) }); // สาย 2 + ขาด 2
   assert.equal(four.absence.effective, 4);
-  assert.equal(four.absence.fail, false);
-  assert.equal(four.grade, 'A');
-  const five = Grade.compute({ ...full, heldWeeks: weeks(16), attendance: marks(4, 2) }); // 4 + 1 = 5
-  assert.equal(five.absence.effective, 5);
-  assert.equal(five.absence.fail, true);
-  assert.equal(five.grade, 'F');
-  assert.equal(five.scoreGrade, 'A', 'score grade kept for reference');
-  assert.ok(five.total > 80, 'total still shows the real score');
+  assert.equal(four.absence.fail, true);
+  assert.equal(four.grade, 'F');
+  assert.equal(four.scoreGrade, 'A', 'score grade kept for reference');
+  assert.ok(four.total > 80, 'total still shows the real score');
+  assert.equal(Grade.compute({ ...full, heldWeeks: weeks(16), attendance: marks(0, 4) }).grade, 'F', 'late 4 times');
   // ลา 10 ครั้งไม่ทำให้ตก
   assert.equal(Grade.compute({ ...full, heldWeeks: weeks(16), attendance: [...Array(10).fill('E'), ...Array(6).fill('P')] }).grade, 'A');
   // เกณฑ์ปรับได้
-  assert.equal(Grade.compute({ ...full, heldWeeks: weeks(16), attendance: marks(3, 0), attendanceRules: { failAbove: 2, warnAt: 1, latePerAbsence: 3 } }).grade, 'F');
-  assert.equal(Grade.absences(marks(0, 9), weeks(16), { failAbove: 4, warnAt: 3, latePerAbsence: 0 }).effective, 0, '0 = lateness never counts');
+  assert.equal(Grade.compute({ ...full, heldWeeks: weeks(16), attendance: marks(4, 0), attendanceRules: { failAbove: 4, warnAt: 3, latePerAbsence: 2 } }).grade, 'A');
+  assert.equal(Grade.absences(marks(0, 9), weeks(16), { failAbove: 3, warnAt: 3, latePerAbsence: 0 }).effective, 0, '0 = lateness never counts');
 });
 
 test('backend: rules from settings drive gradebook, dashboards and the at-risk list', () => {
   const b = loadBackend();
   const marks = (a, l) => [...Array(a).fill('A'), ...Array(l).fill('L'), ...Array(8 - a - l).fill('P'), ...Array(8).fill('')];
   b.ok(T, 'saveAttendance', { courseCode: C, rows: [
-    { studentId: '69000101', marks: marks(5, 0) }, // 5 → F
-    { studentId: '69000102', marks: marks(2, 2) }, // 3 → ติดตาม
+    { studentId: '69000101', marks: marks(3, 1) }, // ขาด 3 + สาย 1 = 4 → F
+    { studentId: '69000102', marks: marks(2, 1) }, // 3 → ติดตาม
     { studentId: '69000103', marks: [...Array(6).fill('E'), 'P', 'P', ...Array(8).fill('')] }, // ลา 6 → ปกติ
   ] });
   const gb = b.ok(T, 'gradebook', { courseCode: C });
   const st = (id) => gb.students.find((s) => s.studentId === id).result;
   assert.equal(st('69000101').grade, 'F');
-  assert.equal(st('69000101').absence.effective, 5);
+  assert.equal(st('69000101').absence.effective, 4);
   assert.equal(st('69000102').absence.warn, true);
   assert.equal(st('69000102').absence.fail, false);
   assert.equal(st('69000103').absence.effective, 0);
@@ -65,17 +75,17 @@ test('backend: rules from settings drive gradebook, dashboards and the at-risk l
   assert.equal(d.atRisk.list[0].studentId, '69000101', 'F by absence first');
   assert.equal(d.atRisk.list[1].studentId, '69000102');
   assert.equal(d.atRisk.list.some((s) => s.studentId === '69000103'), false);
-  assert.deepEqual({ ...d.atRisk.rules }, { failAbove: 4, warnAt: 3, latePerAbsence: 2 });
+  assert.deepEqual({ ...d.atRisk.rules }, { failAbove: 3, warnAt: 3, latePerAbsence: 1 });
 
   // นักศึกษาเห็นเกณฑ์และสถานะของตัวเอง แม้อาจารย์ยังไม่ประกาศเกรด
   const mine = b.ok('69000101@demo.ac.th', 'studentDashboard', { courseCode: C });
   assert.equal(mine.attendance.absence.fail, true);
   assert.equal(mine.grade, null);
-  assert.equal(b.ok('69000101@demo.ac.th', 'myGrades', { courseCode: C }).attendance.absence.effective, 5);
-  assert.equal(b.ok(T, 'getAttendance', { courseCode: C }).attendanceRules.failAbove, 4);
+  assert.equal(b.ok('69000101@demo.ac.th', 'myGrades', { courseCode: C }).attendance.absence.effective, 4);
+  assert.equal(b.ok(T, 'getAttendance', { courseCode: C }).attendanceRules.failAbove, 3);
 
-  // แก้เกณฑ์ในตั้งค่า
-  b.ok(T, 'updateSettings', { attendanceRules: { failAbove: 5, warnAt: 4, latePerAbsence: 2 } });
+  // แก้เกณฑ์ในตั้งค่า (สาย 2 = ขาด 1 → ขาด 3 + สาย 1 = 3 · ยังไม่ตก)
+  b.ok(T, 'updateSettings', { attendanceRules: { failAbove: 3, warnAt: 3, latePerAbsence: 2 } });
   assert.equal(b.ok(T, 'gradebook', { courseCode: C }).students.find((s) => s.studentId === '69000101').result.absence.fail, false);
   const bad = b.call(T, 'updateSettings', { attendanceRules: { failAbove: 4.5, warnAt: 3, latePerAbsence: 2 } });
   assert.equal(bad.ok, false);

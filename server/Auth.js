@@ -56,6 +56,12 @@ function authenticate_(idToken) {
   return resolveUser_(verifyIdToken_(idToken));
 }
 
+/** โดเมนตรงกัน หรือเป็นโดเมนย่อย: ตั้ง cmru.ac.th → รับ g.cmru.ac.th ด้วย (แต่ไม่รับ fakecmru.ac.th) */
+function domainAllowed_(email, domains) {
+  var host = String(email).split('@')[1] || '';
+  return domains.some(function (d) { return host === d || host.slice(-(d.length + 1)) === '.' + d; });
+}
+
 /**
  * อาจารย์ = อีเมลอยู่ใน Settings.teacherEmails
  * นักศึกษา = บัญชีโดเมนมหาวิทยาลัย (Settings.allowedDomains) ที่สมัครแล้ว คือผูกกับรหัสนักศึกษาในแท็บ Students
@@ -68,8 +74,8 @@ function resolveUser_(ident) {
   }
   var domains = listSetting_('allowedDomains');
   if (!domains.length) throw new Error('AUTH_DOMAIN: ระบบยังไม่เปิดรับนักศึกษา (อาจารย์ยังไม่ได้ตั้งค่าโดเมนมหาวิทยาลัย)');
-  if (domains.indexOf(email.split('@')[1]) < 0) {
-    throw new Error('AUTH_DOMAIN: บัญชีนี้ใช้ไม่ได้ กรุณาเข้าสู่ระบบด้วยบัญชี @' + domains.join(' หรือ @'));
+  if (!domainAllowed_(email, domains)) {
+    throw new Error('AUTH_DOMAIN: บัญชีนี้ใช้ไม่ได้ กรุณาเข้าสู่ระบบด้วยบัญชีของมหาวิทยาลัย (@' + domains.join(' หรือ @') + ')');
   }
 
   var mine = rows_('Students').filter(function (r) { return r.email.toLowerCase() === email; });

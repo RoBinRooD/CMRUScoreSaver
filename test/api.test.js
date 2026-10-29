@@ -24,6 +24,17 @@ test('rejects requests without a valid token and from other domains', () => {
   assert.match(err(b, 'x@gmail.com', 'me', {}), /^AUTH_DOMAIN/);
 });
 
+test('university subdomains are accepted; look-alike domains are not', () => {
+  const b = loadBackend();
+  // ตั้งไว้ demo.ac.th → รับ <รหัส>@g.demo.ac.th (แบบ g.cmru.ac.th)
+  const me = b.ok('69000103@g.demo.ac.th', 'me');
+  assert.equal(me.role, 'student');
+  assert.equal(me.registration.studentId, '69000103', 'id still read from the email');
+  assert.equal(b.ok('69000103@g.demo.ac.th', 'register', {}).studentId, '69000103');
+  assert.match(err(b, 'x@fakedemo.ac.th', 'me', {}), /^AUTH_DOMAIN/);
+  assert.match(err(b, 'x@demo.ac.th.evil.com', 'me', {}), /^AUTH_DOMAIN/);
+});
+
 test('teacher sees all courses; students only their own', () => {
   const b = loadBackend();
   const t = b.ok(T, 'me');

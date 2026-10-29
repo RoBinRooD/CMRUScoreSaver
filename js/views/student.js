@@ -87,7 +87,7 @@ function renderBind(root, ctx) {
   h('p', { class: 'muted small' }, 'ไม่พบชื่อ? อาจลงทะเบียนเรียนช้าหรือยังไม่อยู่ในรายชื่อ — แจ้งอาจารย์ให้เพิ่มรายชื่อ'))));
 }
 
-/** อีเมลเป็น <รหัส>@cmru.ac.th และรหัสอยู่ในรายชื่อ → แค่ยืนยัน */
+/** อีเมลเป็น <รหัส>@g.cmru.ac.th และรหัสอยู่ในรายชื่อ → แค่ยืนยัน */
 function renderConfirm(root, ctx, reg) {
   const nickname = h('input', { maxlength: 50 });
   const phone = h('input', { type: 'tel', inputmode: 'tel', autocomplete: 'tel', maxlength: 15 });
@@ -110,7 +110,7 @@ function renderConfirm(root, ctx, reg) {
     toast('สมัครสำเร็จ');
     await ctx.refreshMe();
   }, { class: 'primary', type: 'submit', disabled: reg.takenByOther }),
-  h('p', { class: 'muted small' }, 'ถ้าชื่อไม่ใช่คุณ ให้ออกจากระบบแล้วเข้าด้วยบัญชี <รหัสนักศึกษา>@cmru.ac.th ของคุณเอง'))));
+  h('p', { class: 'muted small' }, 'ถ้าชื่อไม่ใช่คุณ ให้ออกจากระบบแล้วเข้าด้วยบัญชี <รหัสนักศึกษา>@g.cmru.ac.th ของคุณเอง'))));
 }
 
 /* ---------- งาน ---------- */

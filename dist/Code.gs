@@ -447,6 +447,12 @@ function authenticate_(idToken) {
   return resolveUser_(verifyIdToken_(idToken));
 }
 
+/** โดเมนตรงกัน หรือเป็นโดเมนย่อย: ตั้ง cmru.ac.th → รับ g.cmru.ac.th ด้วย (แต่ไม่รับ fakecmru.ac.th) */
+function domainAllowed_(email, domains) {
+  var host = String(email).split('@')[1] || '';
+  return domains.some(function (d) { return host === d || host.slice(-(d.length + 1)) === '.' + d; });
+}
+
 /**
  * อาจารย์ = อีเมลอยู่ใน Settings.teacherEmails
  * นักศึกษา = บัญชีโดเมนมหาวิทยาลัย (Settings.allowedDomains) ที่สมัครแล้ว คือผูกกับรหัสนักศึกษาในแท็บ Students
@@ -459,8 +465,8 @@ function resolveUser_(ident) {
   }
   var domains = listSetting_('allowedDomains');
   if (!domains.length) throw new Error('AUTH_DOMAIN: ระบบยังไม่เปิดรับนักศึกษา (อาจารย์ยังไม่ได้ตั้งค่าโดเมนมหาวิทยาลัย)');
-  if (domains.indexOf(email.split('@')[1]) < 0) {
-    throw new Error('AUTH_DOMAIN: บัญชีนี้ใช้ไม่ได้ กรุณาเข้าสู่ระบบด้วยบัญชี @' + domains.join(' หรือ @'));
+  if (!domainAllowed_(email, domains)) {
+    throw new Error('AUTH_DOMAIN: บัญชีนี้ใช้ไม่ได้ กรุณาเข้าสู่ระบบด้วยบัญชีของมหาวิทยาลัย (@' + domains.join(' หรือ @') + ')');
   }
 
   var mine = rows_('Students').filter(function (r) { return r.email.toLowerCase() === email; });
@@ -833,7 +839,7 @@ function setupWarnings_() {
   return w;
 }
 
-/** อีเมลนักศึกษา มรภ.เชียงใหม่ = <รหัสนักศึกษา>@cmru.ac.th → คืนรหัส (หรือ null ถ้าไม่ใช่รูปแบบนี้) */
+/** อีเมลนักศึกษา มรภ.เชียงใหม่ = <รหัสนักศึกษา>@g.cmru.ac.th → คืนรหัส (หรือ null ถ้าไม่ใช่รูปแบบนี้) */
 function emailStudentId_(email) {
   var local = String(email || '').split('@')[0];
   return /^\d{8,13}$/.test(local) ? local : null;
@@ -875,7 +881,7 @@ function apiRegister_(user, p) {
 
   var fromEmail = emailStudentId_(user.email);
   if (fromEmail) {
-    // อีเมลแบบ <รหัส>@cmru.ac.th ยืนยันตัวตนโดย Google แล้ว → ใช้รหัสจากอีเมล ไม่ต้องตรวจชื่อ
+    // อีเมลแบบ <รหัส>@g.cmru.ac.th ยืนยันตัวตนโดย Google แล้ว → ใช้รหัสจากอีเมล ไม่ต้องตรวจชื่อ
     if (p.studentId && str_(p.studentId, 20) !== fromEmail) throw new Error('สมัครได้เฉพาะรหัส ' + fromEmail + ' ตามอีเมลที่ล็อกอิน');
     rows = rows_('Students').filter(function (r) { return r.studentId === fromEmail; });
     if (!rows.length) throw new Error('รหัส ' + fromEmail + ' ยังไม่อยู่ในรายชื่อวิชาใด กรุณาแจ้งอาจารย์');

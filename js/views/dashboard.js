@@ -107,7 +107,7 @@ export async function teacherDashboard(body, ctx) {
       d.atRisk.list.length ? h('div', { class: 'table-wrap' }, h('table', {},
         h('thead', {}, h('tr', {}, h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'), h('th', { class: 'num' }, 'ขาดเรียน (นับ)'), h('th', { class: 'num' }, 'ขาดส่ง'), h('th', { class: 'num' }, 'เข้าเรียน'), h('th', {}, 'สถานะ'))),
         h('tbody', {}, d.atRisk.list.map((s) => h('tr', {},
-          h('td', { class: 'nowrap' }, s.studentId), h('td', {}, s.name),
+          h('td', { class: 'nowrap' }, s.studentId), h('td', {}, s.name, s.note ? h('div', { class: 'muted small', title: s.note }, '📝 ', s.note.length > 80 ? s.note.slice(0, 80) + '…' : s.note) : null),
           h('td', { class: 'num nowrap' }, absenceText(s.absence)),
           h('td', { class: 'num' }, s.missing ? `${s.missing} งาน` : '-'),
           h('td', { class: 'num' }, s.attendance === null ? '-' : `${fmtNum(s.attendance, 0)}%`),

@@ -139,7 +139,7 @@ function apiTeacherDashboard_(user, p) {
     var g = res.grade || res.projectedGrade;
     grades[g || '-'] = (grades[g || '-'] || 0) + 1;
     return {
-      studentId: r.studentId, name: r.name, registered: !!r.email, missing: missing, toGrade: toGrade,
+      studentId: r.studentId, name: r.name, note: r.note || '', registered: !!r.email, missing: missing, toGrade: toGrade,
       attendance: att, absence: res.absence, total: res.total, grade: res.grade
     };
   });

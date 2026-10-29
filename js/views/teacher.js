@@ -23,6 +23,11 @@ const TABS = [
 
 let gradingAssignment = null; // งานที่เลือกไว้ในแท็บตรวจงาน
 
+/** 📝 ข้างชื่อ เมื่ออาจารย์มีบันทึกถึงนักศึกษาคนนี้ (ชี้เพื่ออ่าน) */
+function noteMark(s) {
+  return s.note ? h('span', { class: 'note-mark', title: s.note, 'aria-label': 'บันทึก: ' + s.note, tabindex: 0 }, ' 📝') : null;
+}
+
 export function renderTeacher(root, ctx) {
   const { course } = ctx;
   let tab = TABS.some(([k]) => k === ctx.tab) ? ctx.tab : 'overview';
@@ -185,7 +190,7 @@ async function grading(body, ctx) {
           const fb = h('input', { class: 'wide', value: s?.feedback || '', placeholder: 'ความเห็น', 'aria-label': 'ความเห็น ' + r.studentId });
           const tr = h('tr', {},
             h('td', { class: 'nowrap' }, r.studentId),
-            h('td', {}, r.name),
+            h('td', {}, r.name, noteMark(r)),
             h('td', { class: 'nowrap' }, s?.submittedAt
               ? h('span', { class: 'chip ' + (s.isLate ? 'warn' : 'info'), title: fmtDate(s.submittedAt) }, s.isLate ? 'ส่งช้า' : 'ส่งแล้ว')
               : h('span', { class: 'chip' }, 'ยังไม่ส่ง')),
@@ -225,7 +230,7 @@ async function grading(body, ctx) {
       const score = h('input', { class: 'score', type: 'number', min: 0, max: a.maxScore, step: 'any', value: s?.score ?? '', 'aria-label': 'คะแนน ' + r.studentId });
       const fb = h('input', { class: 'wide', value: s?.feedback || '', placeholder: 'ความเห็น', 'aria-label': 'ความเห็น ' + r.studentId });
       const tr = h('tr', {},
-        h('td', { class: 'nowrap' }, r.studentId), h('td', {}, r.name), h('td', {}), h('td', {}),
+        h('td', { class: 'nowrap' }, r.studentId), h('td', {}, r.name, noteMark(r)), h('td', {}), h('td', {}),
         h('td', { class: 'num' }, score), h('td', {}, fb));
       const mark = () => {
         dirty.set(r.studentId, { studentId: r.studentId, score: score.value, feedback: fb.value });
@@ -498,7 +503,7 @@ async function attendance(body, ctx) {
         h('th', { class: 'num', title: `ขาด + สาย ÷ ${data.attendanceRules.latePerAbsence} · ลาไม่นับ` }, 'ขาด (นับ)'))),
       h('tbody', {}, rows.map((r) => h('tr', {},
         h('td', { class: 'nowrap' }, r.studentId),
-        h('td', { class: 'nowrap' }, r.name),
+        h('td', { class: 'nowrap' }, r.name, noteMark(r)),
         r.marks.map((m, i) => {
           const unsaved = saver.pending[r.studentId]?.[i + 1] !== undefined;
           return h('td', {}, h('button', {
@@ -562,7 +567,7 @@ async function exams(body, ctx) {
     h('div', { class: 'table-wrap' }, h('table', {},
       h('thead', {}, h('tr', {}, h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'), h('th', { class: 'num' }, 'กลางภาค'), h('th', { class: 'num' }, 'ปลายภาค'))),
       h('tbody', {}, data.rows.map((r, i) => h('tr', {},
-        h('td', {}, r.studentId), h('td', {}, r.name),
+        h('td', {}, r.studentId), h('td', {}, r.name, noteMark(r)),
         h('td', { class: 'num' }, inputs[i].mid), h('td', { class: 'num' }, inputs[i].fin))))))));
 }
 
@@ -617,7 +622,7 @@ async function gradebook(body, ctx) {
           REGISTRAR_COLS.map(([k, label]) => h('th', { class: 'num reg' }, label, h('div', { class: 'muted small' }, `/${fmtNum(maxOf(k))}`))),
           h('th', { class: 'num' }, 'ขาด (นับ)'), h('th', { class: 'num' }, 'รวม'), h('th', {}, 'เกรด'))),
         h('tbody', {}, results.map(({ s, r }) => h('tr', {},
-          h('td', { class: 'nowrap' }, s.studentId), h('td', { class: 'nowrap' }, s.name),
+          h('td', { class: 'nowrap' }, s.studentId), h('td', { class: 'nowrap' }, s.name, noteMark(s)),
           gb.assignments.map((a) => h('td', { class: 'num' }, fmtNum(s.scores[a.id]))),
           ['attendance', 'assignments'].map((k) => h('td', { class: 'num muted' }, fmtNum(r.parts[k].points))),
           REGISTRAR_COLS.map(([k]) => h('td', { class: 'num reg' }, fmtNum(r.halves[k]))),
@@ -724,11 +729,12 @@ async function students(body, ctx) {
   const filter = h('select', { 'aria-label': 'กรองสถานะ' },
     h('option', { value: 'all' }, 'ทั้งหมด'),
     h('option', { value: 'no' }, 'ยังไม่สมัคร'),
-    h('option', { value: 'yes' }, 'สมัครแล้ว'));
+    h('option', { value: 'yes' }, 'สมัครแล้ว'),
+    h('option', { value: 'note' }, 'มีบันทึก'));
   const tbody = h('tbody');
   const reload = () => students(body, ctx);
   const draw = () => mount(tbody, list
-    .filter((s) => filter.value === 'all' || (filter.value === 'yes') === !!s.email)
+    .filter((s) => filter.value === 'all' || (filter.value === 'note' ? !!s.note : (filter.value === 'yes') === !!s.email))
     .map((s) => h('tr', {},
       h('td', { class: 'nowrap' }, s.studentId),
       h('td', { class: 'nowrap' }, s.name, s.nickname ? h('span', { class: 'muted' }, ` (${s.nickname})`) : null),
@@ -737,6 +743,9 @@ async function students(body, ctx) {
         ? h('span', { class: 'chip ok', title: 'สมัครเมื่อ ' + fmtDate(s.boundAt) }, 'สมัครแล้ว')
         : h('span', { class: 'chip warn' }, 'ยังไม่สมัคร')),
       h('td', {}, s.email || '-', s.phone ? h('div', { class: 'muted small' }, s.phone) : null),
+      h('td', { class: 'note-cell' },
+        s.note ? h('div', { class: 'small note-text', title: s.note }, s.note) : null,
+        h('button', { class: 'sm ghost', onclick: () => editNote(ctx.course, s).then((ok) => ok && reload()) }, s.note ? 'แก้บันทึก' : '+ บันทึก')),
       h('td', { class: 'nowrap' },
         h('button', { class: 'sm', onclick: () => editEmail(s).then((ok) => ok && reload()) }, s.email ? 'แก้/รีเซ็ต' : 'กำหนดอีเมล'),
         actionButton('นำออก', async () => {
@@ -755,7 +764,7 @@ async function students(body, ctx) {
       filter,
       h('button', { onclick: () => addStudentForm(ctx.course).then((ok) => ok && reload()) }, '+ เพิ่มนักศึกษา')),
     h('div', { class: 'table-wrap' }, h('table', {},
-      h('thead', {}, h('tr', {}, h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'), h('th', {}, 'หมู่เรียน'), h('th', {}, 'สถานะ'), h('th', {}, 'บัญชี / เบอร์'), h('th', {}, ''))),
+      h('thead', {}, h('tr', {}, h('th', {}, 'รหัส'), h('th', {}, 'ชื่อ'), h('th', {}, 'หมู่เรียน'), h('th', {}, 'สถานะ'), h('th', {}, 'บัญชี / เบอร์'), h('th', { title: 'เห็นเฉพาะอาจารย์' }, 'บันทึกของอาจารย์'), h('th', {}, ''))),
       tbody))));
 }
 
@@ -776,6 +785,14 @@ function addStudentForm(course) {
       toast('เพิ่มนักศึกษาแล้ว');
     }
   }]);
+}
+
+function editNote(course, s) {
+  const input = h('textarea', { value: s.note || '', maxlength: 2000, placeholder: 'เช่น เรียนอ่อน ต้องติดตามงาน · ปัญหาสุขภาพ · ทำงานพิเศษ · ติดต่อผู้ปกครองแล้ว', style: 'min-height:120px' });
+  return modal(`บันทึกถึง ${s.studentId} ${s.name}`, h('div', { class: 'form' },
+    input,
+    h('p', { class: 'muted small' }, '🔒 เห็นเฉพาะอาจารย์ — นักศึกษาไม่เห็นบันทึกนี้ในทุกหน้า · บันทึกแยกตามวิชา · ลบข้อความให้ว่าง = ลบบันทึก')),
+  [{ label: 'บันทึก', run: async () => { await call('setStudentNote', { courseCode: course.courseCode, studentId: s.studentId, note: input.value.trim() }); toast('บันทึกแล้ว'); } }]);
 }
 
 function editEmail(s) {

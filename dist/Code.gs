@@ -201,7 +201,7 @@ var WRITE_ACTIONS = {
   register: 1, finalizeUpload: 1, submitLink: 1, removeFile: 1,
   importRoster: 1, upsertAssignment: 1, deleteAssignment: 1, saveGrades: 1,
   saveAttendance: 1, setAttendanceMarks: 1, saveExams: 1, updateCourse: 1, updateSettings: 1,
-  setStudentEmail: 1, addStudent: 1, removeStudent: 1,
+  setStudentEmail: 1, setStudentNote: 1, addStudent: 1, removeStudent: 1,
   saveGroup: 1, leaveGroup: 1, deleteGroup: 1, deleteCourse: 1,
   saveSyllabus: 1, addSyllabusLink: 1, finalizeSyllabusUpload: 1, removeSyllabusAttachment: 1,
   saveTask: 1, deleteTask: 1,
@@ -253,7 +253,7 @@ var SCHEMA = {
   Settings: ['key', 'value'],
   Courses: ['courseCode', 'title', 'section', 'term', 'schedule', 'credits', 'teacher',
     'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks', 'syllabus', 'syllabusUpdatedAt'],
-  Students: ['courseCode', 'studentId', 'name', 'group', 'email', 'boundAt', 'nickname', 'phone'],
+  Students: ['courseCode', 'studentId', 'name', 'group', 'email', 'boundAt', 'nickname', 'phone', 'note'],
   Assignments: ['id', 'courseCode', 'title', 'description', 'maxScore', 'dueAt', 'allowLate', 'published', 'createdAt',
     'groupMax', 'half'],
   Submissions: ['id', 'assignmentId', 'studentId', 'files', 'link', 'submittedAt', 'isLate', 'score', 'feedback', 'gradedAt',
@@ -574,6 +574,7 @@ function actions_() {
     importRoster: apiImportRoster_,
     listStudents: apiListStudents_,
     setStudentEmail: apiSetStudentEmail_,
+    setStudentNote: apiSetStudentNote_,
     addStudent: apiAddStudent_,
     removeStudent: apiRemoveStudent_,
     listAssignments: apiListAssignments_,
@@ -711,10 +712,11 @@ function checkInRoster_(code, studentId) {
   }
 }
 
+/** ใช้เฉพาะคำสั่งของอาจารย์ — note เป็นบันทึกส่วนตัวของอาจารย์ ห้ามส่งให้นักศึกษา */
 function studentView_(r) {
   return {
     studentId: r.studentId, name: r.name, group: r.group, email: r.email, boundAt: r.boundAt,
-    nickname: r.nickname || '', phone: r.phone || ''
+    nickname: r.nickname || '', phone: r.phone || '', note: r.note || ''
   };
 }
 
@@ -1017,6 +1019,16 @@ function apiImportRoster_(user, p) {
 function apiListStudents_(user, p) {
   requireTeacher_(user);
   return rosterOf_(p.courseCode).map(studentView_);
+}
+
+/** บันทึกของอาจารย์ต่อนักศึกษา 1 คนในวิชานี้ (เช่น เรียนอ่อน ปัญหาสุขภาพ) — นักศึกษาไม่เห็น */
+function apiSetStudentNote_(user, p) {
+  requireTeacher_(user);
+  var r = studentRow_(p.courseCode, str_(p.studentId, 20));
+  if (!r) throw new Error('ไม่พบรหัส ' + p.studentId + ' ในรายชื่อวิชา ' + p.courseCode);
+  r.note = str_(p.note, 2000);
+  update_('Students', r);
+  return studentView_(r);
 }
 
 function apiSetStudentEmail_(user, p) {
@@ -2350,7 +2362,7 @@ function apiTeacherDashboard_(user, p) {
     var g = res.grade || res.projectedGrade;
     grades[g || '-'] = (grades[g || '-'] || 0) + 1;
     return {
-      studentId: r.studentId, name: r.name, registered: !!r.email, missing: missing, toGrade: toGrade,
+      studentId: r.studentId, name: r.name, note: r.note || '', registered: !!r.email, missing: missing, toGrade: toGrade,
       attendance: att, absence: res.absence, total: res.total, grade: res.grade
     };
   });

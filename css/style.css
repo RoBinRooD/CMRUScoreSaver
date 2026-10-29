@@ -332,4 +332,8 @@ article.group-card { opacity: 0.85; }
 }
 footer.build { text-align: center; padding: 1.5rem 0 1rem; }
 
+.note-mark { cursor: help; }
+.note-cell { min-width: 12em; max-width: 22em; }
+.note-text { white-space: pre-wrap; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; margin-bottom: 0.25rem; }
+
 .save-status { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }

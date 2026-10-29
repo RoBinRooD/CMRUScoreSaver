@@ -34,6 +34,7 @@ function actions_() {
     importRoster: apiImportRoster_,
     listStudents: apiListStudents_,
     setStudentEmail: apiSetStudentEmail_,
+    setStudentNote: apiSetStudentNote_,
     addStudent: apiAddStudent_,
     removeStudent: apiRemoveStudent_,
     listAssignments: apiListAssignments_,
@@ -171,10 +172,11 @@ function checkInRoster_(code, studentId) {
   }
 }
 
+/** ใช้เฉพาะคำสั่งของอาจารย์ — note เป็นบันทึกส่วนตัวของอาจารย์ ห้ามส่งให้นักศึกษา */
 function studentView_(r) {
   return {
     studentId: r.studentId, name: r.name, group: r.group, email: r.email, boundAt: r.boundAt,
-    nickname: r.nickname || '', phone: r.phone || ''
+    nickname: r.nickname || '', phone: r.phone || '', note: r.note || ''
   };
 }
 
@@ -477,6 +479,16 @@ function apiImportRoster_(user, p) {
 function apiListStudents_(user, p) {
   requireTeacher_(user);
   return rosterOf_(p.courseCode).map(studentView_);
+}
+
+/** บันทึกของอาจารย์ต่อนักศึกษา 1 คนในวิชานี้ (เช่น เรียนอ่อน ปัญหาสุขภาพ) — นักศึกษาไม่เห็น */
+function apiSetStudentNote_(user, p) {
+  requireTeacher_(user);
+  var r = studentRow_(p.courseCode, str_(p.studentId, 20));
+  if (!r) throw new Error('ไม่พบรหัส ' + p.studentId + ' ในรายชื่อวิชา ' + p.courseCode);
+  r.note = str_(p.note, 2000);
+  update_('Students', r);
+  return studentView_(r);
 }
 
 function apiSetStudentEmail_(user, p) {

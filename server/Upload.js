@@ -8,10 +8,23 @@
 
 var MAX_FILES_PER_SUBMISSION = 20;
 
-function checkCanSubmit_(a, t) {
+/** atIso: เวลาที่นับกำหนดส่ง — ตอนจบการอัปโหลดใช้เวลาที่เริ่มอัปโหลด (ไฟล์ใหญ่ที่เริ่มก่อนหมดเวลายังส่งได้) */
+function checkCanSubmit_(a, t, atIso) {
   if (a.published !== 'true') throw new Error('งานนี้ยังไม่เปิดให้ส่ง');
   if (t.graded) throw new Error('งานนี้ตรวจให้คะแนนแล้ว แก้ไขไม่ได้ (ติดต่ออาจารย์)');
-  if (isPastDue_(a) && a.allowLate !== 'true') throw new Error('เลยกำหนดส่งแล้ว');
+  if (isPastDue_(a, atIso) && a.allowLate !== 'true') throw new Error('เลยกำหนดส่งแล้ว');
+}
+
+var UPLOADS_PER_HOUR = 60;
+
+/** กันเปิด upload session ไม่จำกัด (ไฟล์ที่อัปเสร็จจะกินพื้นที่ Drive ของอาจารย์แม้ไม่ได้กดยืนยัน) */
+function checkUploadRate_(user) {
+  rateLimit_('up_' + user.email, UPLOADS_PER_HOUR, 3600, 'อัปโหลดบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่')();
+}
+
+function cleanMime_(m) {
+  m = String(m || '').slice(0, 100);
+  return /^[\w.+-]+\/[\w.+-]+$/.test(m) ? m : 'application/octet-stream';
 }
 
 /**
@@ -63,6 +76,7 @@ function apiStartUpload_(user, p) {
   if (sub && parseJson_(sub.files, []).length >= MAX_FILES_PER_SUBMISSION) {
     throw new Error('ส่งได้สูงสุด ' + MAX_FILES_PER_SUBMISSION + ' ไฟล์ต่องาน');
   }
+  checkUploadRate_(user);
   var size = Number(p.size);
   var maxMB = settingsView_().uploadMaxMB;
   if (!(size > 0)) throw new Error('ไฟล์ว่างเปล่า');
@@ -77,11 +91,11 @@ function apiStartUpload_(user, p) {
   var uploadUrl = startResumable_({
     folderId: folderId,
     name: safeName_(p.fileName),
-    mimeType: String(p.mimeType || 'application/octet-stream'),
+    mimeType: cleanMime_(p.mimeType),
     size: size,
     origin: origin,
     description: 'ส่งโดย ' + st.name + ' (' + st.studentId + ') ' + user.email,
-    appProperties: t.props
+    appProperties: Object.assign({ startedAt: now_() }, t.props)
   });
   return { uploadUrl: uploadUrl };
 }
@@ -99,8 +113,13 @@ function apiFinalizeUpload_(user, p) {
   var sub = t.sub || t.create();
   var files = parseJson_(sub.files, []);
   var added = !files.some(function (x) { return x.id === f.id; });
-  if (added) files.push({ id: f.id, name: f.name, size: Number(f.size) || 0, mimeType: f.mimeType });
-  markSubmitted_(a, sub, files);
+  if (added) {
+    // ตรวจซ้ำตอนจบ: ระหว่างอัปโหลดอาจตรวจแล้ว หรือเปิด session ไว้หลายอันเกินจำนวนไฟล์
+    checkCanSubmit_(a, t, props.startedAt);
+    if (files.length >= MAX_FILES_PER_SUBMISSION) throw new Error('ส่งได้สูงสุด ' + MAX_FILES_PER_SUBMISSION + ' ไฟล์ต่องาน');
+    files.push({ id: f.id, name: f.name, size: Number(f.size) || 0, mimeType: f.mimeType });
+  }
+  markSubmitted_(a, sub, files, props.startedAt);
   if (added) t.share(f.id);
   return mergedSubmission_(a, user.studentId);
 }
@@ -134,11 +153,11 @@ function apiRemoveFile_(user, p) {
   return mergedSubmission_(a, user.studentId);
 }
 
-function markSubmitted_(a, sub, files) {
+function markSubmitted_(a, sub, files, startedAt) {
   sub.files = JSON.stringify(files);
   if (files.length || sub.link) {
     sub.submittedAt = now_();
-    sub.isLate = isPastDue_(a) ? 'true' : 'false';
+    sub.isLate = isPastDue_(a, startedAt) ? 'true' : 'false';
   } else {
     sub.submittedAt = '';
     sub.isLate = '';
@@ -214,6 +233,21 @@ function shareReader_(id, email) {
   if (res.getResponseCode() !== 200) {
     console.warn('share failed ' + id + ' ' + email + ': ' + res.getContentText());
   }
+}
+
+/** ถอนสิทธิ์ดูไฟล์ (เฉพาะสิทธิ์ reader ของอีเมลนี้) — ใช้ตอนออก/ถูกย้ายออกจากกลุ่ม */
+function unshareReader_(id, email) {
+  var base = 'https://www.googleapis.com/drive/v3/files/' + id + '/permissions';
+  var res = driveFetch_('get', base + '?fields=permissions(id,emailAddress,role)');
+  if (res.getResponseCode() !== 200) {
+    console.warn('list permissions failed ' + id + ': ' + res.getContentText());
+    return;
+  }
+  (JSON.parse(res.getContentText()).permissions || []).forEach(function (perm) {
+    if (perm.role !== 'reader' || String(perm.emailAddress || '').toLowerCase() !== email) return;
+    var del = driveFetch_('delete', base + '/' + perm.id);
+    if (del.getResponseCode() >= 300) console.warn('unshare failed ' + id + ' ' + email + ': ' + del.getContentText());
+  });
 }
 
 function trashFile_(id) {

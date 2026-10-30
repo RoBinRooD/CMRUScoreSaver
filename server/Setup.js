@@ -31,7 +31,7 @@ function setup() {
   var me = Session.getEffectiveUser().getEmail();
   var defaults = {
     teacherEmails: me,
-    allowedDomains: 'cmru.ac.th',
+    allowedDomains: 'g.cmru.ac.th',
     allowedOrigins: 'https://robinrood.github.io',
     clientId: '',
     rootFolderId: '',

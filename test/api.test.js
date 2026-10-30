@@ -24,14 +24,17 @@ test('rejects requests without a valid token and from other domains', () => {
   assert.match(err(b, 'x@gmail.com', 'me', {}), /^AUTH_DOMAIN/);
 });
 
-test('university subdomains are accepted; look-alike domains are not', () => {
+test('allowed domains match exactly: list the student subdomain explicitly', () => {
   const b = loadBackend();
-  // ตั้งไว้ demo.ac.th → รับ <รหัส>@g.demo.ac.th (แบบ g.cmru.ac.th)
+  // โดเมนย่อยที่ไม่ได้ใส่ไว้ไม่ผ่าน — <ตัวเลข>@โดเมนใดก็ได้ สมัครเป็นรหัสนั้นได้ทันที จึงต้องจำกัดให้ตรงตัว
+  assert.match(err(b, '69000103@g.demo.ac.th', 'me', {}), /^AUTH_DOMAIN/);
+  b.ok(T, 'updateSettings', { allowedDomains: ['demo.ac.th', 'g.demo.ac.th'] });
   const me = b.ok('69000103@g.demo.ac.th', 'me');
   assert.equal(me.role, 'student');
   assert.equal(me.registration.studentId, '69000103', 'id still read from the email');
   assert.equal(b.ok('69000103@g.demo.ac.th', 'register', {}).studentId, '69000103');
   assert.match(err(b, 'x@fakedemo.ac.th', 'me', {}), /^AUTH_DOMAIN/);
+  assert.match(err(b, '69000104@evil.demo.ac.th', 'me', {}), /^AUTH_DOMAIN/);
   assert.match(err(b, 'x@demo.ac.th.evil.com', 'me', {}), /^AUTH_DOMAIN/);
 });
 
@@ -81,8 +84,20 @@ test('<id>@domain email whose id was taken by another account is flagged', () =>
   assert.match(err(b, '69000104@demo.ac.th', 'register', {}), /บัญชีอื่น/);
 });
 
-test('register: id and name must match the registrar roster', () => {
+test('register by id + name is off by default (names are not secret)', () => {
   const b = loadBackend();
+  const e = 'staff@demo.ac.th';
+  const me = b.ok(e, 'me');
+  assert.equal(me.registration.byName, false);
+  // ชื่อเพื่อนดูได้จากหน้าเลือกสมาชิกกลุ่ม — ถ้าเปิด จะสวมรอยคนที่ยังไม่สมัครได้
+  assert.match(err(b, e, 'register', { studentId: '69000103', firstName: 'ปิยะ', lastName: 'แสงทอง' }), /ไม่ใช่บัญชีนักศึกษา/);
+  assert.equal(b.ok('69000103@demo.ac.th', 'register', {}).studentId, '69000103', 'the real student is not locked out');
+  assert.equal(b.ok(T, 'getSettings').allowNameRegistration, false);
+});
+
+test('register: id and name must match the registrar roster (when enabled)', () => {
+  const b = loadBackend();
+  b.ok(T, 'updateSettings', { allowNameRegistration: true });
   const e = 'piya@demo.ac.th';
   assert.match(err(b, e, 'myAssignments', { courseCode: 'DEMO2303' }), /ยืนยันรหัส/);
   assert.match(err(b, e, 'register', { studentId: '12345678', firstName: 'ก', lastName: 'ข' }), /ไม่พบรหัส/);
@@ -106,6 +121,7 @@ test('register: id and name must match the registrar roster', () => {
 
 test('register: blocked after 5 wrong attempts', () => {
   const b = loadBackend();
+  b.ok(T, 'updateSettings', { allowNameRegistration: true });
   const e = 'guess@demo.ac.th';
   for (let i = 0; i < 5; i++) err(b, e, 'register', { studentId: '6900010' + i, firstName: 'สุ่ม', lastName: 'เดา' });
   assert.match(err(b, e, 'register', { studentId: '69000103', firstName: 'ปิยะ', lastName: 'แสงทอง' }), /หลายครั้งเกินไป/);
@@ -169,7 +185,8 @@ test('upload flow: start → finalize shares the file with the owner only', () =
   const fileId = uploadUrl.replace('demo-upload://', '');
   const f = b.db()._files[fileId];
   assert.equal(f.name, 'poster_v1.psd');
-  assert.deepEqual({ ...f.appProperties }, { assignmentId: 'A2', studentId: '69000103' });
+  assert.deepEqual({ ...f.appProperties, startedAt: undefined }, { assignmentId: 'A2', studentId: '69000103', startedAt: undefined });
+  assert.ok(f.appProperties.startedAt);
 
   // นักศึกษาคนอื่นอ้างไฟล์นี้ไม่ได้
   assert.match(err(b, '69000104@demo.ac.th', 'finalizeUpload', { assignmentId: 'A2', fileId }), /ไม่พบไฟล์/);

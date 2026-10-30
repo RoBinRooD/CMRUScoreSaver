@@ -56,10 +56,13 @@ function authenticate_(idToken) {
   return resolveUser_(verifyIdToken_(idToken));
 }
 
-/** โดเมนตรงกัน หรือเป็นโดเมนย่อย: ตั้ง cmru.ac.th → รับ g.cmru.ac.th ด้วย (แต่ไม่รับ fakecmru.ac.th) */
+/**
+ * โดเมนต้องตรงกับที่ตั้งไว้ทุกตัวอักษร (ไม่รับโดเมนย่อยอัตโนมัติ) — ใส่ g.cmru.ac.th เองถ้าต้องการ
+ * เพราะบัญชีแบบ <ตัวเลข>@โดเมนย่อย สมัครเป็นรหัสนักศึกษานั้นได้ทันที
+ */
 function domainAllowed_(email, domains) {
   var host = String(email).split('@')[1] || '';
-  return domains.some(function (d) { return host === d || host.slice(-(d.length + 1)) === '.' + d; });
+  return domains.indexOf(host) >= 0;
 }
 
 /**

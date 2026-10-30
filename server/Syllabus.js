@@ -92,7 +92,7 @@ function apiStartSyllabusUpload_(user, p) {
     uploadUrl: startResumable_({
       folderId: syllabusFolderId_(c.courseCode),
       name: safeName_(p.fileName),
-      mimeType: String(p.mimeType || 'application/octet-stream'),
+      mimeType: cleanMime_(p.mimeType),
       size: size,
       origin: origin,
       description: 'Syllabus ' + c.courseCode,

@@ -845,7 +845,8 @@ async function settings(body, ctx) {
     teacherEmails: text(s.teacherEmails),
     allowedDomains: text(s.allowedDomains),
     allowedOrigins: text(s.allowedOrigins),
-    uploadMaxMB: h('input', { type: 'number', min: 1, value: s.uploadMaxMB })
+    uploadMaxMB: h('input', { type: 'number', min: 1, value: s.uploadMaxMB }),
+    allowNameRegistration: h('input', { type: 'checkbox', checked: !!s.allowNameRegistration })
   };
   const cutoffs = s.gradeCutoffs.map(([g, min]) => ({ g: h('input', { value: g, style: 'width:4em' }), min: h('input', { type: 'number', step: 'any', value: min, style: 'width:6em' }) }));
   const pts = Object.fromEntries(['P', 'L', 'E', 'A'].map((k) => [k, h('input', { type: 'number', min: 0, max: 1, step: 0.05, value: s.attendancePoints[k] ?? 0, style: 'width:6em' })]));
@@ -859,7 +860,9 @@ async function settings(body, ctx) {
       h('label', { class: 'field' }, h('span', {}, 'อีเมลอาจารย์ (บรรทัดละ 1)'), f.teacherEmails),
       h('label', { class: 'field' }, h('span', {}, 'โดเมนอีเมลมหาวิทยาลัยที่นักศึกษาใช้ล็อกอิน เช่น cmru.ac.th (จำเป็น — ว่าง = นักศึกษาเข้าไม่ได้)'), f.allowedDomains),
       h('label', { class: 'field' }, h('span', {}, 'เว็บไซต์ที่อัปโหลดได้ (origin) เช่น https://robinrood.github.io'), f.allowedOrigins),
-      h('label', { class: 'field' }, h('span', {}, 'ขนาดไฟล์สูงสุดต่อไฟล์ (MB)'), f.uploadMaxMB)),
+      h('label', { class: 'field' }, h('span', {}, 'ขนาดไฟล์สูงสุดต่อไฟล์ (MB)'), f.uploadMaxMB),
+      h('label', { class: 'check' }, f.allowNameRegistration, 'ให้บัญชีที่ไม่ใช่ <รหัส>@โดเมน สมัครด้วยรหัส + ชื่อ-นามสกุลได้'),
+      h('p', { class: 'muted small' }, 'ปิดไว้จะปลอดภัยกว่า: ถ้าเปิด ใครที่รู้รหัสและชื่อเพื่อน (เช่น เห็นในรายชื่อกลุ่ม) อาจสมัครแทนเพื่อนก่อนได้ — เปิดเฉพาะช่วงที่จำเป็น แล้วปิดหลังทุกคนสมัครเสร็จ')),
     h('section', { class: 'card form' },
       h('h2', {}, 'เกณฑ์เกรด (คะแนนรวมขั้นต่ำ)'),
       h('div', { class: 'row' }, cutoffs.map((c) => h('span', { class: 'row' }, c.g, '≥', c.min)))),
@@ -879,6 +882,7 @@ async function settings(body, ctx) {
         allowedDomains: lines(f.allowedDomains),
         allowedOrigins: lines(f.allowedOrigins),
         uploadMaxMB: Number(f.uploadMaxMB.value),
+        allowNameRegistration: f.allowNameRegistration.checked,
         gradeCutoffs: cutoffs.map((c) => [c.g.value.trim(), Number(c.min.value)]),
         attendancePoints: Object.fromEntries(Object.entries(pts).map(([k, el]) => [k, Number(el.value)])),
         attendanceRules: Object.fromEntries(Object.entries(rules).map(([k, el]) => [k, Number(el.value)]))

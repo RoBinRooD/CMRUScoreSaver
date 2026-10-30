@@ -129,8 +129,8 @@ function assignmentView_(a) {
   };
 }
 
-function isPastDue_(a) {
-  return !!a.dueAt && new Date(now_()).getTime() > new Date(a.dueAt).getTime();
+function isPastDue_(a, atIso) {
+  return !!a.dueAt && new Date(atIso || now_()).getTime() > new Date(a.dueAt).getTime();
 }
 
 function submissionRow_(assignmentId, studentId) {
@@ -195,6 +195,7 @@ function settingsView_() {
     attendancePoints: jsonSetting_('attendancePoints', Grade.DEFAULT_ATTENDANCE_POINTS),
     attendanceRules: jsonSetting_('attendanceRules', Grade.DEFAULT_ATTENDANCE_RULES),
     uploadMaxMB: Number(s.uploadMaxMB) || 2048,
+    allowNameRegistration: s.allowNameRegistration === 'true',
     hasDeletePin: !!s.deletePinHash
   };
 }
@@ -310,7 +311,7 @@ function emailStudentId_(email) {
 /** ข้อมูลสำหรับหน้าสมัครของนักศึกษาที่ยังไม่สมัคร */
 function registrationInfo_(user) {
   var id = emailStudentId_(user.email);
-  if (!id) return null;
+  if (!id) return { byName: settingsView_().allowNameRegistration };
   var rows = rows_('Students').filter(function (r) { return r.studentId === id; });
   if (!rows.length) return { studentId: id, notFound: true };
   var courses = rows_('Courses');
@@ -349,6 +350,10 @@ function apiRegister_(user, p) {
     if (!rows.length) throw new Error('รหัส ' + fromEmail + ' ยังไม่อยู่ในรายชื่อวิชาใด กรุณาแจ้งอาจารย์');
   } else {
     // อีเมลรูปแบบอื่น → ต้องกรอกรหัส + ชื่อ-นามสกุลให้ตรงกับรายชื่อ
+    // ปิดไว้เป็นค่าเริ่มต้น: ชื่อและรหัสของเพื่อนร่วมชั้นไม่ใช่ความลับ (เห็นได้ตอนจับกลุ่ม) จึงใช้ยืนยันตัวตนไม่ได้
+    if (!settingsView_().allowNameRegistration) {
+      throw new Error('บัญชีนี้ไม่ใช่บัญชีนักศึกษาแบบ <รหัส>@g.cmru.ac.th — ออกจากระบบแล้วเข้าด้วยบัญชีนักศึกษา หรือติดต่ออาจารย์ให้กำหนดบัญชีให้');
+    }
     var hit = rateLimit_('reg_' + user.email, 5, 3600, 'กรอกข้อมูลไม่ถูกต้องหลายครั้งเกินไป กรุณารอ 1 ชั่วโมง หรือติดต่ออาจารย์');
     var id = str_(p.studentId, 20);
     var first = str_(p.firstName, 100), last = str_(p.lastName, 100);
@@ -565,13 +570,25 @@ function apiDeleteCourse_(user, p) {
 
 function apiRemoveStudent_(user, p) {
   requireTeacher_(user);
+  var row = find_(rosterOf_(p.courseCode), function (r) { return r.studentId === p.studentId; });
+  var email = row && row.email ? row.email.toLowerCase() : '';
   var n = remove_('Students', function (r) { return r.courseCode === p.courseCode && r.studentId === p.studentId; });
   var ids = {};
   rows_('Assignments').forEach(function (a) { if (a.courseCode === p.courseCode) ids[a.id] = true; });
+  var left = [];
   rows_('Groups').forEach(function (g) {
-    if (ids[g.assignmentId]) g.members = JSON.stringify(membersOf_(g).filter(function (m) { return m !== p.studentId; }));
+    if (!ids[g.assignmentId] || membersOf_(g).indexOf(p.studentId) < 0) return;
+    g.members = JSON.stringify(membersOf_(g).filter(function (m) { return m !== p.studentId; }));
+    left.push(g);
   });
   saveAll_('Groups');
+  // ถอนสิทธิ์ดูไฟล์ของกลุ่มที่เคยอยู่ (แถวในรายชื่อถูกลบไปแล้ว จึงใช้อีเมลที่เก็บไว้)
+  if (email) {
+    left.forEach(function (g) {
+      var sub = groupSubmissionRow_(g.id);
+      parseJson_(sub ? sub.files : '', []).forEach(function (f) { unshareReader_(f.id, email); });
+    });
+  }
   return { removed: n };
 }
 
@@ -758,7 +775,7 @@ function apiSetAttendanceMarks_(user, p) {
   var course = courseRow_(p.courseCode);
   var changes = p.changes || [];
   if (changes.length > 5000) throw new Error('เปลี่ยนพร้อมกันมากเกินไป');
-  var roster = {};
+  var roster = Object.create(null);
   rosterOf_(p.courseCode).forEach(function (r) { roster[r.studentId] = true; });
   // ตรวจทั้งชุดก่อน แล้วค่อยเขียน — ช่องผิดช่องเดียว = ไม่บันทึกเลย
   var clean = changes.map(function (c) {
@@ -909,6 +926,7 @@ function apiUpdateSettings_(user, p) {
     updates.deletePinSalt = uid_('P');
     updates.deletePinHash = hashPin_(updates.deletePinSalt, pin);
   }
+  if (p.allowNameRegistration !== undefined) updates.allowNameRegistration = p.allowNameRegistration ? 'true' : 'false';
   if (p.attendanceRules) {
     var ar = {};
     [['failAbove', 0, 16], ['warnAt', 0, 16], ['latePerAbsence', 0, 16]].forEach(function (x) {

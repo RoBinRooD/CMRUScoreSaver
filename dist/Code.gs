@@ -205,8 +205,12 @@ var WRITE_ACTIONS = {
   saveGroup: 1, leaveGroup: 1, deleteGroup: 1, deleteCourse: 1,
   saveSyllabus: 1, addSyllabusLink: 1, finalizeSyllabusUpload: 1, removeSyllabusAttachment: 1,
   saveTask: 1, deleteTask: 1,
-  submitLeave: 1, finalizeLeaveUpload: 1, cancelLeave: 1, decideLeave: 1
+  submitLeave: 1, finalizeLeaveUpload: 1, cancelLeave: 1, decideLeave: 1,
+  // สร้างโฟลเดอร์ใน Drive + Script Properties และนับ rate limit
+  startUpload: 1, startLeaveUpload: 1, startSyllabusUpload: 1
 };
+
+var hasOwn_ = function (obj, key) { return Object.prototype.hasOwnProperty.call(obj, key); };
 
 function doGet() {
   return json_({ ok: true, data: { service: 'CMRUScoreSaver', time: now_() } });
@@ -224,14 +228,16 @@ function doPost(e) {
 
 function handleRequest_(req) {
   try {
-    var fn = actions_()[req && req.action];
-    if (!fn) throw new Error('ไม่รู้จักคำสั่ง: ' + (req && req.action));
+    var actions = actions_();
+    var name = String((req && req.action) || '');
+    var fn = hasOwn_(actions, name) ? actions[name] : null;
+    if (!fn) throw new Error('ไม่รู้จักคำสั่ง: ' + name);
     var run = function () {
       resetCache_();
       var user = authenticate_(req.idToken);
       return fn(user, req.payload || {});
     };
-    var data = WRITE_ACTIONS[req.action] ? withLock_(run) : run();
+    var data = hasOwn_(WRITE_ACTIONS, name) ? withLock_(run) : run();
     return { ok: true, data: data };
   } catch (err) {
     return { ok: false, error: String((err && err.message) || err) };
@@ -447,10 +453,13 @@ function authenticate_(idToken) {
   return resolveUser_(verifyIdToken_(idToken));
 }
 
-/** โดเมนตรงกัน หรือเป็นโดเมนย่อย: ตั้ง cmru.ac.th → รับ g.cmru.ac.th ด้วย (แต่ไม่รับ fakecmru.ac.th) */
+/**
+ * โดเมนต้องตรงกับที่ตั้งไว้ทุกตัวอักษร (ไม่รับโดเมนย่อยอัตโนมัติ) — ใส่ g.cmru.ac.th เองถ้าต้องการ
+ * เพราะบัญชีแบบ <ตัวเลข>@โดเมนย่อย สมัครเป็นรหัสนักศึกษานั้นได้ทันที
+ */
 function domainAllowed_(email, domains) {
   var host = String(email).split('@')[1] || '';
-  return domains.some(function (d) { return host === d || host.slice(-(d.length + 1)) === '.' + d; });
+  return domains.indexOf(host) >= 0;
 }
 
 /**
@@ -669,8 +678,8 @@ function assignmentView_(a) {
   };
 }
 
-function isPastDue_(a) {
-  return !!a.dueAt && new Date(now_()).getTime() > new Date(a.dueAt).getTime();
+function isPastDue_(a, atIso) {
+  return !!a.dueAt && new Date(atIso || now_()).getTime() > new Date(a.dueAt).getTime();
 }
 
 function submissionRow_(assignmentId, studentId) {
@@ -735,6 +744,7 @@ function settingsView_() {
     attendancePoints: jsonSetting_('attendancePoints', Grade.DEFAULT_ATTENDANCE_POINTS),
     attendanceRules: jsonSetting_('attendanceRules', Grade.DEFAULT_ATTENDANCE_RULES),
     uploadMaxMB: Number(s.uploadMaxMB) || 2048,
+    allowNameRegistration: s.allowNameRegistration === 'true',
     hasDeletePin: !!s.deletePinHash
   };
 }
@@ -850,7 +860,7 @@ function emailStudentId_(email) {
 /** ข้อมูลสำหรับหน้าสมัครของนักศึกษาที่ยังไม่สมัคร */
 function registrationInfo_(user) {
   var id = emailStudentId_(user.email);
-  if (!id) return null;
+  if (!id) return { byName: settingsView_().allowNameRegistration };
   var rows = rows_('Students').filter(function (r) { return r.studentId === id; });
   if (!rows.length) return { studentId: id, notFound: true };
   var courses = rows_('Courses');
@@ -889,6 +899,10 @@ function apiRegister_(user, p) {
     if (!rows.length) throw new Error('รหัส ' + fromEmail + ' ยังไม่อยู่ในรายชื่อวิชาใด กรุณาแจ้งอาจารย์');
   } else {
     // อีเมลรูปแบบอื่น → ต้องกรอกรหัส + ชื่อ-นามสกุลให้ตรงกับรายชื่อ
+    // ปิดไว้เป็นค่าเริ่มต้น: ชื่อและรหัสของเพื่อนร่วมชั้นไม่ใช่ความลับ (เห็นได้ตอนจับกลุ่ม) จึงใช้ยืนยันตัวตนไม่ได้
+    if (!settingsView_().allowNameRegistration) {
+      throw new Error('บัญชีนี้ไม่ใช่บัญชีนักศึกษาแบบ <รหัส>@g.cmru.ac.th — ออกจากระบบแล้วเข้าด้วยบัญชีนักศึกษา หรือติดต่ออาจารย์ให้กำหนดบัญชีให้');
+    }
     var hit = rateLimit_('reg_' + user.email, 5, 3600, 'กรอกข้อมูลไม่ถูกต้องหลายครั้งเกินไป กรุณารอ 1 ชั่วโมง หรือติดต่ออาจารย์');
     var id = str_(p.studentId, 20);
     var first = str_(p.firstName, 100), last = str_(p.lastName, 100);
@@ -1105,13 +1119,25 @@ function apiDeleteCourse_(user, p) {
 
 function apiRemoveStudent_(user, p) {
   requireTeacher_(user);
+  var row = find_(rosterOf_(p.courseCode), function (r) { return r.studentId === p.studentId; });
+  var email = row && row.email ? row.email.toLowerCase() : '';
   var n = remove_('Students', function (r) { return r.courseCode === p.courseCode && r.studentId === p.studentId; });
   var ids = {};
   rows_('Assignments').forEach(function (a) { if (a.courseCode === p.courseCode) ids[a.id] = true; });
+  var left = [];
   rows_('Groups').forEach(function (g) {
-    if (ids[g.assignmentId]) g.members = JSON.stringify(membersOf_(g).filter(function (m) { return m !== p.studentId; }));
+    if (!ids[g.assignmentId] || membersOf_(g).indexOf(p.studentId) < 0) return;
+    g.members = JSON.stringify(membersOf_(g).filter(function (m) { return m !== p.studentId; }));
+    left.push(g);
   });
   saveAll_('Groups');
+  // ถอนสิทธิ์ดูไฟล์ของกลุ่มที่เคยอยู่ (แถวในรายชื่อถูกลบไปแล้ว จึงใช้อีเมลที่เก็บไว้)
+  if (email) {
+    left.forEach(function (g) {
+      var sub = groupSubmissionRow_(g.id);
+      parseJson_(sub ? sub.files : '', []).forEach(function (f) { unshareReader_(f.id, email); });
+    });
+  }
   return { removed: n };
 }
 
@@ -1298,7 +1324,7 @@ function apiSetAttendanceMarks_(user, p) {
   var course = courseRow_(p.courseCode);
   var changes = p.changes || [];
   if (changes.length > 5000) throw new Error('เปลี่ยนพร้อมกันมากเกินไป');
-  var roster = {};
+  var roster = Object.create(null);
   rosterOf_(p.courseCode).forEach(function (r) { roster[r.studentId] = true; });
   // ตรวจทั้งชุดก่อน แล้วค่อยเขียน — ช่องผิดช่องเดียว = ไม่บันทึกเลย
   var clean = changes.map(function (c) {
@@ -1449,6 +1475,7 @@ function apiUpdateSettings_(user, p) {
     updates.deletePinSalt = uid_('P');
     updates.deletePinHash = hashPin_(updates.deletePinSalt, pin);
   }
+  if (p.allowNameRegistration !== undefined) updates.allowNameRegistration = p.allowNameRegistration ? 'true' : 'false';
   if (p.attendanceRules) {
     var ar = {};
     [['failAbove', 0, 16], ['warnAt', 0, 16], ['latePerAbsence', 0, 16]].forEach(function (x) {
@@ -1488,10 +1515,23 @@ function apiUpdateSettings_(user, p) {
 
 var MAX_FILES_PER_SUBMISSION = 20;
 
-function checkCanSubmit_(a, t) {
+/** atIso: เวลาที่นับกำหนดส่ง — ตอนจบการอัปโหลดใช้เวลาที่เริ่มอัปโหลด (ไฟล์ใหญ่ที่เริ่มก่อนหมดเวลายังส่งได้) */
+function checkCanSubmit_(a, t, atIso) {
   if (a.published !== 'true') throw new Error('งานนี้ยังไม่เปิดให้ส่ง');
   if (t.graded) throw new Error('งานนี้ตรวจให้คะแนนแล้ว แก้ไขไม่ได้ (ติดต่ออาจารย์)');
-  if (isPastDue_(a) && a.allowLate !== 'true') throw new Error('เลยกำหนดส่งแล้ว');
+  if (isPastDue_(a, atIso) && a.allowLate !== 'true') throw new Error('เลยกำหนดส่งแล้ว');
+}
+
+var UPLOADS_PER_HOUR = 60;
+
+/** กันเปิด upload session ไม่จำกัด (ไฟล์ที่อัปเสร็จจะกินพื้นที่ Drive ของอาจารย์แม้ไม่ได้กดยืนยัน) */
+function checkUploadRate_(user) {
+  rateLimit_('up_' + user.email, UPLOADS_PER_HOUR, 3600, 'อัปโหลดบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่')();
+}
+
+function cleanMime_(m) {
+  m = String(m || '').slice(0, 100);
+  return /^[\w.+-]+\/[\w.+-]+$/.test(m) ? m : 'application/octet-stream';
 }
 
 /**
@@ -1543,6 +1583,7 @@ function apiStartUpload_(user, p) {
   if (sub && parseJson_(sub.files, []).length >= MAX_FILES_PER_SUBMISSION) {
     throw new Error('ส่งได้สูงสุด ' + MAX_FILES_PER_SUBMISSION + ' ไฟล์ต่องาน');
   }
+  checkUploadRate_(user);
   var size = Number(p.size);
   var maxMB = settingsView_().uploadMaxMB;
   if (!(size > 0)) throw new Error('ไฟล์ว่างเปล่า');
@@ -1557,11 +1598,11 @@ function apiStartUpload_(user, p) {
   var uploadUrl = startResumable_({
     folderId: folderId,
     name: safeName_(p.fileName),
-    mimeType: String(p.mimeType || 'application/octet-stream'),
+    mimeType: cleanMime_(p.mimeType),
     size: size,
     origin: origin,
     description: 'ส่งโดย ' + st.name + ' (' + st.studentId + ') ' + user.email,
-    appProperties: t.props
+    appProperties: Object.assign({ startedAt: now_() }, t.props)
   });
   return { uploadUrl: uploadUrl };
 }
@@ -1579,8 +1620,13 @@ function apiFinalizeUpload_(user, p) {
   var sub = t.sub || t.create();
   var files = parseJson_(sub.files, []);
   var added = !files.some(function (x) { return x.id === f.id; });
-  if (added) files.push({ id: f.id, name: f.name, size: Number(f.size) || 0, mimeType: f.mimeType });
-  markSubmitted_(a, sub, files);
+  if (added) {
+    // ตรวจซ้ำตอนจบ: ระหว่างอัปโหลดอาจตรวจแล้ว หรือเปิด session ไว้หลายอันเกินจำนวนไฟล์
+    checkCanSubmit_(a, t, props.startedAt);
+    if (files.length >= MAX_FILES_PER_SUBMISSION) throw new Error('ส่งได้สูงสุด ' + MAX_FILES_PER_SUBMISSION + ' ไฟล์ต่องาน');
+    files.push({ id: f.id, name: f.name, size: Number(f.size) || 0, mimeType: f.mimeType });
+  }
+  markSubmitted_(a, sub, files, props.startedAt);
   if (added) t.share(f.id);
   return mergedSubmission_(a, user.studentId);
 }
@@ -1614,11 +1660,11 @@ function apiRemoveFile_(user, p) {
   return mergedSubmission_(a, user.studentId);
 }
 
-function markSubmitted_(a, sub, files) {
+function markSubmitted_(a, sub, files, startedAt) {
   sub.files = JSON.stringify(files);
   if (files.length || sub.link) {
     sub.submittedAt = now_();
-    sub.isLate = isPastDue_(a) ? 'true' : 'false';
+    sub.isLate = isPastDue_(a, startedAt) ? 'true' : 'false';
   } else {
     sub.submittedAt = '';
     sub.isLate = '';
@@ -1694,6 +1740,21 @@ function shareReader_(id, email) {
   if (res.getResponseCode() !== 200) {
     console.warn('share failed ' + id + ' ' + email + ': ' + res.getContentText());
   }
+}
+
+/** ถอนสิทธิ์ดูไฟล์ (เฉพาะสิทธิ์ reader ของอีเมลนี้) — ใช้ตอนออก/ถูกย้ายออกจากกลุ่ม */
+function unshareReader_(id, email) {
+  var base = 'https://www.googleapis.com/drive/v3/files/' + id + '/permissions';
+  var res = driveFetch_('get', base + '?fields=permissions(id,emailAddress,role)');
+  if (res.getResponseCode() !== 200) {
+    console.warn('list permissions failed ' + id + ': ' + res.getContentText());
+    return;
+  }
+  (JSON.parse(res.getContentText()).permissions || []).forEach(function (perm) {
+    if (perm.role !== 'reader' || String(perm.emailAddress || '').toLowerCase() !== email) return;
+    var del = driveFetch_('delete', base + '/' + perm.id);
+    if (del.getResponseCode() >= 300) console.warn('unshare failed ' + id + ' ' + email + ': ' + del.getContentText());
+  });
 }
 
 function trashFile_(id) {
@@ -1813,7 +1874,17 @@ function mergedSubmission_(a, studentId) {
  * studentIds: เฉพาะคนเหล่านี้ (ค่าเริ่มต้น = ทุกคนในกลุ่ม) · fileIds: เฉพาะไฟล์เหล่านี้ (ค่าเริ่มต้น = ทุกไฟล์ของกลุ่ม)
  */
 function shareGroupFiles_(g, studentIds, fileIds) {
-  var ids = studentIds || membersOf_(g);
+  var ids = (studentIds || membersOf_(g)).filter(function (id) { return membersOf_(g).indexOf(id) >= 0; });
+  forGroupFiles_(g, ids, fileIds, shareReader_);
+}
+
+/** ถอนสิทธิ์ดูไฟล์ของกลุ่มจากคนที่ไม่ได้อยู่ในกลุ่มแล้ว */
+function unshareGroupFiles_(g, studentIds) {
+  var ids = studentIds.filter(function (id) { return membersOf_(g).indexOf(id) < 0; });
+  forGroupFiles_(g, ids, null, unshareReader_);
+}
+
+function forGroupFiles_(g, ids, fileIds, fn) {
   if (!fileIds) {
     var sub = groupSubmissionRow_(g.id);
     fileIds = (sub ? parseJson_(sub.files, []) : []).map(function (f) { return f.id; });
@@ -1821,10 +1892,10 @@ function shareGroupFiles_(g, studentIds, fileIds) {
   if (!fileIds.length || !ids.length) return;
   var emails = {};
   rows_('Students').forEach(function (r) {
-    if (r.email && ids.indexOf(r.studentId) >= 0 && membersOf_(g).indexOf(r.studentId) >= 0) emails[r.email.toLowerCase()] = true;
+    if (r.email && ids.indexOf(r.studentId) >= 0) emails[r.email.toLowerCase()] = true;
   });
   Object.keys(emails).forEach(function (e) {
-    fileIds.forEach(function (id) { shareReader_(id, e); });
+    fileIds.forEach(function (id) { fn(id, e); });
   });
 }
 
@@ -1897,6 +1968,10 @@ function apiSaveGroup_(user, p) {
     if (!teacher && membersOf_(g).indexOf(user.studentId) < 0) throw new Error('คุณไม่ได้อยู่ในกลุ่มนี้');
     if (!teacher && groupGraded_(a, g)) throw new Error('กลุ่มนี้ตรวจให้คะแนนแล้ว แก้ไม่ได้ (ติดต่ออาจารย์)');
     before = membersOf_(g);
+    // นักศึกษาเพิ่มเพื่อนได้อย่างเดียว — เอาคนออกต้องให้คนนั้นกด "ออกจากกลุ่ม" เอง หรือให้อาจารย์ทำ
+    if (!teacher && before.some(function (id) { return members.indexOf(id) < 0; })) {
+      throw new Error('นำเพื่อนออกจากกลุ่มไม่ได้ — ให้เพื่อนกด "ออกจากกลุ่ม" เอง หรือติดต่ออาจารย์');
+    }
   } else if (!teacher && groupOf_(a.id, user.studentId)) {
     throw new Error('คุณอยู่ในกลุ่มอื่นของงานนี้แล้ว');
   }
@@ -1905,11 +1980,13 @@ function apiSaveGroup_(user, p) {
   }
 
   var others = groupsOf_(a.id).filter(function (x) { return x !== g; });
+  var moved = [];
   members.forEach(function (id) {
     var other = find_(others, function (x) { return membersOf_(x).indexOf(id) >= 0; });
     if (!other) return;
     if (!teacher) throw new Error(id + ' อยู่กลุ่ม "' + other.name + '" แล้ว');
     other.members = JSON.stringify(membersOf_(other).filter(function (m) { return m !== id; }));
+    moved.push({ g: other, id: id });
   });
 
   if (g) {
@@ -1926,6 +2003,8 @@ function apiSaveGroup_(user, p) {
   saveAll_('Groups');
   pruneTasks_();
   shareGroupFiles_(g, members.filter(function (id) { return before.indexOf(id) < 0; }));
+  unshareGroupFiles_(g, before);
+  moved.forEach(function (m) { unshareGroupFiles_(m.g, [m.id]); });
   return groupView_(a, g);
 }
 
@@ -1946,8 +2025,10 @@ function apiLeaveGroup_(user, p) {
     throw new Error('คุณเป็นสมาชิกคนสุดท้าย — ลบไฟล์/ลิงก์ที่ส่งไว้ก่อนออกจากกลุ่ม');
   }
   g.members = JSON.stringify(left);
-  if (left.length) update_('Groups', g);
-  else {
+  if (left.length) {
+    update_('Groups', g);
+    unshareGroupFiles_(g, [user.studentId]);
+  } else {
     remove_('Submissions', function (s) { return s.groupId === g.id && !s.studentId; });
     remove_('Groups', function (x) { return x.id === g.id; });
     pruneTasks_();
@@ -2060,7 +2141,7 @@ function apiStartSyllabusUpload_(user, p) {
     uploadUrl: startResumable_({
       folderId: syllabusFolderId_(c.courseCode),
       name: safeName_(p.fileName),
-      mimeType: String(p.mimeType || 'application/octet-stream'),
+      mimeType: cleanMime_(p.mimeType),
       size: size,
       origin: origin,
       description: 'Syllabus ' + c.courseCode,
@@ -2132,6 +2213,7 @@ function boardGroup_(user, groupId) {
   var a = assignmentRow_(g.assignmentId);
   checkEnrolled_(user, a.courseCode);
   if (user.role !== 'teacher' && !isMember_(user, g)) throw new Error('ดูได้เฉพาะแผนงานของกลุ่มตัวเอง');
+  if (user.role !== 'teacher' && a.published !== 'true') throw new Error('งานนี้ถูกซ่อนอยู่');
   return { g: g, a: a };
 }
 
@@ -2469,7 +2551,7 @@ function apiSubmitLeave_(user, p) {
   if (!(week >= 1 && week <= Grade.WEEKS && week === Math.floor(week))) throw new Error('กรุณาเลือกสัปดาห์ 1–' + Grade.WEEKS);
   var date = str_(p.date, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date).getTime())) throw new Error('กรุณาเลือกวันที่ลา');
-  if (!LEAVE_TYPES[p.type]) throw new Error('กรุณาเลือกประเภทการลา');
+  if (!Object.prototype.hasOwnProperty.call(LEAVE_TYPES, p.type)) throw new Error('กรุณาเลือกประเภทการลา');
   var reason = str_(p.reason, 1000);
   if (!reason) throw new Error('กรุณาใส่เหตุผลการลา');
   var dup = find_(rows_('LeaveRequests'), function (r) {
@@ -2488,6 +2570,7 @@ function apiStartLeaveUpload_(user, p) {
   var r = myLeave_(user, p.leaveId);
   if (r.status !== 'pending') throw new Error('ใบลานี้พิจารณาแล้ว แนบไฟล์เพิ่มไม่ได้');
   if (parseJson_(r.files, []).length >= LEAVE_MAX_FILES) throw new Error('แนบได้สูงสุด ' + LEAVE_MAX_FILES + ' ไฟล์');
+  checkUploadRate_(user);
   var size = Number(p.size);
   if (!(size > 0)) throw new Error('ไฟล์ว่างเปล่า');
   if (size > LEAVE_MAX_MB * 1024 * 1024) throw new Error('ไฟล์แนบใบลาต้องไม่เกิน ' + LEAVE_MAX_MB + ' MB');
@@ -2500,7 +2583,7 @@ function apiStartLeaveUpload_(user, p) {
     uploadUrl: startResumable_({
       folderId: leaveFolderId_(r.courseCode, st.studentId + ' ' + st.name),
       name: safeName_('สัปดาห์ ' + r.week + ' - ' + p.fileName),
-      mimeType: String(p.mimeType || 'application/octet-stream'),
+      mimeType: cleanMime_(p.mimeType),
       size: size,
       origin: origin,
       description: 'ใบลา ' + st.name + ' (' + st.studentId + ') สัปดาห์ ' + r.week,
@@ -2516,6 +2599,9 @@ function apiFinalizeLeaveUpload_(user, p) {
   if (!f || f.trashed || props.leaveId !== r.id || props.studentId !== user.studentId) throw new Error('ไม่พบไฟล์ที่อัปโหลด');
   var files = parseJson_(r.files, []);
   if (!files.some(function (x) { return x.id === f.id; })) {
+    // ตรวจซ้ำตอนจบ: อาจถูกพิจารณาไปแล้วระหว่างอัปโหลด หรือเปิด session ไว้เกินจำนวน
+    if (r.status !== 'pending') throw new Error('ใบลานี้พิจารณาแล้ว แนบไฟล์เพิ่มไม่ได้');
+    if (files.length >= LEAVE_MAX_FILES) throw new Error('แนบได้สูงสุด ' + LEAVE_MAX_FILES + ' ไฟล์');
     shareReader_(f.id, user.email);
     files.push({ id: f.id, name: f.name, size: Number(f.size) || 0, mimeType: f.mimeType });
     r.files = JSON.stringify(files);
@@ -2609,7 +2695,7 @@ function setup() {
   var me = Session.getEffectiveUser().getEmail();
   var defaults = {
     teacherEmails: me,
-    allowedDomains: 'cmru.ac.th',
+    allowedDomains: 'g.cmru.ac.th',
     allowedOrigins: 'https://robinrood.github.io',
     clientId: '',
     rootFolderId: '',

@@ -58,8 +58,15 @@ function renderBind(root, ctx) {
       h('p', { class: 'muted' }, 'กรุณาแจ้งอาจารย์ให้นำเข้า/เพิ่มรายชื่อ แล้วกลับมาที่หน้านี้อีกครั้ง'),
       actionButton('ลองใหม่', () => ctx.refreshMe(), { class: 'primary' }))));
   }
+  if (reg && reg.byName === false) {
+    return mount(root, h('div', { class: 'signin' }, h('div', { class: 'card form' },
+      h('h1', {}, 'ใช้บัญชีนักศึกษา'),
+      h('p', {}, 'บัญชี ', h('strong', {}, ctx.me.email), ' ไม่ใช่บัญชีนักศึกษาแบบ <รหัสนักศึกษา>@g.cmru.ac.th'),
+      h('p', { class: 'muted' }, 'ออกจากระบบแล้วเข้าด้วยบัญชีนักศึกษาของคุณ หรือติดต่ออาจารย์ให้กำหนดบัญชีให้'),
+      actionButton('ลองใหม่', () => ctx.refreshMe(), { class: 'primary' }))));
+  }
   const f = {
-    studentId: h('input', { inputmode: 'numeric', autocomplete: 'off', placeholder: 'เช่น 67152901', maxlength: 13, required: true }),
+    studentId: h('input', { inputmode: 'numeric', autocomplete: 'off', placeholder: 'เช่น 69000001', maxlength: 13, required: true }),
     firstName: h('input', { autocomplete: 'given-name', placeholder: 'ไม่ต้องใส่คำนำหน้า', required: true }),
     lastName: h('input', { autocomplete: 'family-name', required: true }),
     nickname: h('input', { maxlength: 50 }),
@@ -192,11 +199,12 @@ async function groupForm(a, myId, g) {
   const opts = await call('groupOptions', { assignmentId: a.id });
   const name = h('input', { value: g?.name || '', maxlength: 100, placeholder: 'เช่น ทีมกาแฟ' });
   const count = h('span', { class: 'muted small' });
+  // สมาชิกเดิมเอาออกไม่ได้ (ต้องให้เจ้าตัวกด "ออกจากกลุ่ม" เอง) — ล็อกไว้พร้อมกับคนที่อยู่กลุ่มอื่น
   const boxes = opts.students.filter((s) => s.studentId !== myId).map((s) => {
     const mine = g ? s.groupId === g.id : false;
     const taken = !!s.groupId && !mine;
-    const input = h('input', { type: 'checkbox', checked: mine, disabled: taken, value: s.studentId });
-    return { s, input, taken, row: h('label', { class: 'check' + (taken ? ' muted' : '') }, input,
+    const input = h('input', { type: 'checkbox', checked: mine, disabled: taken || mine, value: s.studentId });
+    return { s, input, taken: taken || mine, row: h('label', { class: 'check' + (taken ? ' muted' : '') }, input,
       `${s.studentId} ${s.name}`, taken ? h('span', { class: 'chip' }, s.groupName) : null) };
   });
   const sync = () => {
@@ -210,7 +218,7 @@ async function groupForm(a, myId, g) {
     h('label', { class: 'field' }, h('span', {}, 'ชื่อกลุ่ม'), name),
     h('div', { class: 'row' }, h('strong', {}, 'สมาชิก'), h('span', { class: 'spacer' }), count),
     h('div', { class: 'pick-list' }, boxes.map((b) => b.row)),
-    h('p', { class: 'muted small' }, 'คนที่อยู่กลุ่มอื่นแล้วเลือกไม่ได้ — ให้เขาออกจากกลุ่มเดิมก่อน')),
+    h('p', { class: 'muted small' }, 'คนที่อยู่กลุ่มอื่นแล้วเลือกไม่ได้ — ให้เขาออกจากกลุ่มเดิมก่อน · เพิ่มเพื่อนได้ แต่เอาเพื่อนออกไม่ได้ (ให้เพื่อนกด "ออกจากกลุ่ม" เอง หรือติดต่ออาจารย์)')),
   [{
     label: 'บันทึก',
     run: async () => {

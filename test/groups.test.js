@@ -87,7 +87,7 @@ test('group files are shared with every member and count for everyone', () => {
   const { fileId, sub } = upload(b, '69000103', a.id);
   assert.equal(sub.files.length, 1);
   const f = b.db()._files[fileId];
-  assert.deepEqual({ ...f.appProperties }, { assignmentId: a.id, groupId: g.id });
+  assert.deepEqual({ ...f.appProperties, startedAt: undefined }, { assignmentId: a.id, groupId: g.id, startedAt: undefined });
   // 69000105 ยังไม่สมัคร → ยังไม่ได้สิทธิ์
   assert.deepEqual([...f.shared].sort(), [mail('69000103'), mail('69000104')]);
 

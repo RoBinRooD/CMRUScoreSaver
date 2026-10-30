@@ -1,8 +1,9 @@
 // การเข้าสู่ระบบด้วย Google (Google Identity Services) — เก็บ ID token ไว้ในเครื่องจนกว่าจะหมดอายุ (~1 ชม.)
 import { h, mount } from './ui.js';
 
-const KEY = 'cmruscoresaver_token';
 export const DEMO = new URLSearchParams(location.search).has('demo');
+// โหมดสาธิตใช้คีย์แยก — โทเคนสาธิตจะไม่ถูกส่งไปยังระบบจริง
+const KEY = DEMO ? 'cmruscoresaver_demo_token' : 'cmruscoresaver_token';
 
 function store() {
   try { return window.localStorage; } catch { return null; }

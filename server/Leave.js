@@ -59,7 +59,7 @@ function apiSubmitLeave_(user, p) {
   if (!(week >= 1 && week <= Grade.WEEKS && week === Math.floor(week))) throw new Error('กรุณาเลือกสัปดาห์ 1–' + Grade.WEEKS);
   var date = str_(p.date, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date).getTime())) throw new Error('กรุณาเลือกวันที่ลา');
-  if (!LEAVE_TYPES[p.type]) throw new Error('กรุณาเลือกประเภทการลา');
+  if (!Object.prototype.hasOwnProperty.call(LEAVE_TYPES, p.type)) throw new Error('กรุณาเลือกประเภทการลา');
   var reason = str_(p.reason, 1000);
   if (!reason) throw new Error('กรุณาใส่เหตุผลการลา');
   var dup = find_(rows_('LeaveRequests'), function (r) {
@@ -78,6 +78,7 @@ function apiStartLeaveUpload_(user, p) {
   var r = myLeave_(user, p.leaveId);
   if (r.status !== 'pending') throw new Error('ใบลานี้พิจารณาแล้ว แนบไฟล์เพิ่มไม่ได้');
   if (parseJson_(r.files, []).length >= LEAVE_MAX_FILES) throw new Error('แนบได้สูงสุด ' + LEAVE_MAX_FILES + ' ไฟล์');
+  checkUploadRate_(user);
   var size = Number(p.size);
   if (!(size > 0)) throw new Error('ไฟล์ว่างเปล่า');
   if (size > LEAVE_MAX_MB * 1024 * 1024) throw new Error('ไฟล์แนบใบลาต้องไม่เกิน ' + LEAVE_MAX_MB + ' MB');
@@ -90,7 +91,7 @@ function apiStartLeaveUpload_(user, p) {
     uploadUrl: startResumable_({
       folderId: leaveFolderId_(r.courseCode, st.studentId + ' ' + st.name),
       name: safeName_('สัปดาห์ ' + r.week + ' - ' + p.fileName),
-      mimeType: String(p.mimeType || 'application/octet-stream'),
+      mimeType: cleanMime_(p.mimeType),
       size: size,
       origin: origin,
       description: 'ใบลา ' + st.name + ' (' + st.studentId + ') สัปดาห์ ' + r.week,
@@ -106,6 +107,9 @@ function apiFinalizeLeaveUpload_(user, p) {
   if (!f || f.trashed || props.leaveId !== r.id || props.studentId !== user.studentId) throw new Error('ไม่พบไฟล์ที่อัปโหลด');
   var files = parseJson_(r.files, []);
   if (!files.some(function (x) { return x.id === f.id; })) {
+    // ตรวจซ้ำตอนจบ: อาจถูกพิจารณาไปแล้วระหว่างอัปโหลด หรือเปิด session ไว้เกินจำนวน
+    if (r.status !== 'pending') throw new Error('ใบลานี้พิจารณาแล้ว แนบไฟล์เพิ่มไม่ได้');
+    if (files.length >= LEAVE_MAX_FILES) throw new Error('แนบได้สูงสุด ' + LEAVE_MAX_FILES + ' ไฟล์');
     shareReader_(f.id, user.email);
     files.push({ id: f.id, name: f.name, size: Number(f.size) || 0, mimeType: f.mimeType });
     r.files = JSON.stringify(files);

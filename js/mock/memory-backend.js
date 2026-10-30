@@ -227,6 +227,12 @@ function getDriveFile_(id) {
   return memoryLoad_()._files[id] || null;
 }
 
+function unshareReader_(id, email) {
+  var f = memoryLoad_()._files[id];
+  if (f) f.shared = f.shared.filter(function (e) { return e !== email; });
+  memoryPersist_();
+}
+
 function shareReader_(id, email) {
   var f = memoryLoad_()._files[id];
   if (f && f.shared.indexOf(email) < 0) f.shared.push(email);

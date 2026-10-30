@@ -34,6 +34,7 @@ function boardGroup_(user, groupId) {
   var a = assignmentRow_(g.assignmentId);
   checkEnrolled_(user, a.courseCode);
   if (user.role !== 'teacher' && !isMember_(user, g)) throw new Error('ดูได้เฉพาะแผนงานของกลุ่มตัวเอง');
+  if (user.role !== 'teacher' && a.published !== 'true') throw new Error('งานนี้ถูกซ่อนอยู่');
   return { g: g, a: a };
 }
 

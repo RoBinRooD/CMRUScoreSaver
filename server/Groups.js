@@ -77,7 +77,17 @@ function mergedSubmission_(a, studentId) {
  * studentIds: เฉพาะคนเหล่านี้ (ค่าเริ่มต้น = ทุกคนในกลุ่ม) · fileIds: เฉพาะไฟล์เหล่านี้ (ค่าเริ่มต้น = ทุกไฟล์ของกลุ่ม)
  */
 function shareGroupFiles_(g, studentIds, fileIds) {
-  var ids = studentIds || membersOf_(g);
+  var ids = (studentIds || membersOf_(g)).filter(function (id) { return membersOf_(g).indexOf(id) >= 0; });
+  forGroupFiles_(g, ids, fileIds, shareReader_);
+}
+
+/** ถอนสิทธิ์ดูไฟล์ของกลุ่มจากคนที่ไม่ได้อยู่ในกลุ่มแล้ว */
+function unshareGroupFiles_(g, studentIds) {
+  var ids = studentIds.filter(function (id) { return membersOf_(g).indexOf(id) < 0; });
+  forGroupFiles_(g, ids, null, unshareReader_);
+}
+
+function forGroupFiles_(g, ids, fileIds, fn) {
   if (!fileIds) {
     var sub = groupSubmissionRow_(g.id);
     fileIds = (sub ? parseJson_(sub.files, []) : []).map(function (f) { return f.id; });
@@ -85,10 +95,10 @@ function shareGroupFiles_(g, studentIds, fileIds) {
   if (!fileIds.length || !ids.length) return;
   var emails = {};
   rows_('Students').forEach(function (r) {
-    if (r.email && ids.indexOf(r.studentId) >= 0 && membersOf_(g).indexOf(r.studentId) >= 0) emails[r.email.toLowerCase()] = true;
+    if (r.email && ids.indexOf(r.studentId) >= 0) emails[r.email.toLowerCase()] = true;
   });
   Object.keys(emails).forEach(function (e) {
-    fileIds.forEach(function (id) { shareReader_(id, e); });
+    fileIds.forEach(function (id) { fn(id, e); });
   });
 }
 
@@ -161,6 +171,10 @@ function apiSaveGroup_(user, p) {
     if (!teacher && membersOf_(g).indexOf(user.studentId) < 0) throw new Error('คุณไม่ได้อยู่ในกลุ่มนี้');
     if (!teacher && groupGraded_(a, g)) throw new Error('กลุ่มนี้ตรวจให้คะแนนแล้ว แก้ไม่ได้ (ติดต่ออาจารย์)');
     before = membersOf_(g);
+    // นักศึกษาเพิ่มเพื่อนได้อย่างเดียว — เอาคนออกต้องให้คนนั้นกด "ออกจากกลุ่ม" เอง หรือให้อาจารย์ทำ
+    if (!teacher && before.some(function (id) { return members.indexOf(id) < 0; })) {
+      throw new Error('นำเพื่อนออกจากกลุ่มไม่ได้ — ให้เพื่อนกด "ออกจากกลุ่ม" เอง หรือติดต่ออาจารย์');
+    }
   } else if (!teacher && groupOf_(a.id, user.studentId)) {
     throw new Error('คุณอยู่ในกลุ่มอื่นของงานนี้แล้ว');
   }
@@ -169,11 +183,13 @@ function apiSaveGroup_(user, p) {
   }
 
   var others = groupsOf_(a.id).filter(function (x) { return x !== g; });
+  var moved = [];
   members.forEach(function (id) {
     var other = find_(others, function (x) { return membersOf_(x).indexOf(id) >= 0; });
     if (!other) return;
     if (!teacher) throw new Error(id + ' อยู่กลุ่ม "' + other.name + '" แล้ว');
     other.members = JSON.stringify(membersOf_(other).filter(function (m) { return m !== id; }));
+    moved.push({ g: other, id: id });
   });
 
   if (g) {
@@ -190,6 +206,8 @@ function apiSaveGroup_(user, p) {
   saveAll_('Groups');
   pruneTasks_();
   shareGroupFiles_(g, members.filter(function (id) { return before.indexOf(id) < 0; }));
+  unshareGroupFiles_(g, before);
+  moved.forEach(function (m) { unshareGroupFiles_(m.g, [m.id]); });
   return groupView_(a, g);
 }
 
@@ -210,8 +228,10 @@ function apiLeaveGroup_(user, p) {
     throw new Error('คุณเป็นสมาชิกคนสุดท้าย — ลบไฟล์/ลิงก์ที่ส่งไว้ก่อนออกจากกลุ่ม');
   }
   g.members = JSON.stringify(left);
-  if (left.length) update_('Groups', g);
-  else {
+  if (left.length) {
+    update_('Groups', g);
+    unshareGroupFiles_(g, [user.studentId]);
+  } else {
     remove_('Submissions', function (s) { return s.groupId === g.id && !s.studentId; });
     remove_('Groups', function (x) { return x.id === g.id; });
     pruneTasks_();

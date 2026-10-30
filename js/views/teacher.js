@@ -578,7 +578,9 @@ function loadXlsx() {
   xlsxLoading ??= new Promise((resolve, reject) => {
     if (window.XLSX) return resolve(window.XLSX);
     const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    // SheetJS 0.20.3 เก็บไว้ใน repo เอง (รุ่นใน npm เก่าและมีช่องโหว่) + ตรวจลายนิ้วมือไฟล์ก่อนรัน
+    s.src = new URL('../vendor/xlsx-0.20.3.full.min.js', import.meta.url).href;
+    s.integrity = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
     s.onload = () => resolve(window.XLSX);
     s.onerror = () => { xlsxLoading = null; reject(new Error('โหลดตัวอ่าน Excel ไม่ได้')); };
     document.head.append(s);

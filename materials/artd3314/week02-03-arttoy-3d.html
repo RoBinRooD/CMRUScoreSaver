@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Art Toy Character 3D · ARTD3314 สัปดาห์ที่ 2–3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#141518; --panel:#1f2024; --panel2:#27282d; --line:#35363c;
+  --text:#ececec; --muted:#a3a4ab; --dim:#6d6e75;
+  --c1:#8b7cf8; --c2:#5ec4c8; --c3:#f2b866; --c4:#ef8a80; --c5:#6f9bff;
+  --grad:linear-gradient(135deg,#6f9bff 0%,#8b7cf8 55%,#b38cf5 100%);
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans Thai",system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+.sec{min-height:100vh;padding:120px 0 90px;display:flex;align-items:center;border-top:1px solid #1d1e22}
+.sec>.wrap{width:100%}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--c1);letter-spacing:.08em;margin-bottom:10px}
+.kicker::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--grad);transform:rotate(45deg)}
+h1{font-family:Prompt,"Noto Sans Thai";font-weight:800;font-size:clamp(56px,10vw,120px);line-height:1.05;letter-spacing:-.02em}
+h2{font-family:Prompt,"Noto Sans Thai";font-weight:700;font-size:clamp(30px,4.2vw,46px);line-height:1.25;margin-bottom:10px}
+h3{font-size:20px;font-weight:600;line-height:1.4}
+p{color:var(--muted);font-size:18px}
+.lead{font-size:19px;max-width:760px;margin-bottom:34px}
+b{color:var(--text);font-weight:600}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.small{font-size:14px;color:var(--dim)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:860px){.g2,.g3{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}.sec{padding:96px 0 70px}}
+.tip{display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--c1);border-radius:14px;padding:16px 20px;margin-top:22px}
+.tip span{font-size:22px;line-height:1.3}.tip p{color:var(--text);font-size:17px}
+.try{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--c3);background:rgba(242,184,102,.1);border:1px solid rgba(242,184,102,.3);padding:3px 10px;border-radius:99px;margin-bottom:14px}
+.btn{font-size:15px;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:8px 16px;transition:.2s}
+.btn:hover{border-color:#5a5b62}
+.btn.on{background:var(--c1);border-color:var(--c1);color:#fff;font-weight:600}
+.seg-btns{display:flex;flex-wrap:wrap;gap:8px}
+input[type=range]{width:100%;accent-color:var(--c1)}
+label.ctl{display:block;font-size:14px;color:var(--muted);margin-bottom:14px}
+label.ctl output{color:var(--text);font-weight:600;float:right}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(30px);transition:opacity .8s var(--ease),transform .9s var(--ease)}
+.rv.in{opacity:1;transform:none}
+.rv.d1{transition-delay:.1s}.rv.d2{transition-delay:.2s}.rv.d3{transition-delay:.3s}.rv.d4{transition-delay:.4s}
+
+/* anim helpers (fire when parent has .in or on insert) */
+.dr{stroke-dasharray:1;stroke-dashoffset:1}
+.in .dr,.ani .dr{animation:draw 1.4s cubic-bezier(.65,0,.35,1) forwards;animation-delay:calc(var(--d,0)*1ms)}
+@keyframes draw{to{stroke-dashoffset:0}}
+.gb{transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(0)}
+.in .gb,.ani .gb{animation:gy 1s var(--ease) forwards;animation-delay:calc(var(--d,0)*1ms)}
+@keyframes gy{to{transform:scaleY(1)}}
+.seg{stroke-dasharray:0 100}
+.in .seg,.ani .seg{animation:seg 1.2s var(--ease) both;animation-delay:calc(var(--d,0)*1ms)}
+@keyframes seg{from{stroke-dasharray:0 100}}
+.pp{transform-box:fill-box;transform-origin:50% 100%;opacity:0}
+.in .pp,.ani .pp{animation:pop .5s var(--ease) forwards;animation-delay:calc(var(--d,0)*1ms)}
+@keyframes pop{0%{opacity:0;transform:scale(.4)}70%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+.float{animation:float 6s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+
+/* top bar + nav */
+#top{position:fixed;top:0;left:0;right:0;height:58px;display:flex;align-items:center;gap:12px;padding:0 22px;background:rgba(20,21,24,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid #222328;z-index:50}
+#top .brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600;white-space:nowrap}
+#top .brand svg{width:20px;height:20px}
+#navlinks{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+#navlinks::-webkit-scrollbar{display:none}
+#navlinks a{font-size:13.5px;color:var(--muted);text-decoration:none;padding:6px 11px;border-radius:9px;white-space:nowrap;transition:.2s}
+#navlinks a.on{color:#fff;background:var(--panel2)}
+#prog{position:fixed;top:58px;left:0;height:3px;background:var(--grad);z-index:51;width:0}
+#nextbtn{position:fixed;right:22px;bottom:22px;z-index:50;background:var(--c1);color:#fff;border:0;border-radius:14px;padding:12px 20px;font-size:15px;font-weight:600;box-shadow:0 10px 30px rgba(139,124,248,.35)}
+#nextbtn:hover{filter:brightness(1.1)}
+#menuBtn{display:none;margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:6px 12px;font-size:14px}
+@media(max-width:860px){
+  #menuBtn{display:block}
+  #navlinks{display:none;position:fixed;top:58px;left:0;right:0;flex-direction:column;gap:2px;padding:10px 14px 16px;background:rgba(20,21,24,.97);border-bottom:1px solid var(--line);max-height:calc(100vh - 58px);overflow-y:auto;margin:0}
+  #navlinks.open{display:flex}
+  #navlinks a{font-size:16px;padding:11px 14px}
+  .sec{min-height:auto;padding:84px 0 56px}
+  .wrap{padding:0 18px}
+  .lead{font-size:17px;margin-bottom:24px}
+  p{font-size:16.5px}
+  .card{padding:18px}
+  #nextbtn{right:14px;bottom:14px;padding:0;width:52px;height:52px;border-radius:50%;font-size:0}
+  #nextbtn::after{content:"↓";font-size:22px}
+  #nextbtn.top::after{content:"↑"}
+  .hero svg{width:100%;max-width:360px;align-self:center}
+  .waffle{grid-template-columns:repeat(10,minmax(0,1fr));width:100%;max-width:300px;gap:5px}
+  .waffle span{width:auto;height:auto;aspect-ratio:1}
+  .facts .fact{font-size:15px}
+  .steps button{min-width:calc(33% - 8px);padding:10px 6px;font-size:13px}
+  .rub .lab{width:118px;font-size:13.5px}
+  .flip{height:120px}
+  .sample{max-width:none}
+  .gdemo{max-width:300px}
+  .tip p{font-size:15.5px}
+  .seg-btns .btn{font-size:14px;padding:8px 12px}
+  .divnum{font-size:72px}
+  #flips{grid-template-columns:1fr 1fr;gap:10px}
+  #flips h3{font-size:16px!important}
+  #flips .f,#flips .b{padding:14px}
+}
+
+/* hero */
+.hero{display:flex;align-items:center;gap:40px}
+.hero svg{width:min(440px,90vw);height:auto;flex:none}
+@media(max-width:860px){.hero{flex-direction:column;align-items:flex-start}}
+.agenda{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:40px}
+.agenda a{text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;transition:.25s}
+.agenda a:hover{border-color:var(--c1);transform:translateY(-3px)}
+.agenda .n{font-family:Prompt;font-weight:800;font-size:34px}
+@media(max-width:860px){.agenda{grid-template-columns:1fr 1fr}}
+
+/* toggle */
+.switch{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:18px}
+.switch button{border:0;background:none;color:var(--muted);padding:8px 18px;border-radius:9px;font-size:15px;transition:.25s}
+.switch button.on{background:var(--c1);color:#fff;font-weight:600}
+.stage{position:relative;min-height:340px}
+.view{position:absolute;inset:0;opacity:0;transform:scale(.97);transition:.5s var(--ease);pointer-events:none}
+.view.on{opacity:1;transform:none;pointer-events:auto;position:relative}
+.waffle{display:grid;grid-template-columns:repeat(10,22px);gap:6px}
+.waffle span{width:22px;height:22px;border-radius:5px;transition:transform .2s,opacity .2s;opacity:0}
+.view.on .waffle span,.in .waffle span{animation:pop .45s var(--ease) forwards;animation-delay:calc(var(--d)*1ms)}
+.waffle.hl span{opacity:.18!important}
+.waffle.hl span.hit{opacity:1!important;transform:scale(1.08)}
+.legend{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.legend button{display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--muted);font-size:16px;text-align:left;padding:2px 0}
+.legend button:hover{color:var(--text)}
+.legend i{width:13px;height:13px;border-radius:3px}
+
+/* types */
+.type{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:left;color:var(--text);transition:.25s}
+.type:hover{border-color:#55565c;transform:translateY(-2px)}
+.type.on{border-color:var(--c1);background:linear-gradient(160deg,#2a2640,var(--panel))}
+.type svg{width:54px;height:54px;margin-bottom:8px}
+.type h3{font-size:18px}
+.type p{font-size:14px}
+#typeDetail{margin-top:18px;min-height:86px}
+
+/* workflow */
+.steps{display:flex;gap:10px;position:relative;margin-bottom:20px;flex-wrap:wrap}
+.steps button{flex:1;min-width:120px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 10px;color:var(--muted);transition:.25s;text-align:center}
+.steps button .n{display:block;font-family:Prompt;font-weight:700;font-size:24px;color:var(--text)}
+.steps button.on{border-color:var(--c1);color:var(--text);background:#262340}
+.steps button.done .n{color:var(--c1)}
+#stepBody{min-height:120px}
+
+/* filter game */
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:860px){.facts{grid-template-columns:1fr}}
+.fact{display:flex;gap:12px;align-items:flex-start;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--text);font-size:16px;line-height:1.5;transition:.2s}
+.fact .box{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid #55565c;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff}
+.fact.keep{border-color:var(--c1)}
+.fact.keep .box{background:var(--c1);border-color:var(--c1)}
+.fact.right{box-shadow:0 0 0 2px var(--c2)}
+.fact.wrong{box-shadow:0 0 0 2px var(--c4)}
+.fact .why{display:none;font-size:13.5px;color:var(--muted);margin-top:4px}
+.checked .fact .why{display:block}
+#gameResult{margin-top:16px;font-size:18px;min-height:30px}
+
+/* squint */
+.sample{background:#f4f2ee;color:#222;border-radius:14px;padding:22px;transition:filter .5s;position:relative;max-width:420px}
+.sample.blur{filter:blur(7px)}
+.sample .t{font-family:Prompt;font-weight:800;font-size:28px;line-height:1.2}
+.sample .big{font-family:Prompt;font-weight:800;font-size:64px;color:#6b5ce7;line-height:1}
+.sample .sub{font-size:13px;color:#666}
+.sample .row{display:flex;gap:12px;margin-top:14px}
+.sample .box{flex:1;background:#e8e4f7;border-radius:10px;padding:10px;font-size:12px;color:#555}
+.sample .box b{display:block;font-size:20px;color:#333}
+.sample .src{font-size:10px;color:#999;margin-top:14px}
+#zpath{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:.3s}
+#zpath.on{opacity:1}
+
+/* grid demo */
+.gdemo{position:relative;background:#f4f2ee;border-radius:14px;aspect-ratio:3/4;max-width:380px;width:100%;overflow:hidden}
+.glay,.gcols{position:absolute;inset:var(--m);display:grid;grid-template-columns:repeat(var(--n),1fr);column-gap:var(--g);row-gap:var(--g);transition:.4s}
+.glay{grid-auto-rows:min-content;align-content:start}
+.gcols div{background:rgba(239,138,128,.22);border-left:1px dashed rgba(239,138,128,.6);border-right:1px dashed rgba(239,138,128,.6)}
+.gcols{opacity:0;transition:opacity .3s}
+.gdemo.show .gcols{opacity:1}
+.glay div{border-radius:6px;transition:.4s var(--ease)}
+
+/* hierarchy tools */
+.mini{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center;cursor:pointer;transition:.25s}
+.mini:hover{border-color:var(--c1)}
+.mini svg{width:100%;height:110px}
+.mini svg *{transition:all .5s var(--ease)}
+.mini p{font-size:14px}
+
+/* color */
+.cinfo{border-radius:16px;padding:22px;transition:background .4s}
+.cinfo *{transition:all .4s}
+.sw{width:34px;height:34px;border-radius:9px;border:2px solid transparent}
+.pal{display:flex;gap:6px;padding:8px;border-radius:12px;border:1px solid var(--line);background:var(--panel)}
+.pal.on{border-color:var(--c1)}
+.cr{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cr input[type=color]{width:46px;height:38px;border:1px solid var(--line);border-radius:8px;background:none;padding:2px}
+#crPreview{border-radius:12px;padding:18px;font-size:20px;margin-top:12px;border:1px solid var(--line)}
+.badge{display:inline-block;font-size:13px;font-weight:700;padding:3px 10px;border-radius:99px}
+.pass{background:rgba(94,196,200,.15);color:var(--c2)}.fail{background:rgba(239,138,128,.15);color:var(--c4)}
+
+/* type */
+#typeDemo{background:#f4f2ee;color:#222;border-radius:14px;padding:26px;overflow:hidden}
+#typeDemo div{line-height:1.3;transition:font-size .3s,font-family .3s;margin-bottom:8px}
+
+/* icon */
+#houseSvg *{transition:all .7s var(--ease)}
+.iconset svg{width:100%;height:56px}
+
+/* chart */
+#chartBox svg{width:100%;height:auto;max-height:320px}
+#chartMsg{min-height:54px;margin-top:10px}
+
+
+body.fig .m-toy{display:none}body:not(.fig) .m-fig{display:none}
+.modeSw{margin:16px 0 0}
+.exsvg canvas{display:block;width:100%;aspect-ratio:240/340}.exsvg canvas.wide{aspect-ratio:760/360}
+.exsvg .hint3d{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:12px;color:#8d8780;pointer-events:none;transition:opacity .4s}
+.exsvg.touched .hint3d{opacity:0}
+@media(max-width:860px){.exsvg.scrollx{overflow-x:auto}.exsvg.scrollx canvas.wide{width:620px;max-width:none}}
+.v3tools{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}.v3tools .btn{font-size:13.5px;padding:6px 12px}
+#chBadge{font-size:13px;padding:5px 11px;border-radius:99px;background:rgba(139,124,248,.15);color:#c9c1ff;border:1px solid rgba(139,124,248,.4);text-decoration:none;white-space:nowrap;margin-left:12px;flex:none}
+@media(max-width:520px){#top .bt{display:none}#chBadge{margin-left:0}}
+/* showcase */
+.ex{display:grid;grid-template-columns:1.3fr 1fr;gap:30px;align-items:center;margin-top:40px;padding-top:36px;border-top:1px dashed var(--line)}
+.ex:first-of-type{border-top:0;padding-top:0}
+.exsvg{border-radius:18px;overflow:hidden;background:var(--panel);border:1px solid var(--line);position:relative}
+.exsvg svg{display:block;width:100%;height:auto}
+.excap{font-size:14.5px;color:var(--c3);min-height:24px;margin-top:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chips span{font-size:13px;padding:4px 11px;border-radius:99px;background:rgba(139,124,248,.12);border:1px solid rgba(139,124,248,.35);color:#c9c1ff}
+.exnum{font-family:Prompt;font-weight:800;font-size:15px;color:var(--c3);letter-spacing:.06em}
+.hit{cursor:pointer}
+.ani .grow{transform-box:fill-box;transform-origin:50% 100%;animation:gy 1.1s var(--ease) both;animation-delay:calc(var(--d,0)*1ms)}
+.breath{transform-box:fill-box;transform-origin:50% 100%;animation:breath 3.2s ease-in-out infinite;animation-delay:calc(var(--d,0)*1ms)}
+@keyframes breath{0%,100%{transform:scale(1,1)}50%{transform:scale(1.025,.975)}}
+.zz{animation:zz 2.6s ease-in-out infinite;animation-delay:calc(var(--d,0)*1ms)}
+@keyframes zz{0%{opacity:0;transform:translate(0,6px)}30%{opacity:1}100%{opacity:0;transform:translate(10px,-22px)}}
+.ani .fin{animation:fd .9s ease both;animation-delay:calc(var(--d,0)*1ms)}
+@keyframes fd{from{opacity:0}to{opacity:1}}
+.bob{transform-box:fill-box;transform-origin:50% 50%;animation:bob 2.4s ease-in-out infinite;animation-delay:calc(var(--d,0)*1ms)}
+.glowp{animation:glowp 2.4s ease-in-out infinite}@keyframes glowp{0%,100%{opacity:.7}50%{opacity:1}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@media(max-width:860px){.ex{grid-template-columns:1fr;gap:16px}}
+
+/* flip */
+.flip{perspective:900px;height:150px;cursor:pointer}
+.flip .in2{position:relative;width:100%;height:100%;transition:transform .6s var(--ease);transform-style:preserve-3d}
+.flip.on .in2{transform:rotateY(180deg)}
+.flip .f,.flip .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;padding:20px;display:flex;flex-direction:column;justify-content:center;border:1px solid var(--line)}
+.flip .f{background:var(--panel)}
+.flip .b{background:#1d2b2c;border-color:var(--c2);transform:rotateY(180deg)}
+.x{color:var(--c4);font-weight:700}.ok{color:var(--c2);font-weight:700}
+
+/* checklist */
+.chk{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;color:var(--text);font-size:17px;margin-bottom:10px;transition:.2s}
+.chk .cb{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid #55565c;display:flex;align-items:center;justify-content:center;transition:.2s}
+.chk.on{border-color:var(--c1)}
+.chk.on .cb{background:var(--c1);border-color:var(--c1)}
+.chk.on .cb::after{content:"✓";color:#fff;font-size:14px;font-weight:700}
+.track{height:10px;background:#2c2d32;border-radius:6px;overflow:hidden}
+.fill{height:100%;background:var(--grad);border-radius:6px;transition:width .5s var(--ease)}
+.rub{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:15px;color:var(--muted)}
+.rub .lab{width:170px}.rub .track{flex:1}.rub .pt{width:30px;text-align:right;color:var(--text);font-weight:600}
+ul.clean{list-style:none}
+ul.clean li{position:relative;padding-left:24px;margin-bottom:10px;color:var(--muted);font-size:17px}
+ul.clean li::before{content:"";position:absolute;left:3px;top:.7em;width:8px;height:8px;border-radius:2px;background:var(--c1);transform:rotate(45deg)}
+.divnum{font-family:Prompt;font-weight:800;font-size:clamp(70px,10vw,120px);line-height:1;margin-bottom:6px}
+footer{padding:60px 0 120px;text-align:center}
+
+.exsvg{border-radius:18px;overflow:hidden;border:1px solid var(--line);position:relative}
+.exsvg svg{display:block;width:100%;height:auto}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chips span{font-size:13px;padding:4px 11px;border-radius:99px;background:rgba(139,124,248,.12);border:1px solid rgba(139,124,248,.35);color:#c9c1ff}
+.moodgrid{display:grid;grid-template-columns:2fr 1fr 1fr;grid-template-rows:170px 170px;gap:12px}
+.mood{border-radius:16px;padding:16px;text-align:left;border:1px solid var(--line);color:var(--text);display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;transition:.3s}
+.mood:hover{transform:translateY(-2px);border-color:var(--c1)}
+.mood h3{font-size:18px;position:relative}
+.mood p{font-size:14px;position:relative;max-height:0;overflow:hidden;transition:max-height .4s;color:#e9e6ff}
+.mood.on p{max-height:120px}
+.mood .art{position:absolute;inset:0}
+.mood::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(10,10,20,.75));pointer-events:none}
+.mood h3,.mood p{z-index:1}
+.keygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.key{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+.key kbd{display:inline-block;font-family:inherit;font-weight:700;font-size:15px;background:#2c2d33;border:1px solid #45464c;border-bottom-width:3px;border-radius:7px;padding:2px 9px;color:#fff;margin-bottom:8px}
+.key h3{font-size:16px}.key p{font-size:13.5px}
+.mpt{cursor:grab}
+@media(max-width:860px){
+  .moodgrid{grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,140px)}
+  .moodgrid .mood:first-child{grid-column:1/-1}
+  .keygrid{grid-template-columns:1fr 1fr}
+}
+
+.hero .exsvg svg{width:100%;max-width:none}
+</style>
+</head>
+<body>
+<header id="top">
+  <div class="brand">
+    <svg viewBox="0 0 24 24"><defs><linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6f9bff"/><stop offset="1" stop-color="#b38cf5"/></linearGradient></defs><path d="M12 1.5c.6 5.6 4.9 9.9 10.5 10.5-5.6.6-9.9 4.9-10.5 10.5C11.4 16.9 7.1 12.6 1.5 12 7.1 11.4 11.4 7.1 12 1.5z" fill="url(#bg1)"/></svg>
+    <span class="bt">ARTD3314 · Art Toy 3D</span>
+  </div>
+  <a id="chBadge" href="#concept" title="เปลี่ยนตัวละคร">🎭 <span class="chName"></span><span id="chMode"></span></a>
+  <button id="menuBtn" aria-label="สารบัญ">☰ สารบัญ</button>
+  <nav id="navlinks"></nav>
+</header>
+<div id="prog"></div>
+<button id="nextbtn">ถัดไป ↓</button>
+
+<!-- HERO -->
+<section class="sec" id="intro" data-nav="เริ่ม">
+  <div class="wrap">
+    <div class="hero">
+      <div style="flex:1">
+        <div class="kicker rv">สัปดาห์ที่ 2 – 3</div>
+        <h1 class="rv d1" style="font-size:clamp(50px,8.5vw,104px)"><span class="grad"><span class="m-toy">Art Toy</span><span class="m-fig">Figure</span></span><br>Character</h1>
+        <p class="rv d2" style="font-size:24px;color:var(--text);margin-top:12px;font-weight:500">จากภาพร่าง → turnaround → โมเดล 3D</p>
+        <p class="rv d3" style="margin-top:12px;max-width:520px">ตัวละครตัวอย่าง <b>“<span class="chName">เห็ดขี้เซา</span>”</b> จะใช้ตลอดทั้งหน้า และ <b>เปลี่ยนได้</b> ที่หัวข้อ <a href="#concept" style="color:var(--c1)">W2 Concept</a> ตัวละครเป็น <b>โมเดล 3D จริง</b> ลากหมุนดูได้ทุกหัวข้อ</p>
+        <div class="switch modeSw rv d3"><button data-mode="toy">🧸 Art Toy</button><button data-mode="fig">🧍 Figure</button></div>
+      </div>
+      <div class="rv d2" style="width:min(380px,100%);flex:none"><div class="exsvg" style="background:#f4f2ee"><canvas class="c3d" id="heroToy"></canvas><div class="hint3d">↔ ลากเพื่อหมุนโมเดล</div></div><div class="v3tools"><button class="btn on" id="hAuto">⟳ หมุนอัตโนมัติ</button><button class="btn" id="hWire">🕸 Wireframe</button></div></div>
+    </div>
+    <div class="agenda">
+      <a href="#concept" class="rv d1"><div class="n grad">W2</div><h3>Concept</h3><p class="small">ค้นคว้า · mood board</p></a>
+      <a href="#shape" class="rv d2"><div class="n grad">W2</div><h3>Character Design</h3><p class="small">รูปทรง · สัดส่วนของเล่น · สี</p></a>
+      <a href="#turn" class="rv d3"><div class="n grad">W2</div><h3>Turnaround</h3><p class="small">หน้า · ข้าง · หลัง</p></a>
+      <a href="#poly" class="rv d4"><div class="n grad">W3</div><h3>3D Modeling</h3><p class="small">box modeling · modifier</p></a>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT IS ART TOY -->
+<section class="sec" id="what" data-nav="อาร์ตทอยคือ">
+  <div class="wrap">
+    <div class="kicker rv"><span class="m-toy">Art Toy / Designer Toy</span><span class="m-fig">Figure / Scale Figure</span></div>
+    <h2 class="rv d1"><span class="m-toy">ของเล่นที่เป็น “งานศิลปะ” ของนักออกแบบ</span><span class="m-fig">ฟิกเกอร์ = ตัวละครที่จับต้องได้ในสัดส่วนสมจริง</span></h2>
+    <p class="lead rv d2"><span class="m-toy">อาร์ตทอยต่างจากภาพวาดตรงที่ <b>ต้องผลิตได้จริง</b> ทุกการตัดสินใจในการออกแบบจึงต้องคิดถึงทั้งความน่ารักและการขึ้นรูป</span><span class="m-fig">ฟิกเกอร์เน้น <b>ตัวละครที่ดูมีชีวิต</b> สัดส่วนใกล้คน ท่าทางมีพลัง รายละเอียดชุดเยอะ แต่ก็ยังต้อง <b>ผลิตได้จริง</b> เหมือนกัน</span></p>
+    <div class="g4 rv d3 m-toy">
+      <div class="card"><div style="font-size:30px">🧸</div><h3>หัวโต ตัวเล็ก</h3><p style="font-size:15px">สัดส่วนน่ารัก จำง่าย ตั้งโชว์ได้</p></div>
+      <div class="card"><div style="font-size:30px">🔷</div><h3>รูปทรงเรียบ</h3><p style="font-size:15px">เงาชัด ไม่มีชิ้นบางที่หักง่าย</p></div>
+      <div class="card"><div style="font-size:30px">🎨</div><h3>สีจำกัด</h3><p style="font-size:15px">ทุกสีคือขั้นตอนการผลิตที่เพิ่มขึ้น</p></div>
+      <div class="card"><div style="font-size:30px">📖</div><h3>มีเรื่องราว</h3><p style="font-size:15px">บุคลิก ที่มา ทำให้คนอยากสะสม</p></div>
+    </div>
+    <div class="g4 rv d3 m-fig">
+      <div class="card"><div style="font-size:30px">📏</div><h3>สัดส่วน 5–8 หัว</h3><p style="font-size:15px">ใกล้คนจริง ขายาว ใส่ชุดได้เต็มที่</p></div>
+      <div class="card"><div style="font-size:30px">⚡</div><h3>ท่าทางมีพลัง</h3><p style="font-size:15px">ท่าโพสบอกนิสัย ตัวละครดูมีเรื่องราว</p></div>
+      <div class="card"><div style="font-size:30px">🧵</div><h3>รายละเอียดชุด</h3><p style="font-size:15px">ผ้า อาวุธ เครื่องประดับ ต้องอ่านออกในขนาดเล็ก</p></div>
+      <div class="card"><div style="font-size:30px">🔩</div><h3>ฐานและข้อต่อ</h3><p style="font-size:15px">ข้อเท้าเล็ก ต้องมีเดือยและฐานรองรับ</p></div>
+    </div>
+    <div class="steps rv" style="margin-top:28px" id="pipeline"></div>
+    <p class="small rv">ขั้นตอนของสองสัปดาห์นี้: กดดูแต่ละขั้น</p>
+    <div class="card rv" id="pipeBody" style="margin-top:12px"></div>
+  </div>
+</section>
+
+<!-- CONCEPT GENERATOR -->
+<section class="sec" id="concept" data-nav="W2 Concept">
+  <div class="wrap">
+    <div class="divnum grad rv">W2</div>
+    <div class="kicker rv">Concept</div>
+    <h2 class="rv d1">ไอเดียตั้งต้น = ฐาน + บุคลิก + ธีม</h2>
+    <p class="lead rv d2">คอนเซปต์ที่ดีอธิบายได้ใน 1 ประโยค ลองผสมดู หรือกดสุ่ม แล้วเอาไปต่อยอดเป็นของตัวเอง</p>
+    <div class="rv d2" style="margin:-10px 0 22px"><p class="small" style="margin-bottom:6px">ประเภทงาน</p><div class="switch modeSw" style="margin:0"><button data-mode="toy">🧸 Art Toy (หัวโต 2–3 หัว)</button><button data-mode="fig">🧍 Figure (5–8 หัว)</button></div></div>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2">
+        <div class="try">🎲 เลือกหรือสุ่ม</div>
+        <p class="small" style="margin-bottom:6px">ฐาน (Base)</p><div class="seg-btns" id="cBase" style="margin-bottom:14px"></div>
+        <p class="small" style="margin-bottom:6px">บุคลิก (Personality)</p><div class="seg-btns" id="cPer" style="margin-bottom:14px"></div>
+        <p class="small" style="margin-bottom:6px">ธีม (Theme)</p><div class="seg-btns" id="cTheme" style="margin-bottom:16px"></div>
+        <button class="btn on" id="cRand">🎲 สุ่มคอนเซปต์</button>
+      </div>
+      <div class="rv d3">
+        <div class="card" style="border-color:var(--c1)">
+          <p class="small">คอนเซปต์ของคุณ</p>
+          <h3 id="cOut" style="font-size:26px;margin:6px 0 12px;font-family:Prompt"></h3>
+          <p id="cStory" style="color:var(--text);font-size:16px"></p>
+          <p class="small" style="margin:14px 0 8px">สีตั้งต้นที่เข้ากับธีม</p>
+          <div id="cPal" style="display:flex;gap:8px"></div>
+          <p class="small" style="margin:14px 0 6px">คำค้นสำหรับ mood board</p>
+          <div class="chips" id="cKeys" style="margin:0"></div>
+          <div style="display:flex;gap:14px;align-items:center;margin-top:14px"><div class="exsvg" style="background:#f4f2ee;width:150px;flex:none"><canvas class="c3d" id="cToy"></canvas></div><p style="font-size:14.5px;color:var(--c2)">✓ โมเดล 3D ในทุกหัวข้อของหน้านี้ เปลี่ยนตามที่เลือกแล้ว ลองเลื่อนลงไปดู</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MOODBOARD -->
+<section class="sec" id="mood" data-nav="Mood board">
+  <div class="wrap">
+    <div class="kicker rv">ค้นคว้าและทำ Mood Board</div>
+    <h2 class="rv d1">Mood board ไม่ใช่การแปะรูปสวย ๆ</h2>
+    <p class="lead rv d2">มันคือ <b>เอกสารตัดสินใจ</b> ว่าตัวละครจะออกมาหน้าตาแบบไหน ต้องตอบได้ครบ 5 ช่องนี้ แตะแต่ละช่องเพื่อดูว่าควรใส่อะไร</p>
+    <div class="moodgrid rv d3" id="moodGrid"></div>
+    <div class="tip rv"><span>💡</span><p>หาภาพจาก <b>ของจริง</b> (เห็ดจริง ผ้าจริง พื้นผิวจริง) มากกว่ารูปตัวละครของคนอื่น จะได้ไม่ออกแบบซ้ำใคร และใส่ที่มาของภาพไว้มุมเล็ก ๆ</p></div>
+  </div>
+</section>
+
+<!-- SHAPE LANGUAGE -->
+<section class="sec" id="shape" data-nav="รูปทรง">
+  <div class="wrap">
+    <div class="kicker rv">Shape Language</div>
+    <h2 class="rv d1">รูปทรงบอกนิสัยก่อนสีหน้า</h2>
+    <p class="lead rv d2">รูปทรงหลักของลำตัวทำให้คนรู้สึกต่อตัวละครต่างกัน ลองเปลี่ยนรูปทรงของ “<span class="chName"></span>” ดู</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2 exsvg" style="background:#f4f2ee;max-width:380px;justify-self:center;width:100%"><canvas class="c3d" id="shapeToy"></canvas><div class="hint3d">↔ ลากเพื่อหมุน</div></div>
+      <div class="rv d3">
+        <div class="try">👆 เลือกรูปทรง</div>
+        <div class="seg-btns" id="shapeBtns" style="margin-bottom:16px">
+          <button class="btn on" data-s="circle">● วงกลม</button>
+          <button class="btn" data-s="square">■ สี่เหลี่ยม</button>
+          <button class="btn" data-s="triangle">▲ สามเหลี่ยม</button>
+          <button class="btn" data-s="vtri">▼ สามเหลี่ยมกลับหัว</button>
+        </div>
+        <div class="card" id="shapeMsg"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROPORTION -->
+<section class="sec" id="prop" data-nav="สัดส่วน">
+  <div class="wrap">
+    <div class="kicker rv"><span class="m-toy">สัดส่วนแบบของเล่น</span><span class="m-fig">สัดส่วนฟิกเกอร์</span></div>
+    <h2 class="rv d1">ตัวละครสูงกี่ “หัว”?</h2>
+    <p class="lead rv d2">วัดความสูงทั้งตัวเป็นจำนวนหัว คนจริงสูงราว 7–8 หัว <span class="m-toy">แต่ของเล่นน่ารักมักอยู่ที่ <b>2–3 หัว</b></span><span class="m-fig">ฟิกเกอร์ส่วนใหญ่อยู่ที่ <b>5–8 หัว</b> ตามสไตล์</span> ลากดูว่าความรู้สึกเปลี่ยนยังไง</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2 exsvg" style="background:#f4f2ee;max-width:380px;justify-self:center;width:100%"><canvas class="c3d" id="propToy"></canvas><div class="hint3d">↔ ลากเพื่อหมุน</div></div>
+      <div class="rv d3">
+        <div class="try">🎛️ ลากปรับสัดส่วน</div>
+        <label class="ctl">ความสูง <output id="oH">1.5 หัว</output><input type="range" id="rH" min="1.3" max="4" step="0.1" value="1.5"></label>
+        <div class="card"><h3 id="propName" style="font-size:22px"></h3><p id="propMsg" style="font-size:16px;margin-top:6px"></p></div>
+        <div class="tip"><span>🏭</span><p><span class="m-toy">คิดเผื่อการผลิต: แขนขา <b>หนาและสั้น</b> ฐานเท้ากว้างพอให้ตั้งได้เอง ไม่มีส่วนที่บางหรือยื่นยาวจนหัก</span><span class="m-fig">คิดเผื่อการผลิต: ฟิกเกอร์ขายาว ข้อเท้าเล็ก <b>ต้องมีฐานและเดือย</b> ส่วนยื่น เช่น ผม อาวุธ ผ้าคลุม ทำเป็นชิ้นแยก</span></p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SILHOUETTE + COLOR -->
+<section class="sec" id="color" data-nav="เงาและสี">
+  <div class="wrap">
+    <div class="kicker rv">Silhouette &amp; Color</div>
+    <h2 class="rv d1">ดูแค่เงาก็ต้องจำได้ · สีน้อยแต่ชัด</h2>
+    <p class="lead rv d2">ทดสอบด้วยการเปลี่ยนเป็นเงาดำ ถ้ายังรู้ว่าเป็นตัวไหน แปลว่ารูปทรงแข็งแรงพอ จากนั้นลองเปลี่ยนชุดสี โดยใช้ <b>3–5 สี</b> เท่านั้น</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="exsvg" style="background:#f4f2ee"><canvas class="c3d" id="silA"></canvas></div>
+        <div class="exsvg" style="background:#f4f2ee"><canvas class="c3d" id="silB"></canvas></div>
+        <p class="small" style="text-align:center"><span class="chName"></span> (มี<span class="chFeat"></span>)</p><p class="small" style="text-align:center">ตัวทั่วไป (ไม่มีจุดเด่น)</p>
+      </div>
+      <div class="rv d3">
+        <div class="try">👁️ ทดสอบเงา (ลากหมุนดูเงาได้ทุกมุม) และเลือกชุดสี</div>
+        <button class="btn" id="btnSil" style="margin-bottom:18px">เปลี่ยนเป็นเงาดำ</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap" id="toyPals"></div>
+        <ul class="clean" style="margin-top:18px">
+          <li>เงาที่จำได้มาจาก <b>ส่วนที่ยื่นออกมา</b> เช่น หมวก หู หาง</li>
+          <li>สีหลัก 1 + รอง 1 + เน้น 1 + สีผิว/ขาว</li>
+          <li>สีน้อย = ผลิตง่าย ต้นทุนต่ำ ทุกสีคือขั้นตอนพ่นหรือพิมพ์เพิ่ม</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TURNAROUND -->
+<section class="sec" id="turn" data-nav="Turnaround">
+  <div class="wrap">
+    <div class="kicker rv">Turnaround</div>
+    <h2 class="rv d1">หน้า · ข้าง · หลัง = แบบพิมพ์เขียวของโมเดล</h2>
+    <p class="lead rv d2">turnaround คือภาพตัวละครตัวเดียวกันในหลายมุม <b>ขนาดเท่ากันและเส้นไกด์ตรงกัน</b> สัปดาห์หน้าเราจะเอาภาพนี้ไปวางเป็นพื้นหลังในโปรแกรม 3D แล้วขึ้นรูปตาม</p>
+    <div class="rv d2">
+      <div class="try">📐 สามมุมนี้เรนเดอร์จากโมเดล 3D ตัวเดียวกันด้วยกล้อง Orthographic · เปิดเส้นไกด์แล้วสังเกตว่าทุกมุมตรงกัน</div>
+      <div class="seg-btns" style="margin-bottom:14px">
+        <button class="btn on" id="tGuide">เส้นไกด์</button>
+        <button class="btn" id="tSil">เงาดำ</button>
+        <button class="btn" id="tWrong">❌ ดูแบบผิด (ขนาดไม่เท่ากัน)</button>
+      </div>
+      <div class="exsvg scrollx" style="background:#f4f2ee"><canvas class="c3d wide" id="turnSvg"></canvas></div>
+    </div>
+    <div class="g3 rv d3" style="margin-top:22px">
+      <div class="card"><h3>ท่ายืนตรง</h3><p style="font-size:15px">ท่า A-pose หรือ T-pose แขนไม่บังลำตัว จะได้ขึ้นรูปง่าย</p></div>
+      <div class="card"><h3>มุมตรง ไม่มีเปอร์สเปกทีฟ</h3><p style="font-size:15px">มองตรงแบบ orthographic ไม่ใช่มุมเฉียง</p></div>
+      <div class="card"><h3>ด้านข้างบอกความหนา</h3><p style="font-size:15px">ส่วนที่ด้านหน้าไม่บอก เช่น ความลึกของหัวและลำตัว</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- W2 WORK -->
+<section class="sec" id="work2" data-nav="งาน W2">
+  <div class="wrap">
+    <div class="kicker rv">งานสัปดาห์ที่ 2</div>
+    <h2 class="rv d1">Concept Sheet ตัวละคร<span class="m-toy">อาร์ตทอย</span><span class="m-fig">ฟิกเกอร์</span> 1 ตัว</h2>
+    <div class="g2" style="align-items:start;margin-top:22px">
+      <ul class="clean rv d2">
+        <li><b>คอนเซปต์ 1 ประโยค</b> + ชื่อ + บุคลิกสั้น ๆ</li>
+        <li><b>Mood board</b> 1 หน้า ครบ 5 ช่อง (รูปทรง สี วัสดุ บุคลิก อ้างอิง)</li>
+        <li><b>ภาพร่าง 3 แบบ</b> <span class="m-toy">สัดส่วนแบบของเล่น</span><span class="m-fig">สัดส่วน 5–8 หัว พร้อมท่าโพส 1 ท่า</span> แล้วเลือก 1</li>
+        <li><b>Turnaround</b> หน้า · ข้าง · หลัง เส้นไกด์ตรงกัน</li>
+        <li><b>ชุดสี</b> 3–5 สี</li>
+        <li>ส่งเป็น .pdf หรือ .png <span class="small">(ข้อกำหนดปรับได้ตามผู้สอน)</span></li>
+      </ul>
+      <div class="rv d3"><div class="try">✅ เช็กก่อนส่ง</div><div id="chk2"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- W3 POLY -->
+<section class="sec" id="poly" data-nav="W3 Polygon">
+  <div class="wrap">
+    <div class="divnum grad rv">W3</div>
+    <div class="kicker rv">3D Modeling พื้นฐาน</div>
+    <h2 class="rv d1">ทุกโมเดลสร้างจาก จุด · เส้น · หน้า</h2>
+    <p class="lead rv d2">โมเดลแบบ polygon ประกอบด้วย <b>Vertex</b> (จุด) ที่ต่อกันเป็น <b>Edge</b> (เส้น) และล้อมกันเป็น <b>Face</b> (หน้า) ในโปรแกรมเราเลือกแก้ได้ทีละแบบ</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2 card" style="text-align:center"><svg viewBox="0 0 300 270" id="cubeSvg" style="width:100%;max-width:340px"></svg></div>
+      <div class="rv d3">
+        <div class="try">👆 สลับโหมดเลือก (ใน Blender กด 1 · 2 · 3 ในโหมด Edit)</div>
+        <div class="seg-btns" id="vefBtns" style="margin-bottom:16px">
+          <button class="btn on" data-m="v">Vertex</button><button class="btn" data-m="e">Edge</button><button class="btn" data-m="f">Face</button>
+        </div>
+        <div class="card" id="vefMsg"></div>
+        <div class="g3" style="margin-top:14px;gap:10px">
+          <div class="card" style="padding:14px;text-align:center"><svg viewBox="0 0 60 50" style="width:60px"><rect x="8" y="6" width="44" height="38" fill="rgba(94,196,200,.25)" stroke="#5ec4c8" stroke-width="2"/></svg><h3 style="font-size:15px"><span class="ok">✓</span> Quad</h3><p style="font-size:13px">4 เหลี่ยม ใช้เป็นหลัก</p></div>
+          <div class="card" style="padding:14px;text-align:center"><svg viewBox="0 0 60 50" style="width:60px"><path d="M30 6 L52 44 H8Z" fill="rgba(242,184,102,.25)" stroke="#f2b866" stroke-width="2"/></svg><h3 style="font-size:15px">⚠ Tri</h3><p style="font-size:13px">3 เหลี่ยม ใช้เมื่อจำเป็น</p></div>
+          <div class="card" style="padding:14px;text-align:center"><svg viewBox="0 0 60 50" style="width:60px"><path d="M30 4 L54 18 L48 44 H12 L6 18Z" fill="rgba(239,138,128,.25)" stroke="#ef8a80" stroke-width="2"/></svg><h3 style="font-size:15px"><span class="x">✕</span> N-gon</h3><p style="font-size:13px">5 เหลี่ยมขึ้นไป ผิวจะเพี้ยน</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BOX MODELING -->
+<section class="sec" id="box" data-nav="Box Modeling">
+  <div class="wrap">
+    <div class="kicker rv">Box Modeling</div>
+    <h2 class="rv d1">เริ่มจากกล่อง แล้วค่อย ๆ ปั้น</h2>
+    <p class="lead rv d2">วิธีที่นิยมสำหรับตัวละครทั้งอาร์ตทอยและฟิกเกอร์ คือเริ่มจาก Cube หยาบ ๆ แล้วเพิ่มเส้น ดึง และทำให้เนียนทีหลัง กดดูทีละขั้น</p>
+    <div class="steps rv d2" id="boxSteps"></div>
+    <div class="g2 rv d3" style="align-items:center">
+      <div class="exsvg" style="background:#1a1b22"><svg viewBox="0 0 320 280" id="boxSvg"></svg></div>
+      <div class="card" id="boxMsg"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SUBDIVISION -->
+<section class="sec" id="subd" data-nav="Subdivision">
+  <div class="wrap">
+    <div class="kicker rv">Modifier · Subdivision Surface</div>
+    <h2 class="rv d1">โมเดลหยาบ → ผิวโค้งเนียน</h2>
+    <p class="lead rv d2">Subdivision แบ่งทุกหน้าเป็นหน้าเล็ก ๆ แล้วเกลี่ยมุมให้โค้ง เราแก้แค่ <b>กรงหยาบ (cage)</b> ที่มีจุดน้อย ๆ แต่ได้ผิวเนียน ด้านล่างเป็นภาพตัดแบบ 2 มิติของหลักการเดียวกัน</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2 exsvg" style="background:#1a1b22"><svg viewBox="0 0 320 300" id="subSvg"></svg></div>
+      <div class="rv d3">
+        <div class="try">🎛️ ลากระดับ และลองเพิ่มเส้นประคองมุม</div>
+        <label class="ctl">ระดับ Subdivision <output id="oSub">0</output><input type="range" id="rSub" min="0" max="4" value="0"></label>
+        <button class="btn" id="btnSupport">+ เพิ่ม edge loop ประคองมุม</button>
+        <div class="card" style="margin-top:16px">
+          <p class="small">ถ้าเริ่มจากลูกบาศก์ 6 หน้า จะมีจำนวนหน้า</p>
+          <div style="font-family:Prompt;font-weight:800;font-size:44px;line-height:1.1" class="grad" id="faceCount">6</div>
+          <p id="subMsg" style="font-size:15px"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MIRROR -->
+<section class="sec" id="mirror" data-nav="Mirror">
+  <div class="wrap">
+    <div class="kicker rv">Modifier · Mirror</div>
+    <h2 class="rv d1">ปั้นครึ่งเดียว อีกครึ่งตามเอง</h2>
+    <p class="lead rv d2">ตัวละครส่วนใหญ่ซ้ายขวาเหมือนกัน ใช้ Mirror แก้แค่ฝั่งเดียว ลาก <b>จุดสีม่วง</b> ด้านขวาดู แล้วลองปิด Clipping เพื่อดูว่ารอยต่อกลางพังยังไง</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2 exsvg" style="background:#1a1b22;touch-action:none"><svg viewBox="0 0 300 270" id="mirSvg" style="touch-action:none"></svg></div>
+      <div class="rv d3">
+        <div class="try">✋ ลากจุดได้ (มือถือก็ได้)</div>
+        <div class="seg-btns" style="margin-bottom:14px"><button class="btn on" id="btnClip">Clipping: เปิด</button><button class="btn" id="btnMirReset">รีเซ็ต</button></div>
+        <div class="card" id="mirMsg"></div>
+        <ul class="clean" style="margin-top:16px">
+          <li>ลบครึ่งซ้ายของโมเดลทิ้งก่อน แล้วค่อยใส่ Mirror</li>
+          <li>เปิด <b>Clipping</b> เพื่อล็อกจุดกลางไว้ที่แกน ไม่ให้ฉีกหรือซ้อนกัน</li>
+          <li>เรียง modifier ให้ <b>Mirror อยู่บน Subdivision</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ASSEMBLY -->
+<section class="sec" id="parts" data-nav="ขึ้นรูปทีละส่วน">
+  <div class="wrap">
+    <div class="kicker rv">ขึ้นรูปจาก Turnaround</div>
+    <h2 class="rv d1">หัว → ลำตัว → แขน → ขา</h2>
+    <p class="lead rv d2">วางภาพ turnaround เป็นพื้นหลังในมุมหน้า (Numpad 1) และมุมข้าง (Numpad 3) แล้วขึ้นรูปทีละชิ้น อาร์ตทอยและฟิกเกอร์มักแยกเป็นชิ้น ๆ อยู่แล้ว เพื่อให้ผลิตและประกอบได้</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2 exsvg" style="background:#f4f2ee;max-width:380px;justify-self:center;width:100%"><canvas class="c3d" id="partToy"></canvas><div class="hint3d">↔ ลากเพื่อหมุน</div></div>
+      <div class="rv d3">
+        <div class="try">👆 กดเปิดปิดทีละชิ้น กางชิ้นส่วน หรือดูโครง Wireframe</div>
+        <div class="seg-btns" id="partBtns" style="margin-bottom:12px"></div>
+        <div class="seg-btns" style="margin-bottom:14px"><button class="btn" id="btnWire">🕸 Wireframe</button><button class="btn" id="btnExplode">กางชิ้นส่วน (Exploded view)</button><button class="btn" id="btnRef">ภาพอ้างอิงด้านหลัง</button></div>
+        <div class="card" id="partMsg"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SHORTCUTS -->
+<section class="sec" id="keys" data-nav="คีย์ลัด">
+  <div class="wrap">
+    <div class="kicker rv">คีย์ลัดที่ใช้บ่อย (Blender)</div>
+    <h2 class="rv d1">จำ 16 ตัวนี้ก็ปั้นได้ทั้งตัว</h2>
+    <p class="lead rv d2">พิมพ์ค้นหาได้ทั้งปุ่มและคำอธิบาย</p>
+    <input id="keySearch" class="rv d2" placeholder="ค้นหา เช่น extrude, มุมหน้า, Ctrl" style="width:100%;max-width:420px;font-family:inherit;font-size:16px;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text);margin-bottom:18px">
+    <div class="keygrid rv d3" id="keyGrid"></div>
+  </div>
+</section>
+
+<!-- MISTAKES -->
+<section class="sec" id="mistakes" data-nav="ข้อผิดพลาด">
+  <div class="wrap">
+    <div class="kicker rv">ข้อผิดพลาดที่พบบ่อย</div>
+    <h2 class="rv d1">ปัญหาที่เจอทุกเทอม</h2>
+    <p class="lead rv d2">ลองถามนักศึกษาว่าแก้ยังไง แล้วค่อย <b>แตะพลิกการ์ด</b></p>
+    <div class="g3 rv d3" id="flips"></div>
+  </div>
+</section>
+
+<!-- W3 WORK -->
+<section class="sec" id="work3" data-nav="งาน W3">
+  <div class="wrap">
+    <div class="kicker rv">งานสัปดาห์ที่ 3</div>
+    <h2 class="rv d1">Base Mesh ตัวละครจาก Turnaround</h2>
+    <div class="g2" style="align-items:start;margin-top:22px">
+      <ul class="clean rv d2">
+        <li>ตั้งภาพ turnaround ของตัวเองเป็นภาพอ้างอิงมุมหน้าและข้าง</li>
+        <li>ขึ้นรูป <b>หัว ลำตัว แขน ขา</b> ด้วย box modeling</li>
+        <li>ใช้ <b>Mirror</b> + <b>Subdivision Surface</b></li>
+        <li>ใช้หน้า 4 เหลี่ยมเป็นหลัก ยังไม่ต้องลงรายละเอียดใบหน้า (สัปดาห์ที่ 4)</li>
+        <li>ส่งไฟล์ .blend + ภาพหน้าจอ 3 มุม (หน้า · ข้าง · 3/4) <span class="small">(ข้อกำหนดปรับได้ตามผู้สอน)</span></li>
+      </ul>
+      <div class="rv d3"><div class="try">✅ เช็กก่อนส่ง</div><div id="chk3"></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <svg viewBox="0 0 24 24" style="width:60px;height:60px"><path d="M12 1.5c.6 5.6 4.9 9.9 10.5 10.5-5.6.6-9.9 4.9-10.5 10.5C11.4 16.9 7.1 12.6 1.5 12 7.1 11.4 11.4 7.1 12 1.5z" fill="url(#bg1)"/></svg>
+  <h2 style="margin-top:16px">ออกแบบให้ “<span class="m-toy">น่ารัก</span><span class="m-fig">มีชีวิต</span>”<br><span class="grad">และ “ผลิตได้จริง”</span></h2>
+  <p style="margin-top:12px">สัปดาห์หน้า → Sculpting และรายละเอียด</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const FH='Prompt,Noto Sans Thai';
+
+/* ---------- nav / reveal / progress ---------- */
+const secs=$$('.sec'),nav=$('#navlinks');
+secs.forEach(s=>{const a=document.createElement('a');a.href='#'+s.id;a.textContent=s.dataset.nav;nav.appendChild(a);});
+const links=$$('#navlinks a');
+$('#menuBtn').onclick=()=>nav.classList.toggle('open');
+links.forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');}),{threshold:.15});
+$$('.rv').forEach(el=>io.observe(el));
+function curIndex(){let idx=0;const y=innerHeight*.4;secs.forEach((s,i)=>{if(s.getBoundingClientRect().top<=y)idx=i;});return idx;}
+function onScroll(){const h=document.documentElement;$('#prog').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';
+  const i=curIndex();links.forEach((a,k)=>a.classList.toggle('on',k===i));
+  const l=links[i];if(l&&nav.scrollWidth>nav.clientWidth&&!nav.classList.contains('open'))nav.scrollTo({left:l.offsetLeft-nav.clientWidth/2+l.clientWidth/2,behavior:'smooth'});
+  const nb=$('#nextbtn');nb.textContent=i>=secs.length-1?'กลับด้านบน ↑':'ถัดไป ↓';nb.classList.toggle('top',i>=secs.length-1);}
+addEventListener('scroll',onScroll,{passive:true});onScroll();
+function goSec(d){const i=curIndex();const t=d>0?(i>=secs.length-1?0:i+1):Math.max(0,i-1);secs[t].scrollIntoView({behavior:'smooth'});}
+$('#nextbtn').onclick=()=>goSec(1);
+addEventListener('keydown',e=>{if(e.target.matches('input'))return;
+  if(['ArrowRight','PageDown'].includes(e.key)||(e.key===' '&&!e.shiftKey)){e.preventDefault();goSec(1);}
+  else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();goSec(-1);}});
+
+/* ---------- TOY DRAWING ---------- */
+const FEAT={'เห็ด':'หมวกเห็ด','แมว':'หูแมว','ลูกชิ้นปิ้ง':'ลูกชิ้นเสียบไม้บนหัว','กระต่าย':'หูกระต่าย','ช้าง':'หูใหญ่และงวง','ปลาทู':'หมวกปลาทู','ก้อนเมฆ':'ฮู้ดก้อนเมฆ','ข้าวเหนียว':'กระติ๊บข้าวเหนียว'};
+const TP={
+ 'ฤดูฝน':{cap:'#6f9bff',spot:'#e3efff',face:'#ffe2c6',body:'#f2c94c',acc:'#6f9bff',leg:'#3d5a99'},
+ 'ยี่เป็ง':{cap:'#ff9f43',spot:'#ffd36e',face:'#ffe6cf',body:'#3c3a7a',acc:'#ffd36e',leg:'#2d2b55'},
+ 'ตลาดนัด':{cap:'#e25b5b',spot:'#ffd166',face:'#ffe2c6',body:'#7fd6d0',acc:'#ffd166',leg:'#4fb3a9'},
+ 'นักบินอวกาศ':{cap:'#e9e4ff',spot:'#ef8a80',face:'#ffe9d9',body:'#dcd8f5',acc:'#ef8a80',leg:'#3c3a7a'},
+ 'สายมู':{cap:'#f2c14e',spot:'#ffffff',face:'#ffe6cf',body:'#a3264a',acc:'#f2c14e',leg:'#5e1530'},
+ 'ไซเบอร์พังก์':{cap:'#ff4fa3',spot:'#5ee6ff',face:'#ffe2d0',body:'#2b2945',acc:'#5ee6ff',leg:'#1d1b2e'}};
+const ALT=[
+ {n:'เห็ดแดง',cap:'#e25b5b',spot:'#fff4e0',face:'#ffe2c6',body:'#8b7cf8',acc:'#f2b866',leg:'#5a4bd1'},
+ {n:'มัทฉะ',cap:'#7fae6b',spot:'#f3f7e8',face:'#ffe6cf',body:'#f3e2c4',acc:'#c0704f',leg:'#a8875f'},
+ {n:'ลูกกวาด',cap:'#ff8fb8',spot:'#ffffff',face:'#fff0e4',body:'#7fd6d0',acc:'#ffd166',leg:'#4fb3a9'}];
+let palI=0,lastPart='head';
+const DEFH_OK=m=>m==='toy'||m==='fig';
+let CH={base:'เห็ด',per:'ขี้เซา',theme:'ฤดูฝน',mode:'toy',shape:'circle',h:{toy:1.5,fig:6.5}};
+try{const s=JSON.parse(localStorage.getItem('arttoyCH')||'null');if(s&&FEAT[s.base]&&TP[s.theme])CH=Object.assign({mode:'toy'},s);if(!CH.h||!CH.h.toy)CH.h={toy:1.5,fig:6.5};if(!['circle','square','triangle','vtri'].includes(CH.shape))CH.shape='circle';if(!DEFH_OK(CH.mode))CH.mode='toy';}catch(e){}
+const pals=()=>[Object.assign({n:'ธีม'+CH.theme},TP[CH.theme]),...ALT];
+const chName=()=>CH.base+CH.per;
+
+const DEFH={toy:1.5,fig:6.5};
+const curH=m=>(CH.h&&CH.h[m])||DEFH[m];
+const toyK=heads=>Math.min(1,158/(294/heads));
+const legFracOf=heads=>Math.min(.45,Math.max(.22,.22+(heads-1.5)*.09));
+function figDims(heads){const top=24,ground=318,hh=294/heads;return {top,ground,hh,fcy:top+hh*.55,fry:hh*.45,ys:top+hh*1.28,yw:top+hh*2.35,yh:top+hh*3.05};}
+function guidesFor(mode,heads){
+  if(mode==='fig'){const d=figDims(heads);return [[d.top,'ยอดหัว'],[d.fcy+d.fry*.12,'ตา'],[d.fcy+d.fry,'คาง'],[d.ys,'ไหล่'],[d.yw,'เอว'],[d.yh,'สะโพก'],[(d.yh+d.ground)/2,'เข่า'],[d.ground,'เท้า']];}
+  const hh=294/heads,top=24,k=toyK(heads),Y=y=>318-(318-y)*k;
+  return [[top,'ยอดหัว'],[top+hh*.5,'ส่วนประดับหัว'],[top+hh*.6+hh*.4*.12,'ตา'],[top+hh,'คาง'],[318-Math.max(16,(294-hh)*legFracOf(heads)),'สะโพก'],[318,'เท้า']].map(([y,l])=>[Y(y),l]);}
+
+/* ================= 3D ENGINE (three.js) ================= */
+const T3=window.THREE;
+const V3={ok:false,views:[],models:{}};
+let R=null,GLc=null,scene,camP,camO,shadowM,silMat,wireMat,lineMat,glowTex;
+const v3=(x,y,z)=>new T3.Vector3(x,y,z);
+const lin=h=>new T3.Color(h).convertSRGBToLinear();
+const _mats=new Map();
+function M(hex,o){o=o||{};const k=[hex,o.r,o.e,o.ei,o.op,o.ds].join('|');let m=_mats.get(k);if(m)return m;
+  m=new T3.MeshStandardMaterial({color:lin(hex),roughness:o.r!=null?o.r:.4,metalness:0});m.envMapIntensity=.42;
+  if(o.e){m.emissive=lin(o.e);m.emissiveIntensity=o.ei||.6;}
+  if(o.op){m.transparent=true;m.opacity=o.op;m.depthWrite=false;}
+  if(o.ds)m.side=T3.DoubleSide;
+  _mats.set(k,m);return m;}
+const G={};let TR=[],GLOWS=[];
+const own=g=>{TR.push(g);return g;};
+function initGeo(){G.sph=new T3.SphereGeometry(1,28,18);G.hemi=new T3.SphereGeometry(1,28,10,0,Math.PI*2,0,Math.PI/2);G.cap=new T3.SphereGeometry(1,28,10,0,Math.PI*2,0,Math.PI*.42);
+  G.cyl=new T3.CylinderGeometry(1,1,1,20,1,true);G.cone=new T3.ConeGeometry(1,1,24,1,false);G.box=new T3.BoxGeometry(1,1,1);G.disc=new T3.CircleGeometry(1,28);}
+function ell(m,rx,ry,rz,x,y,z){const o=new T3.Mesh(G.sph,m);o.scale.set(rx,ry,rz);o.position.set(x||0,y||0,z||0);return o;}
+function stick(m,a,b,r,r2){const d=b.clone().sub(a),len=d.length(),g=new T3.Group();if(r2==null)r2=r;
+  const c=new T3.Mesh(r===r2?G.cyl:own(new T3.CylinderGeometry(r2,r,len,20,1,true)),m);if(r===r2)c.scale.set(r,len,r);
+  c.position.copy(a).addScaledVector(d,.5);c.quaternion.setFromUnitVectors(v3(0,1,0),d.clone().normalize());
+  g.add(c,ell(m,r,r,r,a.x,a.y,a.z),ell(m,r2,r2,r2,b.x,b.y,b.z));return g;}
+function torus(m,Rr,tube,arc){return new T3.Mesh(own(new T3.TorusGeometry(Rr,tube,10,arc?18:36,arc||Math.PI*2)),m);}
+function arcG(m,Rr,tube,flip){const g=new T3.Group(),i=new T3.Group();i.add(torus(m,Rr,tube,Math.PI),ell(m,tube,tube,tube,Rr,0,0),ell(m,tube,tube,tube,-Rr,0,0));if(flip)i.rotation.z=Math.PI;g.add(i);return g;}
+function tube(m,pts,r){const g=new T3.Group();g.add(new T3.Mesh(own(new T3.TubeGeometry(new T3.CatmullRomCurve3(pts),24,r,12,false)),m));const a=pts[0],b=pts[pts.length-1];g.add(ell(m,r,r,r,a.x,a.y,a.z),ell(m,r,r,r,b.x,b.y,b.z));return g;}
+function loft(secs,pw,n){n=n||28;pw=pw||1;const pos=[],idx=[],m=secs.length;
+  for(let i=0;i<m;i++){const [y,rx,rz]=secs[i];for(let j=0;j<=n;j++){const a=j/n*Math.PI*2,c=Math.cos(a),s=Math.sin(a);pos.push(rx*Math.sign(c)*Math.pow(Math.abs(c),pw),y,rz*Math.sign(s)*Math.pow(Math.abs(s),pw));}}
+  for(let i=0;i<m-1;i++)for(let j=0;j<n;j++){const a=i*(n+1)+j,b=a+1,c=a+n+1,d=c+1;idx.push(a,b,c,b,d,c);}
+  const g=new T3.BufferGeometry();g.setAttribute('position',new T3.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();
+  const N=g.attributes.normal;for(let i=0;i<m;i++){const a=i*(n+1),b=a+n,x=N.getX(a)+N.getX(b),y=N.getY(a)+N.getY(b),z=N.getZ(a)+N.getZ(b),l=Math.hypot(x,y,z)||1;N.setXYZ(a,x/l,y/l,z/l);N.setXYZ(b,x/l,y/l,z/l);}
+  return own(g);}
+function surf(S,az,el,lift){const ce=Math.cos(el),d=v3(Math.sin(az)*ce,Math.sin(el),Math.cos(az)*ce);return {p:v3(S.rx*d.x,S.ry*d.y,S.rz*d.z).multiplyScalar(lift||1),n:v3(d.x/S.rx,d.y/S.ry,d.z/S.rz).normalize()};}
+function place(par,o,S,az,el,lift,roll){const {p,n}=surf(S,az,el,lift),g=new T3.Group();g.add(o);g.position.copy(p);g.quaternion.setFromUnitVectors(v3(0,0,1),n);if(roll)g.rotateZ(roll);par.add(g);return g;}
+
+/* ---- face ---- */
+function face3(hg,S,per,r,B,theme,prop){const ink=M('#3a2a33',{r:.5}),wh=M('#ffffff',{r:.3}),E=.415,EL=-.12,ML=-.5;
+  const dot=k=>{const g=new T3.Group();g.add(ell(ink,r*.8*k,r*1.1*k,r*.3),ell(wh,r*.3*k,r*.3*k,r*.15,r*.25*k,r*.38*k,r*.24));return g;};
+  const blush=(op,k)=>[-1,1].forEach(s=>place(hg,ell(M('#ff8fa3',{op:op||.5,r:.8}),r*1.05*(k||1),r*.8*(k||1),r*.1),S,s*.67,-.43,1.003));
+  const lowHemi=(sx,sy)=>{const m=new T3.Mesh(G.hemi,ink);m.rotation.z=Math.PI;m.scale.set(sx,sy,r*.3);return m;};
+  if(per==='ขี้เซา'){[-1,1].forEach(s=>{const g=new T3.Group();g.add(ell(ink,r*1.3,r*.28,r*.26),lowHemi(r,r*.95));place(hg,g,S,s*E,EL);});blush();place(hg,ell(ink,r*.55,r*.75,r*.3),S,0,ML);}
+  if(per==='ขี้อาย'){[-1,1].forEach(s=>place(hg,ell(ink,r*.55,r*.55,r*.3),S,s*E-.05,EL-.07));blush(.8,1.15);[-1,1].forEach(s=>place(hg,arcG(ink,r*.42,r*.13),S,s*.045,ML+.02));}
+  if(per==='จอมซ่า'){place(hg,dot(1),S,-E,EL);place(hg,arcG(ink,r,r*.22),S,E,EL-.02);[-1,1].forEach(s=>place(hg,ell(ink,r*1.15,r*.2,r*.2),S,s*E,EL+.22,1,.22));
+    const g=new T3.Group();g.add(lowHemi(r*1.5,r*1.5),ell(wh,r*.7,r*.22,r*.14,0,-r*.24,r*.2));place(hg,g,S,0,ML+.12);blush();}
+  if(per==='ขี้บ่น'){[-1,1].forEach(s=>{place(hg,ell(ink,r*.75,r*.6,r*.3),S,s*E,EL-.02);place(hg,ell(ink,r*1.15,r*.2,r*.2),S,s*E,EL+.19,1,s*.38);});place(hg,arcG(ink,r*.9,r*.2),S,0,ML-.07);}
+  if(per==='ใจดี'){[-1,1].forEach(s=>place(hg,arcG(ink,r*1.05,r*.24),S,s*E,EL-.03));place(hg,arcG(ink,r*1.1,r*.2,true),S,0,ML+.14);blush();}
+  if(per==='ขี้ตกใจ'){[-1,1].forEach(s=>{const g=new T3.Group();g.add(ell(wh,r*1.25,r*1.25,r*.4),ell(ink,r*.5,r*.5,r*.2,0,0,r*.34));place(hg,g,S,s*E,EL);});place(hg,ell(ink,r*.6,r*.9,r*.3),S,0,ML);
+    const bl=M('#8fd3ff',{r:.2}),g=new T3.Group(),c=new T3.Mesh(G.cone,bl);c.scale.set(r*.42,r*.8,r*.26);c.position.y=r*.75;g.add(ell(bl,r*.5,r*.6,r*.3),c);place(hg,g,S,.82,.2);}
+  if(B==='แมว')[-1,1].forEach(s=>[-1,1].forEach(u=>{const a=surf(S,s*.74,-.4).p;hg.add(stick(M('#3a2a33',{r:.6}),a,a.clone().add(v3(s*S.rx*.5,u*S.ry*.11,S.rz*.1)),r*.09));}));
+  if(theme==='ไซเบอร์พังก์'&&prop){const vz=new T3.Mesh(own(new T3.CylinderGeometry(1,1,1,28,1,true,-1.0,2.0)),M('#5ee6ff',{e:'#5ee6ff',ei:.45,op:.62,ds:1,r:.15}));vz.scale.set(S.rx*1.05,r*2.9,S.rz*1.05);vz.position.y=S.ry*Math.sin(EL);vz.userData.nw=1;hg.add(vz);
+    const fr=new T3.Mesh(own(new T3.CylinderGeometry(1,1,1,28,1,true,-1.05,2.1)),M('#ff4fa3',{e:'#ff4fa3',ei:.4,ds:1}));fr.scale.set(S.rx*1.07,r*.4,S.rz*1.07);fr.position.y=S.ry*Math.sin(EL)+r*1.5;hg.add(fr);}}
+
+/* ---- head features per base ---- */
+function feat3(hg,B,S0,hh,P,L,legCol){const S={rx:S0.rx*L,ry:S0.ry*L,rz:S0.rz*L},cap=M(P.cap),wh=M('#ffffff',{r:.75});
+  if(!B){if(L===1){const c=new T3.Mesh(G.cap,M(legCol,{r:.6}));c.scale.set(S.rx*1.04,S.ry*1.05,S.rz*1.04);hg.add(c);}return;}
+  if(B==='เห็ด'){const cb=S.ry*.25,cw=hh*.62,ch=hh*.5,dome=new T3.Mesh(G.hemi,cap);dome.scale.set(cw,ch,cw);dome.position.y=cb;
+    const un=new T3.Mesh(G.disc,M(P.spot,{r:.7}));un.rotation.x=Math.PI/2;un.scale.set(cw*.99,cw*.99,1);un.position.y=cb+.002;
+    const rim=torus(cap,cw*.985,hh*.03);rim.rotation.x=Math.PI/2;rim.position.y=cb;hg.add(dome,un,rim);
+    [[.5,.5,.085],[-.7,.38,.07],[2.3,.5,.08],[-2.3,.42,.075],[3.3,.72,.06],[1.4,.26,.05],[-1.5,.68,.055],[0,.88,.05]].forEach(([az,el,rs])=>{
+      const p=v3(cw*Math.cos(el)*Math.sin(az),ch*Math.sin(el),cw*Math.cos(el)*Math.cos(az)),n=v3(p.x/(cw*cw),p.y/(ch*ch),p.z/(cw*cw)).normalize(),g=new T3.Group();
+      g.add(ell(M(P.spot,{r:.6}),hh*rs,hh*rs,hh*rs*.22));g.position.set(p.x,p.y+cb,p.z);g.quaternion.setFromUnitVectors(v3(0,0,1),n);hg.add(g);});}
+  if(B==='แมว')[-1,1].forEach(s=>{const ph=s*.62,ax=v3(Math.sin(ph*.55),Math.cos(ph*.55),0),b=v3(S.rx*Math.sin(ph),S.ry*Math.cos(ph),0).multiplyScalar(.8),h=hh*.44,g=new T3.Group();
+    const e=new T3.Mesh(G.cone,cap);e.scale.set(hh*.2,h,hh*.11);const i=new T3.Mesh(G.cone,M('#ff9fb5',{r:.6}));i.scale.set(hh*.12,h*.72,hh*.06);i.position.set(0,-h*.08,hh*.06);
+    g.add(e,i);g.position.copy(b).addScaledVector(ax,h*.5);g.rotation.z=-ph*.55;hg.add(g);});
+  if(B==='กระต่าย')[-1,1].forEach(s=>{const g=new T3.Group();g.add(ell(wh,hh*.085,hh*.25,hh*.055,0,hh*.2,0),ell(M(P.cap,{r:.6}),hh*.042,hh*.18,hh*.02,0,hh*.2,hh*.045));
+    g.position.set(s*S.rx*.42,S.ry*.82,-S.rz*.03);g.rotation.z=-s*.2;hg.add(g);});
+  if(B==='ช้าง'){[-1,1].forEach(s=>{const g=new T3.Group();g.add(ell(cap,S.rx*.6,S.ry*.86,S.rz*.15),ell(M(P.spot,{r:.6}),S.rx*.38,S.ry*.6,S.rz*.08,0,0,S.rz*.1));
+      g.position.set(s*S.rx*1.02,S.ry*.04,-S.rz*.06);g.rotation.y=s*.42;hg.add(g);});
+    hg.add(tube(M('#c9cbd6',{r:.55}),[v3(0,-S0.ry*.25,S0.rz*.9),v3(0,-S0.ry*.72,S0.rz*1.2),v3(0,-S0.ry*1.12,S0.rz*1.28),v3(0,-S0.ry*1.3,S0.rz*1.58),v3(0,-S0.ry*1.14,S0.rz*1.82)],hh*.062));}
+  if(B==='ปลาทู'){const g=new T3.Group(),fb=M('#a9bccb',{r:.3}),ink=M('#3a2a33');g.add(ell(fb,S.rx*1.05,hh*.14,S.rx*.44),ell(M('#e8eef3',{r:.3}),S.rx*.96,hh*.09,S.rx*.38,0,-hh*.055,0),ell(cap,S.rx*.9,hh*.1,S.rx*.3,0,hh*.055,0));
+    const t=new T3.Mesh(G.cone,fb);t.scale.set(hh*.17,hh*.3,hh*.04);t.rotation.z=Math.PI/2;t.position.x=S.rx*1.05+hh*.1;g.add(t);
+    [-1,1].forEach(s=>g.add(ell(wh,hh*.04,hh*.04,hh*.025,-S.rx*.74,hh*.005,s*S.rx*.27),ell(ink,hh*.02,hh*.02,hh*.015,-S.rx*.75,hh*.005,s*(S.rx*.27+hh*.018))));
+    g.position.y=S.ry*.97;hg.add(g);}
+  if(B==='ก้อนเมฆ'){const N=36;for(let i=0;i<N;i++){const y=1-2*(i+.5)/N,rr=Math.sqrt(1-y*y),ph=i*2.39996,d=v3(rr*Math.cos(ph),y,rr*Math.sin(ph));
+      if(y<-.42||(d.z>.38&&y<.52))continue;hg.add(ell(wh,hh*.17,hh*.17,hh*.17,S.rx*d.x*1.02,S.ry*d.y*1.02,S.rz*d.z*1.02));}}
+  if(B==='ข้าวเหนียว'){const wv=M('#d9b56b',{r:.7}),dk=M('#b8913f',{r:.7}),y0=S.ry*.4,y1=S.ry*1.2,r0=S.rx*.84,r1=S.rx*.56;
+    hg.add(new T3.Mesh(loft([[y1,r1*.3,r1*.3],[y1,r1,r1],[y0+(y1-y0)*.66,r1+(r0-r1)*.34,r1+(r0-r1)*.34],[y0+(y1-y0)*.33,r1+(r0-r1)*.67,r1+(r0-r1)*.67],[y0,r0,r0]]),wv));
+    hg.add(ell(M('#c9a254',{r:.7}),r1*1.1,S.ry*.17,r1*1.1,0,y1,0));
+    [.33,.66].forEach(t=>{const rg=torus(dk,r0+(r1-r0)*t+.005,hh*.012);rg.rotation.x=Math.PI/2;rg.position.y=y0+(y1-y0)*t;hg.add(rg);});
+    const bd=torus(M(P.acc),r0+.004,hh*.028);bd.rotation.x=Math.PI/2;bd.position.y=y0+hh*.03;hg.add(bd);}
+  if(B==='ลูกชิ้นปิ้ง'){const c=new T3.Mesh(G.cap,cap);c.scale.set(S.rx*1.04,S.ry*1.05,S.rz*1.04);hg.add(c);
+    const a=v3(-S.rx*1.02,S.ry*.98,0),b=v3(S.rx*1.02,S.ry*1.2,0);hg.add(stick(M('#d9b26a',{r:.7}),a,b,hh*.016));
+    [.3,.7].forEach(t=>{const p=a.clone().lerp(b,t);hg.add(ell(M('#9c5b34',{r:.55}),hh*.13,hh*.13,hh*.13,p.x,p.y,p.z),ell(M(P.acc,{r:.3}),hh*.085,hh*.035,hh*.085,p.x,p.y+hh*.105,p.z));});}}
+
+/* ---- theme prop (origin = hand) ---- */
+function prop3(theme,z,P){const g=new T3.Group(),wood=M('#5a4636',{r:.7});
+  if(theme==='ฤดูฝน'){g.add(stick(wood,v3(0,-.07*z,0),v3(0,.62*z,0),.013*z+.004));const c=new T3.Mesh(G.hemi,M(P.acc,{ds:1}));c.scale.set(.36*z,.2*z,.36*z);c.position.y=.47*z;g.add(c,ell(wood,.02*z,.02*z,.02*z,0,.68*z,0));
+    const hk=arcG(wood,.035*z,.013*z+.004,true);hk.position.set(-.035*z,-.07*z,0);g.add(hk);const tl=Math.max(0,Math.min(1,(z-.7)/.8));g.rotation.set(.15+.25*tl,0,-.24-.4*tl);g.scale.setScalar(1-.15*tl);}
+  else if(theme==='ยี่เป็ง'){const br=M('#7a4a1e',{r:.7});g.add(stick(wood,v3(0,0,0),v3(0,-.1*z,0),.006*z+.003),ell(M('#ff9f43',{e:'#ff8a1f',ei:.75,r:.5}),.11*z,.14*z,.11*z,0,-.25*z,0),ell(br,.07*z,.018*z,.07*z,0,-.11*z,0),ell(br,.07*z,.018*z,.07*z,0,-.39*z,0),stick(M('#e2564f'),v3(0,-.4*z,0),v3(0,-.48*z,0),.008*z+.002));
+    const sp=new T3.Sprite(new T3.SpriteMaterial({map:glowTex,transparent:true,opacity:.6,depthWrite:false}));sp.scale.set(.75*z,.75*z,1);sp.position.y=-.25*z;g.add(sp);GLOWS.push(sp);}
+  else if(theme==='ตลาดนัด'){const b=new T3.Mesh(G.box,M('#ffffff',{op:.55,r:.15}));b.scale.set(.26*z,.3*z,.12*z);b.position.y=-.2*z;b.userData.nw=1;const h=arcG(M('#d0d0d0'),.075*z,.009*z+.003);h.position.y=-.05*z;g.add(ell(M(P.cap),.055*z,.055*z,.055*z,0,-.26*z,0),b,h);}
+  else if(theme==='นักบินอวกาศ'){g.add(stick(M('#9a94c7'),v3(0,-.06*z,0),v3(0,.16*z,0),.012*z+.003));const s=new T3.Shape(),Rr=.12*z;for(let i=0;i<10;i++){const a=Math.PI/2+i*Math.PI/5,rr=i%2?Rr*.46:Rr;i?s.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):s.moveTo(Math.cos(a)*rr,Math.sin(a)*rr);}s.closePath();
+    const ge=own(new T3.ExtrudeGeometry(s,{depth:.03*z,bevelEnabled:true,bevelThickness:.012*z,bevelSize:.012*z,bevelSegments:2}));ge.center();const st=new T3.Mesh(ge,M('#ffd36e',{e:'#ffb400',ei:.25,r:.3}));st.position.y=.24*z;g.add(st);g.rotation.z=-.15;}
+  else if(theme==='สายมู'){g.add(stick(M('#e2564f'),v3(0,0,0),v3(0,-.16*z,0),.006*z+.002));[0,1,2].forEach(i=>g.add(ell(M(i%2?'#ffd36e':'#ff9f43',{r:.7}),.055*z,.05*z,.055*z,0,-(.2+i*.095)*z,0)));}
+  else return null;
+  return g;}
+
+/* ---- body profile ---- */
+function profFn(shape,bw){
+  if(shape==='square')return t=>bw/2*Math.pow(Math.max(0,1-Math.pow(Math.abs(2*t-1),5)),.2);
+  if(shape==='triangle'||shape==='vtri')return t=>{const w=shape==='vtri'?bw*.2+bw*.46*(1-t):bw*.16+bw*.48*t,f=t<.08?Math.sqrt(Math.max(0,1-Math.pow(1-t/.08,2))):t>.88?Math.sqrt(Math.max(0,1-Math.pow((t-.88)/.12,2))):1;return w*f;};
+  return t=>bw/2*Math.sqrt(Math.max(0,1-Math.pow(2*t-1,2)));}
+
+/* ---- ART TOY ---- */
+function buildToy(c){const P=c.pal,H=2.94,hh=H/c.heads,k=toyK(c.heads),B=c.feature?c.base:'',faceCol=B==='ช้าง'?'#c9cbd6':P.face;
+  const root=new T3.Group(),pt={head:new T3.Group(),body:new T3.Group(),armL:new T3.Group(),armR:new T3.Group(),legs:new T3.Group()};
+  const mBody=M(P.body),mLeg=M(P.leg),mAcc=M(P.acc);
+  const yb=H-hh*.9,legH=Math.max(.16,(H-hh)*legFracOf(c.heads)),bodyBot=legH-.06,bodyH=Math.max(.12,yb-bodyBot),bw=Math.min(hh*.72,.92);
+  const yT=yb,yB=bodyBot-.06,bh=yT-yB,prof=profFn(c.shape,bw),zr=c.shape==='circle'?.86:.8,pw=c.shape==='square'?.55:1,hw=y=>prof(Math.min(1,Math.max(0,(yT-y)/bh)));
+  const N=18,secs=[];for(let i=0;i<=N;i++){const t=(1-Math.cos(Math.PI*i/N))/2,w=Math.max(prof(t),.004);secs.push([yT-t*bh,w,w*zr]);}
+  pt.body.add(new T3.Mesh(loft(secs,pw),mBody));
+  const S={rx:hh*.42,ry:hh*.4,rz:hh*.4},hcy=H-hh*.6;
+  {const hrAt=y=>{const d=(y-hcy)/S.ry;return Math.abs(d)<1?S.rx*Math.sqrt(1-d*d):0;};let lo=H-hh,hi=yT;for(let i=0;i<24;i++){const md=(lo+hi)/2;if(hrAt(md)-hw(md)<0)lo=md;else hi=md;}
+    const cy=(lo+hi)/2,cr=Math.max(hrAt(cy),.06),tb=Math.max(.028,Math.min(.055,cr*.2)),col=torus(mAcc,cr+tb*.35,tb);col.rotation.x=Math.PI/2;col.scale.set(1,.93,1);col.position.y=cy;pt.body.add(col);}
+  if(bodyH>.3){const y=yT-bh*.56;pt.body.add(ell(mAcc,Math.min(.08,bw*.1),Math.min(.08,bw*.1),.03,0,y,hw(y)*zr));}
+  {const y=yT-bh*.48,b=new T3.Mesh(G.box,mAcc);b.scale.set(.18,.12,.05);b.position.set(0,y,-hw(y)*zr);pt.body.add(b);}
+  if(B==='กระต่าย'){const y=yT-bh*.8;pt.body.add(ell(M('#ffffff',{r:.8}),bw*.17,bw*.17,bw*.17,0,y,-hw(y)*zr*.95));}
+  if(B==='แมว'){const bz=bw/2*zr;pt.body.add(tube(M(P.cap),[v3(bw*.1,yT-bh*.82,-bz*.6),v3(bw*.4,yT-bh*.78,-bz*1.25),v3(bw*.56,yT-bh*.5,-bz*1.45),v3(bw*.44,yT-bh*.2,-bz*1.3)],Math.max(.035,bw*.07)));}
+  const sy=yT-Math.max(.08,bodyH*.16),armLen=Math.max(.18,Math.min(bodyH*.58,hh*.95)),aw=Math.max(.12,Math.min(.2,bw*.2));let hand=null;
+  [-1,1].forEach(s=>{const sx=s*hw(sy)*.78,a=v3(sx,sy,0),b=v3(sx+s*armLen*.36,sy-armLen*.93,armLen*.12);(s<0?pt.armL:pt.armR).add(stick(mBody,a,b,aw/2));if(s>0)hand=b;});
+  const vt=c.shape==='vtri',lw=Math.max(.1,bw*(vt?.24:.3));[-1,1].forEach(s=>{const x=s*bw*(vt?.14:.22);pt.legs.add(stick(mLeg,v3(x,legH+.03,0),v3(x,lw/2,0),lw/2),ell(mLeg,lw*.6,lw*.42,lw*.85,x,lw*.42,lw*.28));});
+  const hg=new T3.Group();hg.position.y=hcy;hg.add(ell(M(faceCol,{r:.55}),S.rx,S.ry,S.rz));face3(hg,S,c.per,hh*.06,B,c.theme,c.prop);feat3(hg,B,S,hh,P,1,P.leg);pt.head.add(hg);
+  if(c.prop){const pr=prop3(c.theme,Math.min(hh,1.5),P);if(pr){pr.position.copy(hand).add(v3(aw*.25,0,aw*.3));pt.armR.add(pr);}}
+  root.add(pt.legs,pt.body,pt.armL,pt.armR,pt.head);root.scale.setScalar(k);root.userData={parts:pt,k,shR:Math.max(bw*.75,.4)*k};return root;}
+
+/* ---- FIGURE ---- */
+function buildFig(c){const P=c.pal,H=2.94,hh=H/c.heads,B=c.feature?c.base:'',faceCol=B==='ช้าง'?'#c9cbd6':P.face,skin=M(faceCol,{r:.55});
+  const root=new T3.Group(),pt={head:new T3.Group(),body:new T3.Group(),armL:new T3.Group(),armR:new T3.Group(),legs:new T3.Group()};
+  const mBody=M(P.body),mLeg=M(P.leg),mAcc=M(P.acc),dark=M('#3a2a33',{r:.6});
+  const ys=H-hh*1.28,yw=H-hh*2.35,yh=H-hh*3.05,[sw,ww,hw]={circle:[1.45,1.4,1.5],square:[1.9,1.7,1.75],triangle:[1.25,1.3,1.95],vtri:[2.05,1.05,1.35]}[c.shape].map(v=>v*hh/2),zr=.52,pw=c.shape==='square'?.62:1;
+  const sh=c.shape==='circle'?.82:1,raw=[[ys+.07*hh,.1*hh],[ys+.04*hh,sw*.55*sh],[ys-.05*hh,sw*.92*sh],[ys-.22*hh,sw],[(ys+yw)/2,(sw+ww)/2],[yw,ww],[yw-(yw-yh)*.6,(ww+hw)/2+hw*.03],[yh+.04*hh,hw*1.01],[yh-.03*hh,hw*.6],[yh-.05*hh,.01]];
+  const secs=raw.map(([y,r])=>[y,r,Math.max(r*zr,Math.min(r,.2*hh))]);pt.body.add(new T3.Mesh(loft(secs,pw),mBody));
+  const zAt=y=>{for(let i=0;i<secs.length-1;i++){if(y<=secs[i][0]&&y>=secs[i+1][0]){const t=(secs[i][0]-y)/(secs[i][0]-secs[i+1][0]);return secs[i][2]+(secs[i+1][2]-secs[i][2])*t;}}return secs[5][2];};
+  pt.body.add(stick(skin,v3(0,H-hh*.92,0),v3(0,ys+.03*hh,0),.11*hh));
+  const bz=zAt(yw);pt.body.add(new T3.Mesh(loft([[yw+.075*hh,ww*.97,bz*.97],[yw+.07*hh,ww*1.05,bz*1.07],[yw-.07*hh,ww*1.05,bz*1.07],[yw-.075*hh,ww*.97,bz*.97]],pw),mAcc));
+  pt.body.add(ell(M(P.spot,{r:.3}),.075*hh,.075*hh,.035*hh,0,yw,bz*1.07),ell(mAcc,.1*hh,.12*hh,.035*hh,0,ys-.42*hh,zAt(ys-.42*hh)));
+  {const y=ys-.5*hh,b=new T3.Mesh(G.box,mAcc);b.scale.set(.36*hh,.3*hh,.06*hh);b.position.set(0,y,-zAt(y));pt.body.add(b);}
+  const hz=zAt(yh+.05*hh);
+  if(B==='กระต่าย')pt.body.add(ell(M('#ffffff',{r:.8}),.17*hh,.17*hh,.17*hh,0,yh+.12*hh,-hz));
+  if(B==='แมว')pt.body.add(tube(M(P.cap),[v3(.05*hh,yh+.1*hh,-hz*.7),v3(.4*hh,yh,-hz*1.5),v3(.7*hh,yh+.35*hh,-hz*1.8),v3(.6*hh,yh+.85*hh,-hz*1.5)],.07*hh));
+  pt.legs.add(new T3.Mesh(loft([[yh+.1*hh,hw*.5,hz*.5],[yh+.08*hh,hw*.93,hz*.95],[yh-.02*hh,hw*1.0,hz],[yh-.16*hh,hw*.97,hz*.97],[yh-.27*hh,hw*.7,hz*.75],[yh-.32*hh,.01,.01]],pw),mLeg));
+  let hand=null;[-1,1].forEach(s=>{const a=v3(s*(sw-.13*hh),ys-.16*hh,0),b=v3(s*(sw+.3*hh),yh-.2*hh,.07*hh),g=s<0?pt.armL:pt.armR;g.add(stick(mBody,a,b,.13*hh,.11*hh),ell(skin,.13*hh,.15*hh,.12*hh,b.x+s*.02*hh,b.y-.1*hh,b.z));if(s>0)hand=v3(b.x+.02*hh,b.y-.1*hh,b.z);});
+  [-1,1].forEach(s=>pt.legs.add(stick(mLeg,v3(s*hw*.5,yh-.14*hh,0),v3(s*.2*hh,.22*hh,0),hw*.45,.13*hh),ell(dark,.19*hh,.11*hh,.33*hh,s*.2*hh,.105*hh,.1*hh)));
+  const S={rx:hh*.36,ry:hh*.45,rz:hh*.4},hg=new T3.Group();hg.position.y=H-hh*.55;
+  hg.add(ell(skin,S.rx,S.ry,S.rz),ell(dark,S.rx*1.13,S.ry*1.08,S.rz*1.12,0,S.ry*.12,-S.rz*.16));
+  face3(hg,S,c.per,hh*.075,B,c.theme,c.prop);feat3(hg,B,S,hh,P,1.1,P.leg);pt.head.add(hg);
+  if(c.prop){const pr=prop3(c.theme,Math.min(hh*2.2,1.5),P);if(pr){pr.position.copy(hand).add(v3(.04*hh,0,.1*hh));pt.armR.add(pr);}}
+  root.add(pt.legs,pt.body,pt.armL,pt.armR,pt.head);root.userData={parts:pt,k:1,shR:Math.max(hw*1.3,.45)};return root;}
+
+function build(c){TR=[];GLOWS=[];const m=c.mode==='fig'?buildFig(c):buildToy(c);m.userData.tr=TR;m.userData.glows=GLOWS;return m;}
+function disposeModel(m){if(!m)return;(m.userData.tr||[]).forEach(g=>{if(g.userData.qe)g.userData.qe.dispose();g.dispose();});}
+function rebuild(){if(!V3.ok)return;for(const k in V3.models)disposeModel(V3.models[k]);
+  const b={base:CH.base,per:CH.per,theme:CH.theme,shape:CH.shape,heads:curH(CH.mode),pal:pals()[palI],mode:CH.mode};
+  V3.models.main=build(Object.assign({feature:true,prop:true},b));V3.models.plain=build(Object.assign({feature:false,prop:false},b));dirtyAll();}
+const dirtyAll=()=>V3.views.forEach(v=>v.dirty=true);
+
+/* ---- quad wireframe ---- */
+function quadEdges(geo){if(geo.userData.qe)return geo.userData.qe;const ix=geo.index.array,p=geo.attributes.position,out=[],n=ix.length/3;
+  const e=(a,b)=>out.push(p.getX(a),p.getY(a),p.getZ(a),p.getX(b),p.getY(b),p.getZ(b));
+  const tri=(t,skip)=>{for(let j=0;j<3;j++){const a=t[j],b=t[(j+1)%3];if(skip&&skip.includes(a)&&skip.includes(b))continue;e(a,b);}};
+  let i=0;while(i<n){const t=[ix[3*i],ix[3*i+1],ix[3*i+2]];if(i+1<n){const u=[ix[3*i+3],ix[3*i+4],ix[3*i+5]],sh=t.filter(x=>u.includes(x));if(sh.length===2){tri(t,sh);tri(u,sh);i+=2;continue;}}tri(t);i++;}
+  const g=new T3.BufferGeometry();g.setAttribute('position',new T3.Float32BufferAttribute(out,3));geo.userData.qe=g;return g;}
+function setWire(model,on){model.traverse(o=>{if(!o.isMesh||o.userData.nw||!o.geometry.index)return;
+  if(on){if(o.userData.m||o.material.transparent)return;if(!o.userData.wl){const l=new T3.LineSegments(quadEdges(o.geometry),lineMat);o.userData.wl=l;o.add(l);}o.userData.wl.visible=true;o.userData.m=o.material;o.material=wireMat;}
+  else if(o.userData.m){o.material=o.userData.m;o.userData.m=null;o.userData.wl.visible=false;}});}
+
+/* ---- renderer ---- */
+function radialTex(c0,c1){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,c0);g.addColorStop(1,c1);x.fillStyle=g;x.fillRect(0,0,128,128);return new T3.CanvasTexture(c);}
+function makeEnv(){const s=new T3.Scene(),g=new T3.SphereGeometry(10,32,16),cols=[],p=g.attributes.position,top=new T3.Color(1.15,1.15,1.2),bot=new T3.Color(.5,.47,.45);
+  for(let i=0;i<p.count;i++){const t=(p.getY(i)/10+1)/2,c=bot.clone().lerp(top,t);cols.push(c.r,c.g,c.b);}g.setAttribute('color',new T3.Float32BufferAttribute(cols,3));
+  s.add(new T3.Mesh(g,new T3.MeshBasicMaterial({side:T3.BackSide,vertexColors:true})));
+  [[4,6,5,3],[-6,3,2,1.6],[0,4,-7,1.8]].forEach(([x,y,z,i])=>{const b=new T3.Mesh(new T3.BoxGeometry(4,4,.1),new T3.MeshBasicMaterial({color:new T3.Color(i,i,i)}));b.position.set(x,y,z);b.lookAt(0,1,0);s.add(b);});
+  const pm=new T3.PMREMGenerator(R),tex=pm.fromScene(s,.03).texture;pm.dispose();return tex;}
+function initGL(){if(!T3)return false;try{GLc=document.createElement('canvas');R=new T3.WebGLRenderer({canvas:GLc,antialias:true,alpha:true,preserveDrawingBuffer:true});}catch(e){return false;}
+  R.setPixelRatio(1);R.setSize(512,640,false);R.outputEncoding=T3.sRGBEncoding;R.setClearColor(0x000000,0);R.setScissorTest(true);
+  initGeo();scene=new T3.Scene();
+  scene.add(new T3.HemisphereLight(0xffffff,0xd6cdc4,.3));
+  const key=new T3.DirectionalLight(0xffffff,.55);key.position.set(3,5,4.5);const fill=new T3.DirectionalLight(0xffffff,.2);fill.position.set(-4,2,3);const rim=new T3.DirectionalLight(0xffffff,.3);rim.position.set(0,3,-5);scene.add(key,fill,rim);
+  try{scene.environment=makeEnv();}catch(e){scene.add(new T3.AmbientLight(0xffffff,.35));}
+  glowTex=radialTex('rgba(255,211,110,.9)','rgba(255,211,110,0)');
+  shadowM=new T3.Mesh(new T3.PlaneGeometry(1,1),new T3.MeshBasicMaterial({map:radialTex('rgba(40,30,30,.55)','rgba(40,30,30,0)'),transparent:true,depthWrite:false}));shadowM.rotation.x=-Math.PI/2;shadowM.position.y=.003;scene.add(shadowM);
+  silMat=new T3.MeshBasicMaterial({color:lin('#23242a')});wireMat=new T3.MeshStandardMaterial({color:lin('#eeeaf8'),roughness:.85,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});wireMat.envMapIntensity=.4;
+  lineMat=new T3.LineBasicMaterial({color:lin('#5a4bd1'),transparent:true,opacity:.6});
+  camP=new T3.PerspectiveCamera(24,240/340,.1,60);camO=new T3.OrthographicCamera(-1.2,1.2,1.7,-1.7,.1,60);return true;}
+function snap(model,o){const w=o.w|0,h=o.h|0;if(GLc.width<w||GLc.height<h)R.setSize(Math.max(GLc.width,Math.ceil(w/128)*128),Math.max(GLc.height,Math.ceil(h/128)*128),false);
+  const yaw=o.yaw||0,pit=o.pitch||0,ty=1.48,cam=o.ortho?camO:camP,d=o.ortho?12:8.1/(o.zoom||1);
+  cam.position.set(d*Math.sin(yaw)*Math.cos(pit),ty+d*Math.sin(pit),d*Math.cos(yaw)*Math.cos(pit));cam.lookAt(0,ty,0);if(!o.ortho){cam.aspect=w/h;cam.updateProjectionMatrix();}
+  const sil=!!o.sil,wire=!!o.wire&&!sil;scene.add(model);shadowM.visible=!sil&&!o.noShadow;const s=model.userData.shR*2.6;shadowM.scale.set(s,s,1);
+  scene.overrideMaterial=sil?silMat:null;(model.userData.glows||[]).forEach(g=>g.visible=!sil&&!wire);if(wire)setWire(model,true);
+  R.setScissorTest(false);R.clear();R.setScissorTest(true);R.setViewport(0,0,w,h);R.setScissor(0,0,w,h);R.render(scene,cam);
+  if(wire)setWire(model,false);scene.overrideMaterial=null;scene.remove(model);}
+function blit(ctx,model,o,dx,dy,dw,dh){snap(model,o);ctx.drawImage(GLc,0,GLc.height-(o.h|0),o.w|0,o.h|0,dx||0,dy||0,dw||o.w,dh||o.h);}
+
+/* ---- views ---- */
+const vio=new IntersectionObserver(es=>es.forEach(e=>{const v=V3.views.find(x=>x.cv===e.target);if(v){v.vis=e.isIntersecting;if(v.vis)v.dirty=true;}}),{rootMargin:'120px'});
+function mkView(id,draw,o){const cv=$('#'+id);if(!cv)return null;const v=Object.assign({cv,ctx:cv.getContext('2d'),draw,yaw:0,pitch:.07,auto:false,dirty:true,vis:false,drag:true,free:false,down:false},o||{});
+  if(v.drag){cv.style.cursor='grab';cv.style.touchAction='pan-y';let lx=0,ly=0;
+    cv.addEventListener('pointerdown',e=>{v.down=true;lx=e.clientX;ly=e.clientY;try{cv.setPointerCapture(e.pointerId);}catch(_){}cv.style.cursor='grabbing';cv.parentNode.classList.add('touched');});
+    cv.addEventListener('pointermove',e=>{if(!v.down)return;v.yaw-=(e.clientX-lx)*.012;if(v.free&&e.pointerType==='mouse')v.pitch=Math.max(-.25,Math.min(.75,v.pitch+(e.clientY-ly)*.006));lx=e.clientX;ly=e.clientY;v.dirty=true;});
+    ['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,()=>{v.down=false;cv.style.cursor='grab';}));}
+  V3.views.push(v);vio.observe(cv);return v;}
+let lastT=0;function tick(t){const dt=Math.min(.05,(t-lastT)/1000);lastT=t;
+  for(const v of V3.views){if(!v.vis||!V3.models.main)continue;if(v.auto&&!v.down){v.yaw+=dt*v.auto;v.dirty=true;}
+    if(v.dirty){v.dirty=false;const dpr=Math.min(2,window.devicePixelRatio||1),w=Math.round(v.cv.clientWidth*dpr),h=Math.round(v.cv.clientHeight*dpr);if(!w||!h)continue;
+      if(v.cv.width!==w||v.cv.height!==h){v.cv.width=w;v.cv.height=h;}v.ctx.clearRect(0,0,w,h);v.draw(v,w,h);}}
+  requestAnimationFrame(tick);}
+V3.ok=initGL();
+let heroWire=false,partWire=false,heroAuto=true;
+if(V3.ok){
+  const HV=mkView('heroToy',(v,w,h)=>blit(v.ctx,V3.models.main,{w,h,yaw:v.yaw,pitch:v.pitch,wire:heroWire}),{free:true,auto:.55,yaw:-.35,pitch:.1});
+  mkView('cToy',(v,w,h)=>blit(v.ctx,V3.models.main,{w,h,yaw:v.yaw,pitch:v.pitch}),{auto:.5});
+  mkView('shapeToy',(v,w,h)=>blit(v.ctx,V3.models.main,{w,h,yaw:v.yaw,pitch:v.pitch}),{free:true,yaw:-.3});
+  mkView('propToy',(v,w,h)=>{blit(v.ctx,V3.models.main,{w,h,yaw:v.yaw,ortho:true});const x=v.ctx,sx=w/240,sy=h/340,hv=curH(CH.mode),k=CH.mode==='fig'?1:toyK(hv),top=318-294*k,hh=294*k/hv;
+    x.strokeStyle=x.fillStyle='#ef8a80';x.lineWidth=1.6*sx;x.beginPath();x.moveTo(223*sx,top*sy);x.lineTo(223*sx,318*sy);for(let i=0;i<=Math.floor(hv+1e-6);i++){const y=(top+i*hh)*sy;x.moveTo(214*sx,y);x.lineTo(232*sx,y);}x.moveTo(214*sx,318*sy);x.lineTo(232*sx,318*sy);x.stroke();
+    x.font=`600 ${11*sx}px Prompt,"Noto Sans Thai",sans-serif`;x.textAlign='right';for(let i=0;i<Math.ceil(hv-1e-6);i++){const y=Math.min(top+i*hh+hh/2,314);x.fillText(i+1,238*sx,(y+4)*sy);}});
+  mkView('silA',(v,w,h)=>blit(v.ctx,V3.models.main,{w,h,yaw:v.yaw,pitch:v.pitch,sil}),{yaw:-.25});
+  mkView('silB',(v,w,h)=>blit(v.ctx,V3.models.plain,{w,h,yaw:v.yaw,pitch:v.pitch,sil}),{yaw:-.25});
+  mkView('turnSvg',(v,w,h)=>{const x=v.ctx,s=w/760,sw=Math.round(240*s),sh=Math.round(340*s),dpr=Math.min(2,window.devicePixelRatio||1);
+    [[0,'หน้า (Front)'],[-Math.PI/2,'ข้าง (Side)'],[Math.PI,'หลัง (Back)']].forEach(([yaw,l],i)=>{const sc=tw?[1,.86,1.08][i]:1,dy=tw?[0,26,-14][i]:0;snap(V3.models.main,{w:sw,h:sh,yaw,ortho:true,sil:ts});
+      x.drawImage(GLc,0,GLc.height-sh,sw,sh,(i*253+120-120*sc)*s,(dy+330-330*sc)*s,240*sc*s,340*sc*s);
+      x.fillStyle='#3a2a33';x.textAlign='center';x.font=`700 ${Math.max(15*s,10*dpr)}px Prompt,"Noto Sans Thai",sans-serif`;x.fillText(l,(i*253+120)*s,353*s);});
+    if(tg){x.strokeStyle='#ef8a80';x.lineWidth=1.2*Math.max(s,dpr*.5);x.setLineDash([5*s,5*s]);x.font=`${Math.max(11*s,8.5*dpr)}px Prompt,"Noto Sans Thai",sans-serif`;x.textAlign='right';x.fillStyle='#d0685e';
+      guidesFor(CH.mode,curH(CH.mode)).forEach(([y,l])=>{x.beginPath();x.moveTo(0,y*s);x.lineTo(w,y*s);x.stroke();x.fillText(l,756*s,(y-3)*s);});x.setLineDash([]);}
+    if(tw){x.fillStyle='#e2564f';x.textAlign='center';x.font=`700 ${Math.max(15*s,10*dpr)}px Prompt,"Noto Sans Thai",sans-serif`;x.fillText('✕ ขนาดและระดับไม่เท่ากัน เส้นไกด์ไม่ตรง ขึ้นโมเดลตามไม่ได้',380*s,18*s);}},{drag:false});
+  mkView('partToy',(v,w,h)=>{const m=V3.models.main,p=m.userData.parts,e=(expl?.17:0)/m.userData.k,o={w,h,yaw:v.yaw,pitch:v.pitch,zoom:expl?.88:1};
+    if(ref){v.ctx.globalAlpha=.28;blit(v.ctx,m,Object.assign({sil:true},o));v.ctx.globalAlpha=1;}
+    p.head.visible=on.has('head');p.body.visible=on.has('body');p.armL.visible=p.armR.visible=on.has('arms');p.legs.visible=on.has('legs');
+    p.head.position.y=e;p.legs.position.y=-e*.8;p.armL.position.x=-e;p.armR.position.x=e;
+    blit(v.ctx,m,Object.assign({wire:partWire,noShadow:ref},o));
+    p.head.visible=p.body.visible=p.armL.visible=p.armR.visible=p.legs.visible=true;p.head.position.y=p.legs.position.y=p.armL.position.x=p.armR.position.x=0;},{free:true,yaw:-.45,pitch:.12});
+  addEventListener('resize',dirtyAll);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(dirtyAll);
+  const bA=$('#hAuto'),bW=$('#hWire');if(bA)bA.onclick=()=>{heroAuto=!heroAuto;HV.auto=heroAuto?.55:0;bA.classList.toggle('on',heroAuto);};if(bW)bW.onclick=()=>{heroWire=!heroWire;bW.classList.toggle('on',heroWire);HV.dirty=true;};
+  requestAnimationFrame(tick);
+}else{$$('canvas.c3d').forEach(c=>{const d=document.createElement('div');d.style.cssText='padding:30px 16px;text-align:center;color:#6b6660;font-size:14px';d.textContent='อุปกรณ์หรือเบราว์เซอร์นี้เปิดภาพ 3D (WebGL) ไม่ได้ ลองเปิดด้วย Chrome หรือ Safari รุ่นใหม่';c.replaceWith(d);});$$('.v3tools').forEach(e=>e.remove());}
+
+
+/* ---------- pipeline ---------- */
+const pipe=[['W2','ค้นคว้า','หาข้อมูลจากของจริงและเรื่องที่สนใจ ตั้งคอนเซปต์ 1 ประโยค'],['W2','Mood board','รวมภาพอ้างอิง รูปทรง สี วัสดุ บุคลิก ให้ทีมเห็นภาพเดียวกัน'],['W2','ร่างตัวละคร','ร่างหลายแบบในสัดส่วนของเล่น ทดสอบเงา แล้วเลือก 1'],['W2','Turnaround','เขียนแบบหน้า ข้าง หลัง เส้นไกด์ตรงกัน ใช้เป็นพิมพ์เขียว'],['W3','Base mesh','ขึ้นรูปหยาบจาก Cube ตามภาพ turnaround'],['W3','Modifier','Mirror ทำให้ซ้ายขวาเท่ากัน Subdivision ทำให้ผิวเนียน']];
+const PB=$('#pipeline');pipe.forEach((p,i)=>{const b=document.createElement('button');b.innerHTML=`<span class="n">${i+1}</span>${p[1]}`;b.onclick=()=>showPipe(i);PB.appendChild(b);});
+function showPipe(i){$$('#pipeline button').forEach((b,k)=>{b.classList.toggle('on',k===i);b.classList.toggle('done',k<i);});
+  $('#pipeBody').innerHTML=`<p class="small">${pipe[i][0]==='W2'?'สัปดาห์ที่ 2':'สัปดาห์ที่ 3'} · ขั้นที่ ${i+1}/6</p><h3 style="font-size:22px;margin:4px 0 6px">${pipe[i][1]}</h3><p style="color:var(--text)">${pipe[i][2]}</p>`;}
+showPipe(0);
+
+/* ---------- concept generator ---------- */
+const C={base:Object.keys(FEAT),per:['ขี้เซา','ขี้อาย','จอมซ่า','ขี้บ่น','ใจดี','ขี้ตกใจ'],
+ keys:{'ฤดูฝน':'ร่ม รองเท้าบูท หยดน้ำ','ยี่เป็ง':'โคม เทียน ผ้าทอ','ตลาดนัด':'ถุงพลาสติก ป้ายราคา ร่มผ้าใบ','นักบินอวกาศ':'หมวกกันน็อก ดาว ยาน','สายมู':'ด้ายแดง ดอกดาวเรือง พวงมาลัย','ไซเบอร์พังก์':'ไฟนีออน แว่นไซเบอร์ สายไฟ'}};
+const story={'ขี้เซา':'ชอบหลับในที่แปลก ๆ','ขี้อาย':'ซ่อนหน้าเวลามีคนมอง','จอมซ่า':'ชอบลองของใหม่ไม่กลัวพัง','ขี้บ่น':'บ่นทุกอย่างแต่ช่วยทุกครั้ง','ใจดี':'แบ่งของให้ทุกคน','ขี้ตกใจ':'สะดุ้งได้ทุกเสียง'};
+function chips(id,list,key){const el=$(id);el.innerHTML='';list.forEach(v=>{const b=document.createElement('button');b.className='btn'+(CH[key]===v?' on':'');b.textContent=v;b.onclick=()=>setCH({[key]:v});el.appendChild(b);});}
+function renderConcept(){chips('#cBase',C.base,'base');chips('#cPer',C.per,'per');chips('#cTheme',Object.keys(TP),'theme');
+  const t=TP[CH.theme];$('#cOut').innerHTML=`<span class="grad">${chName()}</span> ในธีม${CH.theme}`;
+  $('#cStory').textContent=`ตัวละครจาก “${CH.base}” ที่${story[CH.per]} อยู่ในโลกแบบ${CH.theme} จุดจำคือ${FEAT[CH.base]}`;
+  $('#cPal').innerHTML=[t.cap,t.body,t.acc,t.leg].map(c=>`<span style="width:46px;height:46px;border-radius:12px;background:${c};border:1px solid #444"></span>`).join('');
+  $('#cKeys').innerHTML=[`${CH.base} ภาพจริง`,`${CH.base} พื้นผิว`,...C.keys[CH.theme].split(' ')].map(k=>`<span>${k}</span>`).join('');
+}
+$('#cRand').onclick=()=>{const r=a=>a[Math.floor(Math.random()*a.length)];setCH({base:r(C.base),per:r(C.per),theme:r(Object.keys(TP))});};
+let lastMode=null;
+function setCH(p){Object.assign(CH,p);palI=0;try{localStorage.setItem('arttoyCH',JSON.stringify(CH));}catch(e){}renderAll();}
+function renderAll(){document.body.classList.toggle('fig',CH.mode==='fig');$$('.modeSw button').forEach(b=>b.classList.toggle('on',b.dataset.mode===CH.mode));
+  const rh=$('#rH');if(CH.mode==='fig'){rh.min=4.5;rh.max=8.5;}else{rh.min=1.3;rh.max=4;}rh.value=curH(CH.mode);
+  $$('.chName').forEach(e=>e.textContent=chName());$('#chMode').textContent=CH.mode==='fig'?' · ฟิกเกอร์':'';renderChecklists();$$('.chFeat').forEach(e=>e.textContent=FEAT[CH.base]);
+  renderConcept();renderShape();renderProp();renderPalBtns();renderSil();renderTurn();renderParts(lastPart);rebuild();}
+/* ---------- moodboard ---------- */
+const mood=[
+ ['รูปทรง','ภาพของจริงที่ให้รูปทรงหลัก เช่น เห็ดหลายชนิด ดูโครงหมวก ก้าน','#3c3a7a',`<svg class="art" viewBox="0 0 300 170" preserveAspectRatio="xMidYMid slice"><rect width="300" height="170" fill="#2d2b55"/><path d="M40 120 A50 34 0 0 1 140 120Z" fill="#e25b5b"/><rect x="80" y="118" width="20" height="40" rx="8" fill="#ffe2c6"/><path d="M160 110 A36 50 0 0 1 232 110Z" fill="#f2b866"/><rect x="188" y="108" width="16" height="50" rx="6" fill="#fff4e0"/><circle cx="262" cy="70" r="22" fill="#8b7cf8"/></svg>`],
+ ['สี','ชุดสี 3–5 สี พร้อมรหัสสี','#e25b5b',`<svg class="art" viewBox="0 0 150 170" preserveAspectRatio="xMidYMid slice"><rect width="150" height="34" fill="#e25b5b"/><rect y="34" width="150" height="34" fill="#fff4e0"/><rect y="68" width="150" height="34" fill="#8b7cf8"/><rect y="102" width="150" height="34" fill="#f2b866"/><rect y="136" width="150" height="34" fill="#ffe2c6"/></svg>`],
+ ['วัสดุ / ผิว','ไวนิลด้าน มัน เรซิน กำมะหยี่ ผิวจะส่งผลต่อสีและแสง','#5ec4c8',`<svg class="art" viewBox="0 0 150 170" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="gl" cx=".35" cy=".3"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#7fd6d0"/><stop offset="1" stop-color="#2f7f7a"/></radialGradient></defs><rect width="150" height="170" fill="#1f3b3a"/><circle cx="50" cy="60" r="34" fill="url(#gl)"/><circle cx="105" cy="105" r="30" fill="#7fd6d0"/></svg>`],
+ ['บุคลิก','ท่าทาง สีหน้า หรือการ์ตูนที่มีบุคลิกคล้าย ๆ กัน (ใช้อ้างอิง ไม่ลอก)','#f2b866',`<svg class="art" viewBox="0 0 150 170" preserveAspectRatio="xMidYMid slice"><rect width="150" height="170" fill="#4a3a20"/><circle cx="75" cy="80" r="44" fill="#ffe2c6"/><path d="M52 76 q8 -8 16 0 M84 76 q8 -8 16 0" stroke="#3a2a33" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M62 98 q13 12 26 0" stroke="#3a2a33" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`],
+ ['อ้างอิงการผลิต','ภาพของเล่นที่ผลิตจริง ข้อต่อ ฐาน ขนาด เพื่อดูว่าทำได้จริงไหม','#8b7cf8',`<svg class="art" viewBox="0 0 150 170" preserveAspectRatio="xMidYMid slice"><rect width="150" height="170" fill="#2a2640"/><rect x="40" y="120" width="70" height="14" rx="4" fill="#6d6e75"/><rect x="60" y="60" width="30" height="60" rx="10" fill="#8b7cf8"/><circle cx="75" cy="48" r="20" fill="#b3a8ff"/><path d="M60 80 h30" stroke="#fff" stroke-dasharray="3 3"/></svg>`]
+];
+const MG=$('#moodGrid');mood.forEach((m,i)=>{const b=document.createElement('button');b.className='mood';if(i===0)b.style.gridRow='1 / 3';b.innerHTML=`${m[3]}<h3>${m[0]}</h3><p>${m[1]}</p>`;b.onclick=()=>b.classList.toggle('on');MG.appendChild(b);});
+
+/* ---------- shape language ---------- */
+const shapeTxtFig={circle:['● วงกลม = อ่อนโยน เข้าถึงง่าย','ไหล่ลู่ ลำตัวโค้งมน ให้ความรู้สึกใจดี อบอุ่น เหมาะกับตัวสนับสนุนหรือตัวตลก'],square:['■ สี่เหลี่ยม = แข็งแกร่ง หนักแน่น','ไหล่กว้าง ลำตัวทรงกล่อง ดูเป็นผู้พิทักษ์ ทนทาน ไว้ใจได้'],triangle:['▲ สามเหลี่ยม = ติดดิน เป็นกันเอง','ไหล่แคบ สะโพกกว้าง จุดศูนย์ถ่วงต่ำ ดูมั่นคง อบอุ่น ตลก เหมาะกับตัวตลกหรือตัวพี่เลี้ยง'],vtri:['▼ สามเหลี่ยมกลับหัว = ฮีโร่ / ตัวร้ายทรงพลัง','ไหล่กว้าง เอวคอดเป็นทรง V ดูแข็งแกร่ง ปราดเปรียว ใช้ได้ทั้งตัวเอกแอ็กชันและตัวร้ายที่น่าเกรงขาม']};
+const shapeTxt={circle:['● วงกลม = เป็นมิตร อ่อนโยน','โค้งมน ไม่มีมุมแหลม คนรู้สึกปลอดภัย อยากกอด เหมาะกับตัวละครน่ารัก ใจดี'],square:['■ สี่เหลี่ยม = มั่นคง แข็งแรง','ฐานกว้าง ตั้งได้มั่นคง ให้ความรู้สึกหนักแน่น ไว้ใจได้ ดื้อนิด ๆ'],triangle:['▲ สามเหลี่ยม = ซน เคลื่อนไหว ตื่นเต้น','ฐานกว้าง ปลายแหลมชี้ขึ้น มีทิศทาง ให้ความรู้สึกไม่หยุดนิ่งแต่ยังตั้งได้มั่นคง เหมาะกับตัวซ่า ตัวป่วน'],vtri:['▼ สามเหลี่ยมกลับหัว = ตัวร้าย น่าเกรงขาม','บนกว้าง ล่างแคบ ดูข่มขู่ มีพลัง แต่ไม่มั่นคง เหมาะกับตัวร้ายหรือจอมพลัง · ฐานแคบตั้งยาก ตอนผลิตต้องเผื่อเท้าใหญ่หรือฐานรอง']};
+const saveCH=()=>{try{localStorage.setItem('arttoyCH',JSON.stringify(CH));}catch(e){}};
+function renderShape(){$$('#shapeBtns button').forEach(b=>b.classList.toggle('on',b.dataset.s===CH.shape));
+  const t=(CH.mode==='fig'?shapeTxtFig:shapeTxt)[CH.shape];$('#shapeMsg').innerHTML=`<h3 style="font-size:22px">${t[0]}</h3><p style="font-size:16px;margin-top:6px">${t[1]}</p>`;}
+$$('#shapeBtns button').forEach(b=>b.onclick=()=>{CH.shape=b.dataset.s;saveCH();renderShape();rebuild();});renderShape();
+
+/* ---------- proportion ---------- */
+function renderProp(){const v=+$('#rH').value;$('#oH').textContent=v.toFixed(1)+' หัว';
+  let n,m;if(CH.mode==='fig'){if(v<5.5){n='กึ่งการ์ตูน (Stylized)';m='หัวยังโตกว่าจริง ดูเป็นมิตร เหมาะกับฟิกเกอร์สายอนิเมะหรือเกมแนวน่ารัก';}else if(v<=7.5){n='สัดส่วนฟิกเกอร์ทั่วไป';m='ใกล้คนจริง 6–7 หัว ใส่รายละเอียดชุด ท่าทาง และอาวุธได้เต็มที่';}else{n='สัดส่วนฮีโร่ / แฟชั่น';m='ขายาว ดูสง่าและเท่ แต่ข้อเท้าเล็ก ต้องมีฐานและเดือยยึดตอนผลิต';}}
+  else if(v<1.8){n='ซูเปอร์ชิบิ';m='หัวแทบเท่าตัว น่ารักมาก แต่ตัวเล็กจนใส่รายละเอียดเสื้อผ้าได้น้อย';}
+  else if(v<=3){n='สัดส่วนอาร์ตทอยยอดนิยม';m='หัวโตชัด ตัวมีพื้นที่พอให้ใส่ชุดและอุปกรณ์ ตั้งโชว์ได้มั่นคง';}
+  else{n='เริ่มเหมือนคนจริง';m='ตัวยาวขึ้น ความน่ารักลดลง และขาเรียวจนตั้งยากเวลาผลิตจริง';}
+  $('#propName').textContent=n;$('#propMsg').textContent=m;}
+$('#rH').oninput=()=>{CH.h[CH.mode]=+$('#rH').value;saveCH();renderProp();renderTurn();rebuild();};renderProp();
+
+/* ---------- silhouette + palette ---------- */
+let sil=false;
+function renderPalBtns(){const el=$('#toyPals');el.innerHTML='';pals().forEach((p,i)=>{const b=document.createElement('button');b.className='pal'+(i===palI?' on':'');b.innerHTML=[p.cap,p.body,p.acc,p.face].map(c=>`<span class="sw" style="background:${c}"></span>`).join('')+`<span style="font-size:13px;color:var(--muted);align-self:center;margin-left:4px">${p.n}</span>`;b.onclick=()=>{palI=i;sil=false;renderAllViews();};el.appendChild(b);});}
+function renderAllViews(){renderShape();renderProp();renderPalBtns();renderSil();renderTurn();renderParts(lastPart);rebuild();}
+function renderSil(){dirtyAll();
+  $('#btnSil').classList.toggle('on',sil);$('#btnSil').textContent=sil?'กลับเป็นสี':'เปลี่ยนเป็นเงาดำ';}
+$('#btnSil').onclick=()=>{sil=!sil;renderSil();};renderPalBtns();renderSil();
+
+/* ---------- turnaround ---------- */
+let tg=true,ts=false,tw=false;
+function renderTurn(){dirtyAll();$('#tGuide').classList.toggle('on',tg);$('#tSil').classList.toggle('on',ts);$('#tWrong').classList.toggle('on',tw);}
+$('#tGuide').onclick=()=>{tg=!tg;renderTurn();};$('#tSil').onclick=()=>{ts=!ts;renderTurn();};$('#tWrong').onclick=()=>{tw=!tw;renderTurn();};renderTurn();
+
+/* ---------- checklists ---------- */
+function checklist(id,items){const CK=$(id);let wrap=document.createElement('div');items.forEach(c=>{const b=document.createElement('button');b.className='chk';b.innerHTML=`<span class="cb"></span>${c}`;b.onclick=()=>{b.classList.toggle('on');upd();};wrap.appendChild(b);});
+  const bar=document.createElement('div');bar.innerHTML=`<div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div class="track" style="flex:1"><div class="fill" style="width:0"></div></div><span class="small">0/${items.length}</span></div><p style="margin-top:10px;color:var(--c2);font-weight:600;opacity:0;transition:.4s">พร้อมส่งแล้ว 🎉</p>`;
+  CK.append(wrap,bar);function upd(){const n=wrap.querySelectorAll('.chk.on').length;bar.querySelector('.fill').style.width=(n/items.length*100)+'%';bar.querySelector('.small').textContent=`${n}/${items.length}`;bar.querySelector('p').style.opacity=n===items.length?1:0;}}
+function renderChecklists(){$('#chk2').innerHTML='';checklist('#chk2',['อธิบายคอนเซปต์ได้ใน 1 ประโยค','เงาดำแล้วยังจำได้',CH.mode==='fig'?'สัดส่วน 5–8 หัว ข้อต่อและฐานตั้งได้จริง':'สัดส่วนหัวโต แขนขาหนา ตั้งได้','turnaround 3 มุม สูงเท่ากัน เส้นไกด์ตรง',CH.mode==='fig'?'คุมโทนสี ชุดมีรายละเอียดแต่ไม่รก':'ใช้สีไม่เกิน 5 สี']);}
+checklist('#chk3',['โมเดลตรงกับภาพอ้างอิงทั้งมุมหน้าและข้าง','ใช้ Mirror และรอยต่อกลางไม่ฉีก','ใช้ Subdivision แล้วผิวไม่ย่น','หน้าเป็น 4 เหลี่ยมเป็นหลัก','Apply Scale แล้ว (Ctrl+A)','ตั้งชื่อชิ้นส่วนใน Outliner']);
+
+/* ---------- VEF cube ---------- */
+const V={A:[150,52],B:[234,98],C:[150,144],D:[66,98],E:[66,192],F:[150,238],G:[234,192]};
+const EDG=[['A','B'],['B','C'],['C','D'],['D','A'],['D','E'],['C','F'],['B','G'],['E','F'],['F','G']];
+const FAC=[['A','B','C','D'],['D','C','F','E'],['C','B','G','F']];
+let vef='v';
+const vefTxt={v:['Vertex (จุด)','ลูกบาศก์มี 8 จุด (เห็น 7) ย้ายจุดเพื่อดัดรูปทรงละเอียด ๆ'],e:['Edge (เส้น)','มี 12 เส้น (เห็น 9) เลือกเส้นต่อกันเป็นวง (edge loop) เพื่อปรับทั้งแนว'],f:['Face (หน้า)','มี 6 หน้า (เห็น 3) เลือกหน้าเพื่อ Extrude ดึงแขน ขา ออกมา']};
+function renderCube(){let s='';const fc=vef==='f';
+  FAC.forEach((f,i)=>s+=`<polygon points="${f.map(k=>V[k].join(',')).join(' ')}" fill="${fc?['#8b7cf8','#6c5ce7','#5a4bd1'][i]:['#3a3b48','#2e2f3a','#272832'][i]}" opacity="${fc?.85:1}" style="transition:.4s"/>`);
+  EDG.forEach(([a,b])=>s+=`<line x1="${V[a][0]}" y1="${V[a][1]}" x2="${V[b][0]}" y2="${V[b][1]}" stroke="${vef==='e'?'#f2b866':'#8d8ea0'}" stroke-width="${vef==='e'?4:1.5}" stroke-linecap="round" style="transition:.4s"/>`);
+  Object.values(V).forEach(([x,y])=>s+=`<circle cx="${x}" cy="${y}" r="${vef==='v'?7:3}" fill="${vef==='v'?'#5ec4c8':'#8d8ea0'}" style="transition:.4s"/>`);
+  $('#cubeSvg').innerHTML=s;$$('#vefBtns button').forEach(b=>b.classList.toggle('on',b.dataset.m===vef));
+  $('#vefMsg').innerHTML=`<h3 style="font-size:22px">${vefTxt[vef][0]}</h3><p style="font-size:16px;margin-top:6px">${vefTxt[vef][1]}</p>`;}
+$$('#vefBtns button').forEach(b=>b.onclick=()=>{vef=b.dataset.m;renderCube();});renderCube();
+
+/* ---------- geometry helpers ---------- */
+const mirrorHalf=h=>{const r=h.map(([x,y])=>[x,y]);const l=h.slice().reverse().filter(([x])=>x!==0).map(([x,y])=>[-x,y]);return [...r,...l];};
+function chaikin(pts,n){for(let k=0;k<n;k++){const q=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];q.push([.75*a[0]+.25*b[0],.75*a[1]+.25*b[1]],[.25*a[0]+.75*b[0],.25*a[1]+.75*b[1]]);}pts=q;}return pts;}
+const P2=(pts,cx,cy)=>pts.map(([x,y])=>`${(cx+x).toFixed(1)},${(cy+y).toFixed(1)}`).join(' ');
+
+/* ---------- box modeling ---------- */
+const cube=[[0,-60],[60,-60],[60,60],[0,60]];
+const ext=[[0,-70],[52,-70],[52,-14],[92,-4],[92,16],[52,16],[52,52],[42,56],[42,100],[12,100],[12,56],[0,56]];
+const bsteps=[
+ ['Cube','เริ่มจาก Cube 1 กล่อง (Shift+A → Mesh → Cube) จัดขนาดให้พอดีกับลำตัวในภาพอ้างอิง',cube,0,false,false],
+ ['Loop Cut','กด Ctrl+R เพิ่มเส้นรอบตัว เพื่อให้มีจุดพอจะดึงแขนขาออกมา',cube,0,true,false],
+ ['Extrude','เลือกหน้าแล้วกด E ดึงแขนและขาออกมา ปรับให้ตรงภาพอ้างอิง',ext,0,true,false],
+ ['Mirror','ลบครึ่งซ้าย ใส่ Mirror modifier แก้ฝั่งขวาฝั่งเดียว อีกฝั่งตาม',ext,0,true,true],
+ ['Subdivision','ใส่ Subdivision Surface (Ctrl+2) โมเดลหยาบกลายเป็นตัวกลม ๆ แบบของเล่น',ext,3,false,true]];
+const BS=$('#boxSteps');bsteps.forEach((b,i)=>{const e=document.createElement('button');e.innerHTML=`<span class="n">${i+1}</span>${b[0]}`;e.onclick=()=>showBox(i);BS.appendChild(e);});
+function showBox(i){$$('#boxSteps button').forEach((b,k)=>{b.classList.toggle('on',k===i);b.classList.toggle('done',k<i);});
+  const [t,d,half,lv,cuts,mir]=bsteps[i];const full=mirrorHalf(half),cx=160,cy=130;let s='';
+  s+=`<line x1="${cx}" y1="20" x2="${cx}" y2="260" stroke="${mir?'#ef8a80':'#2e2f3a'}" stroke-width="${mir?1.5:1}" stroke-dasharray="4 4"/>`;
+  if(lv){s+=`<polygon points="${P2(chaikin(full,lv),cx,cy)}" fill="#8b7cf8" stroke="#b3a8ff" stroke-width="2"/><polygon points="${P2(full,cx,cy)}" fill="none" stroke="#6d6e75" stroke-dasharray="3 4"/>`;}
+  else{if(mir){const r=half.map(([x,y])=>[x,y]);s+=`<polygon points="${P2(full,cx,cy)}" fill="rgba(139,124,248,.18)" stroke="#6d6e75" stroke-dasharray="4 4"/><polygon points="${P2([...r,[0,r[r.length-1][1]]],cx,cy)}" fill="#3a3b55" stroke="#b3a8ff" stroke-width="2"/>`;}
+   else s+=`<polygon points="${P2(full,cx,cy)}" fill="#3a3b55" stroke="#b3a8ff" stroke-width="2"/>`;
+   if(cuts){const yTop=half[0][1];[-20,20].forEach(y=>{const w=i>=2?52:60;s+=`<line x1="${cx-(mir?0:w)}" y1="${cy+y}" x2="${cx+w}" y2="${cy+y}" stroke="#f2b866" stroke-width="2"/>`;});}
+   full.forEach(([x,y])=>{if(!mir||x>=0)s+=`<circle cx="${cx+x}" cy="${cy+y}" r="3.5" fill="#5ec4c8"/>`;});}
+  s+=`<text x="16" y="28" font-family="${FH}" font-weight="700" font-size="15" fill="#c9c6e6">${i+1}. ${t}</text>`;
+  $('#boxSvg').innerHTML=s;$('#boxMsg').innerHTML=`<p class="small">ขั้นที่ ${i+1} / 5</p><h3 style="font-size:24px;margin:4px 0 8px">${t}</h3><p style="color:var(--text)">${d}</p>`;}
+showBox(0);
+
+/* ---------- subdivision ---------- */
+let support=false;
+const subHalf=[[0,-90],[70,-90],[70,90],[0,90]];
+function withSupport(h){const out=[];const pts=mirrorHalf(h);for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];out.push(a);out.push([a[0]+(b[0]-a[0])*.2,a[1]+(b[1]-a[1])*.2],[a[0]+(b[0]-a[0])*.8,a[1]+(b[1]-a[1])*.8]);}return out;}
+function renderSub(){const n=+$('#rSub').value;$('#oSub').textContent=n;const cx=160,cy=150;
+  const cage=support?withSupport(subHalf):mirrorHalf(subHalf);let s='';
+  s+=`<polygon points="${P2(chaikin(cage,n),cx,cy)}" fill="#8b7cf8" fill-opacity=".85" stroke="#b3a8ff" stroke-width="2" style="transition:all .3s"/>`;
+  s+=`<polygon points="${P2(cage,cx,cy)}" fill="none" stroke="#f2b866" stroke-dasharray="4 4" stroke-width="1.5"/>`;
+  cage.forEach(([x,y])=>s+=`<circle cx="${cx+x}" cy="${cy+y}" r="3.5" fill="#f2b866"/>`);
+  s+=`<text x="14" y="24" font-family="${FH}" font-size="13" fill="#f2b866">- - - กรงหยาบ (cage)</text><text x="14" y="42" font-family="${FH}" font-size="13" fill="#b3a8ff">▬ ผลหลัง Subdivision</text>`;
+  $('#subSvg').innerHTML=s;$('#faceCount').textContent=(6*4**n).toLocaleString()+' หน้า';
+  $('#btnSupport').classList.toggle('on',support);$('#btnSupport').textContent=support?'− เอา edge loop ประคองมุมออก':'+ เพิ่ม edge loop ประคองมุม';
+  $('#subMsg').innerHTML=(n===0?'ระดับ 0 = รูปทรงหยาบตามที่ปั้น':n<=2?'ระดับ 1–2 พอสำหรับทำงานในหน้าจอ (Viewport)':'ระดับสูง ผิวเนียนมาก แต่เครื่องช้า ใช้ตอนเรนเดอร์')+(support?' · <b>เส้นประคองมุม</b> ทำให้มุมคมขึ้นแม้จะ subdivide':'');}
+$('#rSub').oninput=renderSub;$('#btnSupport').onclick=()=>{support=!support;renderSub();};renderSub();
+
+/* ---------- mirror (draggable) ---------- */
+const mirInit=[[0,-95],[58,-80],[88,-20],[70,50],[28,92],[0,98]];
+let mh=mirInit.map(p=>p.slice()),clip=true,drag=-1;
+const MS=$('#mirSvg'),MCX=150,MCY=135;
+function renderMir(){const r=mh,l=mh.slice().reverse().map(([x,y])=>[-x,y]);let s='';
+  s+=`<line x1="${MCX}" y1="10" x2="${MCX}" y2="260" stroke="#ef8a80" stroke-dasharray="4 4"/><text x="${MCX+6}" y="22" font-family="${FH}" font-size="12" fill="#ef8a80">แกน X</text>`;
+  s+=`<polygon points="${P2(l,MCX,MCY)}" fill="rgba(139,124,248,.25)" stroke="#6d6e75" stroke-dasharray="4 3"/>`;
+  s+=`<polygon points="${P2([...r],MCX,MCY)}" fill="rgba(139,124,248,.55)" stroke="#b3a8ff" stroke-width="2"/>`;
+  const broken=Math.abs(mh[0][0])>1||Math.abs(mh[mh.length-1][0])>1;
+  mh.forEach(([x,y],i)=>s+=`<circle class="mpt" data-i="${i}" cx="${MCX+x}" cy="${MCY+y}" r="${i===0||i===mh.length-1?8:9}" fill="${i===0||i===mh.length-1?(clip?'#5ec4c8':'#ef8a80'):'#8b7cf8'}" stroke="#fff" stroke-width="2"/>`);
+  s+=`<text x="14" y="252" font-family="${FH}" font-size="12" fill="#9a99a8">ซ้าย = Mirror (อัตโนมัติ)</text><text x="286" y="252" text-anchor="end" font-family="${FH}" font-size="12" fill="#c9c1ff">ขวา = ต้นฉบับ</text>`;
+  MS.innerHTML=s;$('#btnClip').classList.toggle('on',clip);$('#btnClip').textContent='Clipping: '+(clip?'เปิด':'ปิด');
+  $('#mirMsg').innerHTML=broken?`<h3 style="font-size:20px"><span class="x">✕</span> รอยต่อกลางพัง</h3><p style="font-size:15px;margin-top:4px">จุดกลางหลุดจากแกน ${mh[0][0]>0||mh[mh.length-1][0]>0?'เกิดช่องโหว่':'เนื้อซ้อนกัน'} เปิด Clipping แล้วรีเซ็ต</p>`:`<h3 style="font-size:20px"><span class="ok">✓</span> รอยต่อสนิท</h3><p style="font-size:15px;margin-top:4px">${clip?'จุดสีฟ้าถูกล็อกไว้บนแกน ลากได้แค่ขึ้นลง':'ระวัง: ตอนนี้จุดกลางลากออกจากแกนได้'}</p>`;}
+function svgPt(e){const p=MS.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(MS.getScreenCTM().inverse());return [q.x-MCX,q.y-MCY];}
+MS.addEventListener('pointerdown',e=>{const t=e.target.closest('.mpt');if(!t)return;drag=+t.dataset.i;MS.setPointerCapture(e.pointerId);e.preventDefault();});
+MS.addEventListener('pointermove',e=>{if(drag<0)return;let [x,y]=svgPt(e);x=Math.max(-60,Math.min(140,x));y=Math.max(-120,Math.min(118,y));
+  const centre=drag===0||drag===mh.length-1;if(centre&&clip)x=0;if(!centre)x=Math.max(2,x);mh[drag]=[x,y];renderMir();});
+['pointerup','pointercancel'].forEach(ev=>MS.addEventListener(ev,()=>{drag=-1;}));
+$('#btnClip').onclick=()=>{clip=!clip;if(clip){mh[0][0]=0;mh[mh.length-1][0]=0;}renderMir();};
+$('#btnMirReset').onclick=()=>{mh=mirInit.map(p=>p.slice());clip=true;renderMir();};renderMir();
+
+/* ---------- assembly ---------- */
+const partList=[['head','หัว','เริ่มจาก UV Sphere หรือ Cube + Subdivision ปั้นหน้าให้ตรงทั้งมุมหน้าและข้าง {F}แยกเป็นอีกชิ้น'],['body','ลำตัว','Cube + Loop Cut ปรับให้เป็นทรงลูกแพร์ตามภาพ ใส่ Mirror'],['arms','แขน','Extrude จากลำตัว หรือทำเป็นชิ้นแยก (ทำข้อต่อหมุนได้ตอนผลิต)'],['legs','ขา','{LEG}']];
+let on=new Set(['head','body','arms','legs']),expl=false,ref=false;
+const PBt=$('#partBtns');partList.forEach(([k,l])=>{const b=document.createElement('button');b.className='btn on';b.dataset.k=k;b.textContent=l;b.onclick=()=>{on.has(k)?on.delete(k):on.add(k);renderParts(k);};PBt.appendChild(b);});
+function renderParts(last){if(last)lastPart=last;dirtyAll();
+  $$('#partBtns button').forEach(b=>b.classList.toggle('on',on.has(b.dataset.k)));
+  $('#btnExplode').classList.toggle('on',expl);$('#btnRef').classList.toggle('on',ref);$('#btnWire').classList.toggle('on',partWire);
+  const p=partList.find(x=>x[0]===lastPart)||partList[0];
+  $('#partMsg').innerHTML=`<h3 style="font-size:22px">${p[1]}</h3><p style="font-size:16px;margin-top:6px">${p[2].replace('{F}',FEAT[CH.base]).replace('{LEG}',CH.mode==='fig'?'ขายาว ขึ้นรูปต้นขา หัวเข่า น่อง ตามภาพข้าง เผื่อเดือยใต้เท้าสำหรับเสียบฐาน':'ขาสั้นหนา ฐานเท้าแบนกว้าง ให้ตัวละครตั้งได้เอง')}</p><p class="small" style="margin-top:8px">ชิ้นที่เปิดอยู่: ${partList.filter(x=>on.has(x[0])).map(x=>x[1]).join(' · ')||'—'}</p>`;}
+$('#btnWire').onclick=()=>{partWire=!partWire;renderParts();};$('#btnExplode').onclick=()=>{expl=!expl;renderParts();};$('#btnRef').onclick=()=>{ref=!ref;renderParts();};renderParts('head');
+
+/* ---------- shortcuts ---------- */
+const keys=[['Tab','สลับโหมด Object / Edit'],['1 · 2 · 3','เลือกแบบ Vertex / Edge / Face (โหมด Edit)'],['G','ย้าย (Grab)'],['R','หมุน (Rotate)'],['S','ย่อขยาย (Scale)'],['E','ดึงออก (Extrude)'],['I','หดหน้าเข้าด้านใน (Inset)'],['Ctrl + R','เพิ่มเส้นรอบ (Loop Cut)'],['Ctrl + B','ลบมุม (Bevel)'],['Shift + A','เพิ่มวัตถุใหม่ (Add)'],['Shift + D','ทำสำเนา (Duplicate)'],['Numpad 1 · 3 · 7','มุมหน้า · มุมข้างขวา · มุมบน'],['Alt + Z','มองทะลุ (X-Ray)'],['Ctrl + 2','ใส่ Subdivision ระดับ 2 (โหมด Object)'],['Ctrl + A','Apply Scale / Rotation'],['Shift + N','คำนวณทิศหน้า (Normal) ใหม่']];
+function renderKeys(q=''){q=q.trim().toLowerCase();$('#keyGrid').innerHTML=keys.filter(k=>!q||(k[0]+k[1]).toLowerCase().includes(q)).map(k=>`<div class="key"><kbd>${k[0]}</kbd><p style="color:var(--text)">${k[1]}</p></div>`).join('')||'<p class="small">ไม่พบ ลองคำอื่น</p>';}
+$('#keySearch').oninput=e=>renderKeys(e.target.value);renderKeys();
+$$('.modeSw button').forEach(b=>b.onclick=()=>setCH({mode:b.dataset.mode}));
+renderAll();
+
+/* ---------- mistakes ---------- */
+const mist=[['ผิวย่นหลัง Subdivision','มี N-gon หรือสามเหลี่ยมเยอะ ใช้หน้า 4 เหลี่ยมเป็นหลัก'],['Modifier ทำงานแปลก ๆ','ลืม Apply Scale กด Ctrl+A → Scale'],['รอยต่อกลางเป็นร่อง','จุดกลางไม่อยู่บนแกน เปิด Clipping ใน Mirror'],['ผิวดำ ๆ เป็นหย่อม','ทิศหน้ากลับด้าน กด Shift+N คำนวณใหม่'],['โมเดลไม่ตรงแบบ','ภาพ turnaround แต่ละมุมขนาดไม่เท่ากัน แก้แบบก่อน'],['ส่วนบางหักง่าย','ทำแขนขา หู หาง ให้หนาขึ้น คิดถึงการผลิตจริง']];
+const FL=$('#flips');mist.forEach(m=>{const d=document.createElement('div');d.className='flip';d.innerHTML=`<div class="in2"><div class="f"><h3 style="font-size:20px"><span class="x">✕</span> ${m[0]}</h3><p class="small" style="margin-top:8px">แตะเพื่อดูวิธีแก้</p></div><div class="b"><h3 style="font-size:18px"><span class="ok">✓</span> ${m[1]}</h3></div></div>`;d.onclick=()=>d.classList.toggle('on');FL.appendChild(d);});
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storyboard · ARTD2303 สัปดาห์ที่ 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/lesson.css">
+<style>
+.frame{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#cfe7f7;border:1px solid #3d3f46}
+.frame>svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.frame .tag{position:absolute;left:10px;top:10px;font-size:14px;font-weight:700;color:#fff;background:rgba(20,21,24,.72);border-radius:8px;padding:2px 9px}
+.fig{background:var(--paper);border:1px solid #d9d4cc;border-radius:18px;overflow:hidden}
+.fig svg{display:block;width:100%;height:auto}
+.heroboard{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--paper);border-radius:18px;padding:12px;border:0;width:100%;text-align:left;color:#4a4550}
+.heroboard .p{border:2px solid #2b2433;border-radius:6px;overflow:hidden;aspect-ratio:16/9;position:relative;background:#fff}
+.heroboard .p svg{position:absolute;inset:0;width:100%;height:100%}
+.heroboard .p.on{outline:3px solid var(--c1);outline-offset:2px}
+.heroboard small{display:block;font-size:14px;margin-top:2px}
+
+/* shot slider labels */
+.ticks{display:flex;justify-content:space-between;margin-top:4px}
+.ticks button{background:none;border:0;color:var(--muted);font-size:14px;font-weight:600;min-height:40px;padding:0 4px}
+.ticks button.on{color:var(--c1)}
+
+/* rule of 180 */
+.top180{background:#f4f2ee;border-radius:16px;border:1px solid #d9d4cc;touch-action:none;user-select:none;-webkit-user-select:none}
+.top180 svg{display:block;width:100%;height:auto}
+#cam180{cursor:grab}
+#cam180:active{cursor:grabbing}
+.warn{border-radius:12px;padding:10px 14px;font-size:16px;margin-top:12px;border:1px solid}
+.warn.ok{color:var(--c2);border-color:rgba(94,196,200,.4);background:rgba(94,196,200,.08)}
+.warn.bad{color:var(--c4);border-color:rgba(239,138,128,.5);background:rgba(239,138,128,.1)}
+
+/* transitions */
+.tstage{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid #3d3f46;background:#000}
+.tstage>.L{position:absolute;inset:0}
+.tstage>.L svg{width:100%;height:100%;display:block}
+.tstage .B{opacity:0}
+.tstage.go.t-cut .B{animation:tcut 2.6s step-end forwards}
+.tstage.go.t-dissolve .B{animation:tdis 2.6s ease forwards}
+.tstage.go.t-wipe .B{opacity:1;clip-path:inset(0 100% 0 0);animation:twipe 2.6s ease forwards}
+.tstage.go.t-match .B{animation:tcut 2.6s step-end forwards}
+@keyframes tcut{0%{opacity:0}45%{opacity:1}100%{opacity:1}}
+@keyframes tdis{0%,30%{opacity:0}70%,100%{opacity:1}}
+@keyframes twipe{0%,30%{clip-path:inset(0 100% 0 0)}70%,100%{clip-path:inset(0 0 0 0)}}
+@media(prefers-reduced-motion:reduce){
+  .tstage.go.t-cut .B,.tstage.go.t-match .B{animation-duration:2.6s!important}
+  .tstage.go.t-dissolve .B{animation-duration:2.6s!important}
+  .tstage.go.t-wipe .B{animation-duration:2.6s!important}
+}
+
+/* thumbnail steps */
+#tsArt{background:#fff;border-radius:14px;overflow:hidden;border:1px solid #d9d4cc}
+#tsArt svg{display:block;width:100%;height:auto}
+
+/* builder */
+.sbgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:1000px){.sbgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.sbgrid{grid-template-columns:1fr}}
+.sbc{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;min-width:0;transition:border-color .2s}
+.sbc.drag{border-color:var(--c1);box-shadow:0 0 0 3px rgba(139,124,248,.3);opacity:.92}
+.sbh{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.sbh .num{font-family:Prompt;font-weight:800;font-size:20px;color:var(--c1);margin-right:auto}
+.ib{min-width:40px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:16px}
+.ib:disabled{opacity:.35;cursor:default}
+.grip{cursor:grab;touch-action:none}
+.sbc .frame{border-radius:8px}
+.sbsel{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;font-size:15px;min-height:40px;padding:0 6px;width:100%;min-width:0}
+.sbc textarea{min-height:64px;resize:vertical;font-size:16px}
+.sec-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:15px;color:var(--muted)}
+.sec-row input{width:84px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;min-height:40px;padding:0 8px;font-size:16px}
+.tl{display:flex;height:34px;border-radius:9px;overflow:hidden;margin-top:10px;border:1px solid var(--line)}
+.tl span{display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#1a1530;min-width:0;overflow:hidden}
+.tl .mark{position:relative}
+#sbTotal{font-size:18px;margin-top:12px}
+</style>
+</head>
+<body data-course="ARTD2303" data-title="Storyboard">
+
+<!-- HERO -->
+<section class="sec" id="intro" data-nav="เริ่ม">
+  <div class="wrap">
+    <div class="hero">
+      <div style="flex:1;min-width:0">
+        <div class="kicker rv">สัปดาห์ที่ 4</div>
+        <h1 class="rv d1"><span class="grad">Storyboard</span></h1>
+        <p class="rv d2" style="font-size:24px;color:var(--text);margin-top:10px;font-weight:500">วางแผนทุกช็อตก่อนลงมือทำจริง</p>
+        <p class="rv d3" style="margin-top:12px;max-width:540px">ขนาดภาพ · มุมกล้อง · กฎ 180 องศา · การเปลี่ยนฉาก → จาก thumbnail สู่ <b>storyboard ของงานกลางภาค</b></p>
+        <div class="prev rv d3" id="prevBox"><span class="tag">ต่อจากสัปดาห์ 3</span><p id="prevTxt"></p></div>
+      </div>
+      <div class="heroart rv d2">
+        <button class="heroboard" id="heroBoard" type="button" aria-label="แตะเพื่อเล่นช็อตถัดไป"></button>
+        <p class="small" style="text-align:center;margin-top:8px">👆 แตะเพื่อไล่ดูทีละช็อต</p>
+      </div>
+    </div>
+    <div class="agenda">
+      <a href="#what" class="rv d1"><div class="n grad">01</div><h3>Storyboard คืออะไร</h3><p class="small">เล่าเรื่องด้วยภาพ</p></a>
+      <a href="#shots" class="rv d2"><div class="n grad">02</div><h3>ขนาดภาพ มุมกล้อง</h3><p class="small">ELS → ECU</p></a>
+      <a href="#rule180" class="rv d3"><div class="n grad">03</div><h3>180° และการเปลี่ยนฉาก</h3><p class="small">cut · dissolve · wipe</p></a>
+      <a href="#builder" class="rv d4"><div class="n grad">04</div><h3>สร้าง storyboard</h3><p class="small">30–60 วินาที</p></a>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT -->
+<section class="sec" id="what" data-nav="คืออะไร">
+  <div class="wrap">
+    <div class="kicker rv">Visual Storytelling</div>
+    <h2 class="rv d1">บทบอกว่า “เกิดอะไร” · storyboard บอกว่า “เห็นอะไร”</h2>
+    <p class="lead rv d2">storyboard คือภาพนิ่งเรียงตามลำดับช็อต แต่ละช่องบอก<b>ขนาดภาพ มุมกล้อง สิ่งที่ขยับ และเวลา</b> ทุกคนในทีมเห็นภาพเดียวกันก่อนเริ่มทำแอนิเมชัน ลองสลับดู</p>
+    <div class="rv d3">
+      <div class="try">👆 ลองสลับดู</div><br>
+      <div class="switch" id="wSw"><button data-v="txt">บท (ข้อความ)</button><button data-v="sb">storyboard (ภาพ)</button></div>
+      <div id="wBody"></div>
+      <p class="note" style="margin-top:10px">ตัวเลขในตัวอย่างเป็นข้อมูลสมมติเพื่อการสอน (ชุดเดียวกับสัปดาห์ 2)</p>
+    </div>
+  </div>
+</section>
+
+<!-- SHOT SIZE -->
+<section class="sec" id="shots" data-nav="ขนาดภาพ">
+  <div class="wrap">
+    <div class="kicker rv">Shot Size</div>
+    <h2 class="rv d1">ยิ่งใกล้ ยิ่งเห็นอารมณ์ · ยิ่งไกล ยิ่งเห็นโลก</h2>
+    <p class="lead rv d2">ฉากเดียวกัน ตัวละครยืนที่เดิม แค่เปลี่ยนกรอบภาพ เรื่องที่เล่าก็เปลี่ยน ลากดูทั้ง 5 ขนาด</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2">
+        <div class="frame" id="shotFrame"></div>
+        <div class="try" style="margin-top:14px">🎛️ ลากเปลี่ยนขนาดภาพ</div>
+        <input type="range" id="rShot" min="0" max="4" step="1" value="1" aria-label="ขนาดภาพ">
+        <div class="ticks" id="shotTicks"></div>
+      </div>
+      <div class="rv d3">
+        <div class="card"><p class="small" id="shotK"></p><h3 id="shotName" style="font-size:24px;font-family:Prompt"></h3><p id="shotUse" style="font-size:16.5px;margin-top:6px"></p></div>
+        <p class="small" style="margin:16px 0 6px">กล้องครอปตรงไหนของฉาก</p>
+        <div class="frame" id="shotOver" style="border-color:#d9d4cc"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ANGLE -->
+<section class="sec" id="angle" data-nav="มุมกล้อง">
+  <div class="wrap">
+    <div class="kicker rv">Camera Angle</div>
+    <h2 class="rv d1">มุมกล้องบอกความรู้สึก</h2>
+    <p class="lead rv d2">ตัวละครตัวเดิม ขนาดภาพเดิม เปลี่ยนแค่ความสูงและความเอียงของกล้อง สังเกต<b>เส้นขอบฟ้า</b>และขนาดตัวละคร</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2"><div class="frame" id="angFrame"></div></div>
+      <div class="rv d3">
+        <div class="try">👆 เลือกมุมกล้อง</div>
+        <div class="seg-btns" id="angBtns" style="margin-bottom:14px"></div>
+        <div class="card"><h3 id="angName" style="font-size:22px"></h3><p id="angFeel" style="font-size:16.5px;margin-top:6px"></p></div>
+        <div class="tip"><span>📏</span><p>มุมสูง = เส้นขอบฟ้าอยู่สูง เห็นพื้นเยอะ · มุมต่ำ = เส้นขอบฟ้าอยู่ต่ำ เห็นฟ้าเยอะ · มุมเอียง ใช้แค่ช่วงสั้น ๆ</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 180 RULE -->
+<section class="sec" id="rule180" data-nav="กฎ 180°">
+  <div class="wrap">
+    <div class="kicker rv">180° Rule</div>
+    <h2 class="rv d1">อย่าให้กล้องข้ามเส้น</h2>
+    <p class="lead rv d2">ลากเส้นสมมติผ่านตัวละคร 2 ตัว ถ้ากล้องอยู่ฝั่งเดียวกันตลอด ตัว A จะอยู่ซ้าย B อยู่ขวาเสมอ พอกล้อง<b>ข้ามเส้น</b> ทั้งคู่สลับฝั่ง คนดูจะงงว่าใครหันไปทางไหน</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2">
+        <div class="try">✋ ลากกล้อง (🎥) ไปรอบ ๆ</div>
+        <div class="top180" id="top180"></div>
+        <div class="seg-btns" style="margin-top:10px" id="camPre">
+          <button class="btn" data-v="0">กล้อง 1</button><button class="btn" data-v="1">กล้อง 2</button><button class="btn" data-v="2">กล้อง 3 (ข้ามเส้น)</button>
+        </div>
+      </div>
+      <div class="rv d3">
+        <p class="small" style="margin-bottom:6px">ช็อตก่อนหน้า (กล้องเริ่มต้น)</p>
+        <div class="frame" id="v180a" style="max-width:340px"></div>
+        <p class="small" style="margin:12px 0 6px">ช็อตนี้ (ตามตำแหน่งกล้องที่ลาก)</p>
+        <div class="frame" id="v180b"></div>
+        <div class="warn" id="w180"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSITIONS -->
+<section class="sec" id="trans" data-nav="เปลี่ยนฉาก">
+  <div class="wrap">
+    <div class="kicker rv">Transition</div>
+    <h2 class="rv d1">เปลี่ยนฉากแบบไหน บอกความหมายต่างกัน</h2>
+    <p class="lead rv d2">ใช้ <b>cut</b> เป็นหลัก แล้วเลือกแบบอื่นเมื่อมีเหตุผล เช่น เวลาผ่านไป หรือต้องการเชื่อมสองเรื่องเข้าหากัน กดเล่นแต่ละแบบ</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2"><div class="tstage" id="tStage"><div class="L A"></div><div class="L B"></div></div></div>
+      <div class="rv d3">
+        <div class="try">▶ กดเพื่อเล่น (กดซ้ำได้)</div>
+        <div class="seg-btns" id="tBtns" style="margin-bottom:14px">
+          <button class="btn" data-v="cut">Cut</button><button class="btn" data-v="dissolve">Dissolve</button><button class="btn" data-v="wipe">Wipe</button><button class="btn" data-v="match">Match Cut</button>
+        </div>
+        <div class="card"><h3 id="tName" style="font-size:22px"></h3><p id="tUse" style="font-size:16.5px;margin-top:6px"></p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THUMBNAIL -> STORYBOARD -->
+<section class="sec" id="thumb" data-nav="Thumbnail">
+  <div class="wrap">
+    <div class="kicker rv">From Thumbnail to Storyboard</div>
+    <h2 class="rv d1">ร่างหยาบก่อน แล้วค่อยเก็บ</h2>
+    <p class="lead rv d2">ช็อตเดียวกันจากเรื่อง “7 ใน 10 คนเรียนผ่านมือถือ” ใน 3 ขั้น thumbnail ต้องเร็ว (ช่องละไม่เกิน 1 นาที) จะได้ลองได้หลายแบบ</p>
+    <div class="rv d3">
+      <div id="tsBtns"></div>
+      <div class="g2" style="align-items:center">
+        <div id="tsArt"></div>
+        <div class="card" id="tsTxt"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BUILDER -->
+<section class="sec" id="builder" data-nav="สร้าง storyboard">
+  <div class="wrap" style="display:block">
+    <div class="kicker rv">Storyboard Builder</div>
+    <h2 class="rv d1">ลองวาง storyboard ของงานกลางภาค</h2>
+    <p class="lead rv d2">แต่ละช่องเลือกขนาดภาพ มุมกล้อง สีหน้า ใส่คำอธิบายและจำนวนวินาที ลาก ⠿ (หรือกดลูกศร) เพื่อสลับลำดับ ความยาวรวมต้องอยู่ใน <b>30–60 วินาที</b> ระบบจำไว้ในเครื่องนี้ และจะใช้ต่อในสัปดาห์ animatic</p>
+    <div class="rv d3">
+      <div class="try">🧩 ลาก เลือก พิมพ์ได้ทุกช่อง</div>
+      <div class="sbgrid" id="sbGrid"></div>
+      <div class="card" style="margin-top:16px">
+        <div id="sbTotal"></div>
+        <div class="tl" id="sbTl" aria-hidden="true"></div>
+        <div class="seg-btns" style="margin-top:14px">
+          <button class="btn" id="sbAdd" type="button">+ เพิ่มช่อง</button>
+          <button class="btn" id="sbReset" type="button">เริ่มใหม่จากตัวอย่าง</button>
+        </div>
+      </div>
+      <div class="inapp"><h4>ในโปรแกรม · Illustrator</h4><p>สร้าง Artboard ขนาด 1920 × 1080 หลาย ๆ อันด้วย <b>Artboard Tool</b> <kbd>Shift</kbd>+<kbd>O</kbd> หนึ่ง Artboard = หนึ่งช็อต แล้วพิมพ์คำอธิบายและเวลาไว้ใต้กรอบ ส่งออกเป็น PDF หลายหน้าได้ทันที</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- MISTAKES -->
+<section class="sec" id="mistakes" data-nav="ข้อผิดพลาด">
+  <div class="wrap">
+    <div class="kicker rv">ข้อผิดพลาดที่พบบ่อย</div>
+    <h2 class="rv d1">เจอบ่อย · แก้ง่าย</h2>
+    <p class="lead rv d2">ลองคิดก่อนว่าจะแก้ยังไง แล้วค่อย<b>แตะพลิกการ์ด</b></p>
+    <div class="rv d3" id="flips"></div>
+  </div>
+</section>
+
+<!-- ASSIGNMENT -->
+<section class="sec" id="work" data-nav="งาน">
+  <div class="wrap">
+    <div class="kicker rv">งานประจำสัปดาห์</div>
+    <h2 class="rv d1">Storyboard งานกลางภาค <span class="grad">8–12 ช่อง</span></h2>
+    <div class="g2" style="align-items:start;margin-top:24px">
+      <div class="rv d2">
+        <ul class="clean">
+          <li><b>เรื่อง</b> ใช้ข้อมูลจากอินโฟกราฟิกสัปดาห์ 2 และตัวละครจากสัปดาห์ 3</li>
+          <li><b>8–12 ช่อง</b> แต่ละช่องบอกขนาดภาพ มุมกล้อง สิ่งที่ขยับ และเวลาต่อช็อต</li>
+          <li><b>ความยาวรวม</b> 30–60 วินาที</li>
+          <li><b>แนบ thumbnail</b> ที่ร่างไว้ก่อนอย่างน้อย 1 หน้า</li>
+        </ul>
+        <div class="card" style="margin-top:18px">
+          <p class="note" style="margin-bottom:10px">รูปแบบไฟล์และเกณฑ์คะแนนด้านล่างเป็นตัวอย่าง ปรับได้ตามผู้สอน</p>
+          <ul class="clean" style="margin-bottom:14px"><li><b>กรอบ</b> 16:9 (1920 × 1080)</li><li><b>ส่ง</b> .pdf หลายหน้า หรือภาพรวมทุกช่องในหน้าเดียว</li></ul>
+          <h3 style="margin-bottom:14px">เกณฑ์ให้คะแนน (ตัวอย่าง)</h3>
+          <div class="rub"><span class="lab">เล่าเรื่องชัด</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="pt">30</span></div>
+          <div class="rub"><span class="lab">ขนาดภาพ &amp; มุมกล้อง</span><div class="track"><div class="fill" style="width:83%"></div></div><span class="pt">25</span></div>
+          <div class="rub"><span class="lab">จังหวะ &amp; เวลา</span><div class="track"><div class="fill" style="width:67%"></div></div><span class="pt">20</span></div>
+          <div class="rub"><span class="lab">ความต่อเนื่อง</span><div class="track"><div class="fill" style="width:50%"></div></div><span class="pt">15</span></div>
+          <div class="rub"><span class="lab">ความเรียบร้อย</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="pt">10</span></div>
+        </div>
+      </div>
+      <div class="rv d3">
+        <div class="try">✅ เช็กลิสต์ก่อนส่ง ติ๊กได้ (จำไว้ในเครื่องนี้)</div>
+        <div id="chks"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <h2>คิดเป็นภาพก่อน<br><span class="grad">แก้บนกระดาษถูกกว่าแก้ในงานจริง</span></h2>
+  <p class="next">สัปดาห์หน้า → Motion Graphic เบื้องต้น (ทำให้ทุกช็อตขยับ)</p>
+</footer>
+
+<script src="../_shared/lesson.js"></script>
+<script src="../_shared/character.js"></script>
+<script src="../_shared/scene.js"></script>
+<script>
+(() => {
+const { $, $$, esc, store } = Lesson;
+const CH = Character, SC = Scene;
+let saved = null;
+try { saved = localStorage.getItem(CH.KEY); } catch (e) { /* ใช้ค่าเริ่มต้น */ }
+const C = CH.load();
+const friend = Object.assign(CH.defaults(), { base: C.base === 'ช้าง' ? 'แมว' : 'ช้าง', per: 'ใจดี', theme: C.theme === 'ตลาดนัด' ? 'สายมู' : 'ตลาดนัด', shape: 'circle', heads: C.heads });
+const EXPR_TH = Object.fromEntries(CH.EXPRS.map((e) => [e[0], e[1]]));
+
+/* ---------- intro ---------- */
+$('#prevTxt').innerHTML = saved
+  ? `ตัวละครของคุณ <b>${esc(CH.displayName(C))}</b> จากสัปดาห์ 3 มาแสดงในทุกช็อตของหน้านี้ สัปดาห์นี้วางแผนว่าจะเห็นตัวละครแบบไหนในแต่ละช็อต`
+  : 'ยังไม่ได้เลือกตัวละครในเครื่องนี้ จึงใช้ตัวละครตัวอย่างไปก่อน <a href="week03-character-design.html">ไปออกแบบตัวละครที่สัปดาห์ 3</a> แล้วกลับมาหน้านี้ ตัวละครจะเปลี่ยนตาม';
+const HERO = [['ELS', 'eye', 'neutral', 'ช็อต 1 · ELS'], ['MS', 'eye', 'happy', 'ช็อต 2 · MS'], ['CU', 'low', 'surprised', 'ช็อต 3 · CU มุมต่ำ'], ['LS', 'high', 'happy', 'ช็อต 4 · LS มุมสูง']];
+let heroI = 0;
+function renderHero() {
+  $('#heroBoard').innerHTML = HERO.map((h, i) => `<div><div class="p${i === heroI ? ' on' : ''}">${SC.svg({ c: C, shot: h[0], angle: h[1], expr: h[2] })}</div><small>${h[3]}</small></div>`).join('');
+}
+$('#heroBoard').onclick = () => { heroI = (heroI + 1) % HERO.length; renderHero(); };
+renderHero();
+
+/* ---------- what ---------- */
+const SCRIPT = [
+  ['ELS', 'eye', 'neutral', 'มหาวิทยาลัยตอนเช้า นักศึกษาเดินไปเรียน', 4],
+  ['MS', 'eye', 'happy', `${CH.displayName(C)} หันมาถามคนดู “รู้ไหม เราเรียนผ่านอะไรกันมากที่สุด?”`, 5],
+  ['CU', 'low', 'surprised', 'ตัวเลข 7 ใน 10 เด้งขึ้น ตัวละครตกใจ', 5]
+];
+function renderWhat(v) {
+  if (v === 'txt') {
+    $('#wBody').innerHTML = `<div class="card"><p style="color:var(--text);font-size:18px;line-height:1.9">${SCRIPT.map((s) => esc(s[3])).join(' ')} …</p><p class="small" style="margin-top:10px">อ่านแล้วเข้าใจเรื่อง แต่ยังไม่รู้ว่าจะเห็นภาพอะไร ใกล้หรือไกล นานแค่ไหน</p></div>`;
+  } else {
+    $('#wBody').innerHTML = `<div class="g3">${SCRIPT.map((s, i) => `<div class="card" style="padding:12px"><div class="frame"><span class="tag">${i + 1} · ${s[0]}</span>${SC.svg({ c: C, shot: s[0], angle: s[1], expr: s[2] })}</div><p style="font-size:16px;color:var(--text);margin-top:8px">${esc(s[3])}</p><p class="small">⏱ ${s[4]} วินาที</p></div>`).join('')}</div>`;
+  }
+}
+Lesson.switcher($('#wSw'), renderWhat, 'sb');
+
+/* ---------- shot size ---------- */
+$('#shotTicks').innerHTML = SC.SHOTS.map((s, i) => `<button type="button" data-i="${i}">${s.k}</button>`).join('');
+function renderShot() {
+  const i = +$('#rShot').value, s = SC.SHOTS[i];
+  $('#shotFrame').innerHTML = `<span class="tag">${s.k}</span>` + SC.svg({ c: C, shot: s.k, expr: i >= 3 ? 'happy' : undefined });
+  $('#shotOver').innerHTML = SC.overview({ c: C, shot: s.k });
+  $('#shotK').textContent = s.th;
+  $('#shotName').textContent = s.short;
+  $('#shotUse').textContent = s.use;
+  $$('#shotTicks button').forEach((b) => b.classList.toggle('on', +b.dataset.i === i));
+}
+$('#rShot').addEventListener('input', renderShot);
+$$('#shotTicks button').forEach((b) => { b.onclick = () => { $('#rShot').value = b.dataset.i; renderShot(); }; });
+renderShot();
+
+/* ---------- angle ---------- */
+$('#angBtns').innerHTML = SC.ANGLES.map((a) => `<button class="btn" data-v="${a.k}">${a.th}</button>`).join('');
+Lesson.switcher($('#angBtns'), (v) => {
+  const a = SC.ANGLES.find((x) => x.k === v);
+  $('#angFrame').innerHTML = `<span class="tag">LS · ${a.th}</span>` + SC.svg({ c: C, shot: 'LS', angle: v, expr: v === 'low' ? 'angry' : v === 'high' ? 'sad' : v === 'dutch' ? 'surprised' : 'neutral' });
+  $('#angName').textContent = a.th;
+  $('#angFeel').textContent = a.feel;
+}, 'eye');
+
+/* ---------- 180 rule ---------- */
+const A = [150, 150], B = [250, 150], M = [200, 150];
+const PRESETS = [[200, 262], [318, 222], [205, 40]];
+let cam = PRESETS[0].slice();
+const side = (p) => Math.sign((B[0] - A[0]) * (p[1] - A[1]) - (B[1] - A[1]) * (p[0] - A[0])) || 1;
+const side0 = side(PRESETS[0]);
+function camView(p) {
+  const d = [M[0] - p[0], M[1] - p[1]], L = Math.hypot(d[0], d[1]) || 1, r = [-d[1] / L, d[0] / L];
+  const px = (q) => (q[0] - p[0]) * r[0] + (q[1] - p[1]) * r[1];
+  const xa = px(A), xb = px(B);
+  const spread = Math.max(Math.abs(xa - xb), 1);
+  const scale = Math.min(440 / spread, 6);
+  const pos = (x) => 800 + (x - (xa + xb) / 2) * scale;
+  const aLeft = xa < xb;
+  const chars = [
+    { c: C, x: pos(xa), view: 'side', flip: !aLeft, expr: 'happy' },
+    { c: friend, x: pos(xb), view: 'side', flip: aLeft, expr: 'neutral' }
+  ].sort((u, v) => u.x - v.x);
+  let svg = SC.svg({ shot: 'MS', chars: chars, vb: [260, 230, 1080, 607.5] });
+  const lab = (x, t, col) => `<g><circle cx="${x}" cy="300" r="34" fill="${col}"/><text x="${x}" y="314" text-anchor="middle" font-family="Prompt" font-weight="800" font-size="38" fill="#fff">${t}</text></g>`;
+  const end = svg.lastIndexOf('</svg>');
+  return svg.slice(0, end) + lab(pos(xa), 'A', '#8b7cf8') + lab(pos(xb), 'B', '#e2564f') + '</svg>';
+}
+function build180() {
+  let t = `<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ผังมุมบนของตัวละครและกล้อง">`;
+  t += `<rect x="0" y="0" width="400" height="150" fill="${side0 < 0 ? '#e9f6ef' : '#fbe9e7'}"/><rect x="0" y="150" width="400" height="150" fill="${side0 > 0 ? '#e9f6ef' : '#fbe9e7'}"/>`;
+  t += `<line x1="0" y1="150" x2="400" y2="150" stroke="#e2564f" stroke-width="2.5" stroke-dasharray="8 6"/><text x="8" y="142" font-family="'Noto Sans Thai',sans-serif" font-size="14" fill="#c0392b">เส้น 180°</text>`;
+  t += `<text x="392" y="290" text-anchor="end" font-family="'Noto Sans Thai',sans-serif" font-size="14" fill="#2f8f6b">ฝั่งที่กล้องอยู่ได้</text>`;
+  t += `<g><circle cx="${A[0]}" cy="${A[1]}" r="20" fill="#8b7cf8"/><path d="M${A[0] + 20} ${A[1]} l12 0" stroke="#8b7cf8" stroke-width="4" stroke-linecap="round"/><text x="${A[0]}" y="${A[1] + 6}" text-anchor="middle" font-family="Prompt" font-weight="800" font-size="17" fill="#fff">A</text></g>`;
+  t += `<g><circle cx="${B[0]}" cy="${B[1]}" r="20" fill="#e2564f"/><path d="M${B[0] - 20} ${B[1]} l-12 0" stroke="#e2564f" stroke-width="4" stroke-linecap="round"/><text x="${B[0]}" y="${B[1] + 6}" text-anchor="middle" font-family="Prompt" font-weight="800" font-size="17" fill="#fff">B</text></g>`;
+  t += `<g id="cam180" tabindex="0" role="slider" aria-label="ตำแหน่งกล้อง ใช้ปุ่มลูกศรเพื่อขยับ"><path id="camFov" d="M0 0 L70 -34 L70 34Z" opacity=".35"/><circle r="30" fill="transparent"/><rect x="-18" y="-13" width="28" height="26" rx="5" fill="#2b2433"/><path d="M10 -7 L22 -13 V13 L10 7Z" fill="#2b2433"/></g>`;
+  $('#top180').innerHTML = t + '</svg>';
+  $('#v180a').innerHTML = `<span class="tag">ก่อนหน้า</span>` + camView(PRESETS[0]);
+  const svgEl = $('#top180 svg'), g = $('#cam180');
+  const toSvg = (e) => { const p = svgEl.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(svgEl.getScreenCTM().inverse()); return [q.x, q.y]; };
+  let dragging = false;
+  svgEl.addEventListener('pointerdown', (e) => { dragging = true; svgEl.setPointerCapture(e.pointerId); place(toSvg(e)); });
+  svgEl.addEventListener('pointermove', (e) => { if (dragging) place(toSvg(e)); });
+  svgEl.addEventListener('pointerup', () => { dragging = false; });
+  svgEl.addEventListener('pointercancel', () => { dragging = false; });
+  g.addEventListener('keydown', (e) => {
+    const k = { ArrowLeft: [-12, 0], ArrowRight: [12, 0], ArrowUp: [0, -12], ArrowDown: [0, 12] }[e.key];
+    if (!k) return;
+    e.preventDefault(); e.stopPropagation();
+    place([cam[0] + k[0], cam[1] + k[1]]);
+  });
+}
+function place(q) {
+  let x = Math.min(385, Math.max(15, q[0])), y = Math.min(285, Math.max(15, q[1]));
+  const dx = x - M[0], dy = y - M[1], L = Math.hypot(dx, dy);
+  if (L < 70) { x = M[0] + dx / (L || 1) * 70; y = M[1] + dy / (L || 1) * 70; }
+  cam = [x, y];
+  render180();
+}
+let viewTimer = 0;
+function render180() {
+  const okSide = side(cam) === side0, ang = Math.atan2(M[1] - cam[1], M[0] - cam[0]) * 180 / Math.PI;
+  const g = $('#cam180');
+  g.setAttribute('transform', `translate(${cam[0].toFixed(1)} ${cam[1].toFixed(1)}) rotate(${ang.toFixed(1)})`);
+  g.setAttribute('aria-valuetext', okSide ? 'อยู่ฝั่งเดิม' : 'ข้ามเส้นแล้ว');
+  $('#camFov').setAttribute('fill', okSide ? '#5ec4c8' : '#ef8a80');
+  const w = $('#w180');
+  w.className = 'warn ' + (okSide ? 'ok' : 'bad');
+  w.textContent = okSide ? '✓ กล้องอยู่ฝั่งเดิม A ยังอยู่ซ้าย B อยู่ขวา ตัดต่อกันแล้วไม่งง' : '✕ ข้ามเส้นแล้ว! A กับ B สลับฝั่ง คนดูจะรู้สึกว่าทั้งคู่หันหนีกัน';
+  // วาดภาพจากกล้องไม่เกินเฟรมละครั้ง
+  cancelAnimationFrame(viewTimer);
+  viewTimer = requestAnimationFrame(() => { $('#v180b').innerHTML = `<span class="tag">ช็อตนี้</span>` + camView(cam); });
+}
+$$('#camPre button').forEach((b) => { b.type = 'button'; b.onclick = () => { cam = PRESETS[+b.dataset.v].slice(); render180(); }; });
+build180();
+render180();
+
+/* ---------- transitions ---------- */
+const T_TXT = {
+  cut: ['Cut · ตัดทันที', 'ใช้บ่อยที่สุด เร็ว ชัด เหมาะกับการเปลี่ยนจากตัวละครไปที่ข้อมูล'],
+  dissolve: ['Dissolve · ค่อย ๆ จางซ้อน', 'บอกว่าเวลาผ่านไป หรือเปลี่ยนเรื่องอย่างนุ่มนวล'],
+  wipe: ['Wipe · ปาดภาพใหม่เข้ามา', 'สนุก มีพลัง เหมาะกับการเปิดหัวข้อใหม่ ใช้บ่อยแล้วดูเป็นสไลด์'],
+  match: ['Match Cut · ตัดด้วยรูปทรงที่ตรงกัน', 'วงกลมของนาฬิกาตัดไปเป็นวงกลมของแผนภูมิ ในตำแหน่งเดียวกัน ทำให้สองเรื่องเชื่อมกันแบบฉลาด']
+};
+const dataCard = (round) => {
+  let s = `<svg viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="การ์ดข้อมูล"><rect width="1600" height="900" fill="#2d2b55"/>`;
+  if (round) {
+    s += `<circle cx="800" cy="430" r="230" fill="none" stroke="#45437a" stroke-width="90"/><circle cx="800" cy="430" r="230" fill="none" stroke="#8b7cf8" stroke-width="90" stroke-dasharray="${2 * Math.PI * 230 * 0.68} 9999" transform="rotate(-90 800 430)"/><text x="800" y="470" text-anchor="middle" font-family="Prompt" font-weight="800" font-size="130" fill="#fff">68%</text><text x="800" y="800" text-anchor="middle" font-family="'Noto Sans Thai',sans-serif" font-size="52" fill="#d6d0f7">เวลาเรียนส่วนใหญ่อยู่บนมือถือ</text>`;
+  } else {
+    s += `<text x="800" y="400" text-anchor="middle" font-family="Prompt" font-weight="800" font-size="260" fill="#b9b0ff">7<tspan font-size="110" fill="#fff"> ใน 10</tspan></text><text x="800" y="560" text-anchor="middle" font-family="'Noto Sans Thai',sans-serif" font-size="60" fill="#fff">เรียนผ่านมือถือ</text>`;
+  }
+  return s + `<text x="1560" y="870" text-anchor="end" font-family="'Noto Sans Thai',sans-serif" font-size="30" fill="#9d99c9">ข้อมูลสมมติเพื่อการสอน</text></svg>`;
+};
+const clockCard = () => `<svg viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="นาฬิกา"><rect width="1600" height="900" fill="#f4f2ee"/><circle cx="800" cy="430" r="275" fill="#fff" stroke="#2b2433" stroke-width="20"/><circle cx="800" cy="430" r="230" fill="none" stroke="#8b7cf8" stroke-width="12" stroke-dasharray="4 116"/><path d="M800 430 V270 M800 430 L910 500" stroke="#2b2433" stroke-width="22" stroke-linecap="round"/><circle cx="800" cy="430" r="20" fill="#e2564f"/><text x="800" y="830" text-anchor="middle" font-family="'Noto Sans Thai',sans-serif" font-size="52" fill="#4a4550">วันหนึ่งเรียนกี่ชั่วโมง?</text></svg>`;
+let tMode = 'cut';
+function playT(v) {
+  tMode = v;
+  const st = $('#tStage');
+  st.querySelector('.A').innerHTML = v === 'match' ? clockCard() : SC.svg({ c: C, shot: 'MS', expr: 'happy', armR: -110 });
+  st.querySelector('.B').innerHTML = dataCard(v === 'match');
+  st.className = 'tstage t-' + v;
+  void st.offsetWidth;
+  st.classList.add('go');
+  $('#tName').textContent = T_TXT[v][0];
+  $('#tUse').textContent = T_TXT[v][1];
+}
+$$('#tBtns button').forEach((b) => { b.type = 'button'; b.onclick = () => { $$('#tBtns button').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); }); playT(b.dataset.v); }; });
+$('#tBtns button').classList.add('on');
+playT('cut');
+
+/* ---------- thumbnail -> storyboard ---------- */
+function tsArt(step) {
+  const sk = '#5d5866';
+  let s = '<svg viewBox="0 0 640 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ภาพช็อตตัวอย่าง"><rect width="640" height="400" fill="#fff"/>';
+  s += `<rect x="20" y="20" width="600" height="338" rx="6" fill="${step === 0 ? '#fff' : '#f7f5f1'}" stroke="#2b2433" stroke-width="3"/>`;
+  if (step === 0) {
+    s += `<g fill="none" stroke="${sk}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">`;
+    s += '<path d="M60 300 Q200 296 330 302 T600 298"/><path d="M80 120 q10 -40 40 -36 q34 6 30 44"/><path d="M98 108 l6 0 M126 106 l6 2"/><text x="70" y="220" font-family="Prompt" font-size="74" fill="#5d5866" stroke="none">7/10</text>';
+    s += '<circle cx="470" cy="140" r="40"/><path d="M470 182 L466 262 M466 262 L440 318 M466 262 L496 318 M468 200 L420 170 M470 204 L520 236"/><path d="M455 132 h4 M480 132 h4 M458 154 q12 10 24 0"/>';
+    s += '<path d="M60 250 h70 M60 268 h110"/></g>';
+    s += `<text x="40" y="388" font-family="'Noto Sans Thai',sans-serif" font-size="22" fill="#5d5866">ร่างเร็ว ๆ แค่รูปทรงและตำแหน่ง</text>`;
+  } else {
+    s += `<g opacity="${step === 1 ? 1 : 0.35}" stroke="#8b7cf8" stroke-width="1.5" stroke-dasharray="6 5"><line x1="220" y1="20" x2="220" y2="358"/><line x1="420" y1="20" x2="420" y2="358"/><line x1="20" y1="132.7" x2="620" y2="132.7"/><line x1="20" y1="245.3" x2="620" y2="245.3"/></g>`;
+    s += `<text x="60" y="150" font-family="Prompt" font-weight="800" font-size="110" fill="#6b5ce7">7<tspan font-size="44" fill="#4a4550"> ใน 10</tspan></text>`;
+    for (let i = 0; i < 10; i++) s += `<rect x="${62 + i * 28}" y="182" width="20" height="34" rx="4" fill="${i < 7 ? '#8b7cf8' : '#e2ddd5'}"/>`;
+    s += `<text x="62" y="250" font-family="'Noto Sans Thai',sans-serif" font-size="19" fill="#4a4550">คนเรียนผ่านมือถือเป็นหลัก</text>`;
+    s += CH.svg(C, { expr: 'surprised', armL: 70 }).replace('<svg ', '<svg x="400" y="60" width="200" height="280" ');
+    if (step === 2) {
+      s += '<defs><marker id="ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10Z" fill="#e2564f"/></marker></defs>';
+      s += '<g fill="none" stroke="#e2564f" stroke-width="4" stroke-linecap="round" marker-end="url(#ah)"><path d="M70 300 q60 -6 120 -60"/><path d="M600 300 q-40 -20 -60 -60"/><path d="M150 70 v-26"/></g>';
+      s += '<g font-family="\'Noto Sans Thai\',sans-serif" font-size="20" fill="#c0392b"><text x="40" y="332">มือถือเด้งขึ้นทีละเครื่อง</text><text x="400" y="332">ตัวละครเด้งเข้าจากขวา</text><text x="166" y="50">ตัวเลขนับขึ้น 0→7</text></g>';
+      s += '<text x="40" y="388" font-family="Prompt" font-weight="700" font-size="21" fill="#2b2433">ช็อต 3 · CU · มุมต่ำ · 5 วินาที · ตัวละครตกใจ</text>';
+    } else {
+      s += `<text x="40" y="388" font-family="'Noto Sans Thai',sans-serif" font-size="22" fill="#5d5866">จัดองค์ประกอบด้วยกฎสามส่วน ตัวเลขซ้าย ตัวละครขวา</text>`;
+    }
+  }
+  return s + '</svg>';
+}
+const TS = [
+  ['Thumbnail', 'ร่างหยาบ', 'วาดเล็ก ๆ เร็ว ๆ แค่รูปทรงหลักและตำแหน่ง ลองหลายแบบในหน้าเดียว ยังไม่ต้องสวย'],
+  ['Compose', 'จัดองค์ประกอบ', 'เลือกแบบที่ดีที่สุด วางตามเส้นแบ่งสามส่วน แยกพื้นที่ข้อมูลกับตัวละครให้ชัด สายตาไม่ตีกัน'],
+  ['Annotate', 'ลูกศรและโน้ต', 'ใส่ลูกศรบอกการเคลื่อนไหว เลขช็อต ขนาดภาพ มุมกล้อง และเวลา คนอื่นอ่านแล้วทำตามได้']
+];
+Lesson.stepper($('#tsBtns'), $('#tsTxt'), TS.map((t, i) => ({
+  label: t[1],
+  render(el) { el.innerHTML = `<p class="small">ขั้นที่ ${i + 1}/3 · ${t[0]}</p><h3 style="font-size:22px;margin:4px 0 6px">${t[1]}</h3><p style="color:var(--text);font-size:16.5px">${t[2]}</p>`; $('#tsArt').innerHTML = tsArt(i); }
+})));
+
+/* ---------- builder ---------- */
+const SB_KEY = 'storyboard';
+const MIN_P = 6, MAX_P = 8;
+const EXAMPLE = [
+  { shot: 'ELS', angle: 'eye', expr: 'neutral', text: 'เปิดฉาก: มหาวิทยาลัยตอนเช้า', sec: 4 },
+  { shot: 'LS', angle: 'eye', expr: 'happy', text: 'ตัวละครเดินเข้าฉาก ถือมือถือ', sec: 5 },
+  { shot: 'MS', angle: 'eye', expr: 'happy', text: 'ทักคนดู “รู้ไหม เราเรียนผ่านอะไรกันมากที่สุด?”', sec: 5 },
+  { shot: 'CU', angle: 'low', expr: 'surprised', text: 'ตัวเลข 7 ใน 10 เด้งขึ้น ตัวละครตกใจ', sec: 6 },
+  { shot: 'MS', angle: 'eye', expr: 'neutral', text: 'กราฟแท่ง มือถือ 68 · โน้ตบุ๊ก 24 · แท็บเล็ต 8', sec: 8 },
+  { shot: 'LS', angle: 'high', expr: 'happy', text: 'ปิดท้าย: ออกแบบสื่อให้ดูบนมือถือได้', sec: 6 }
+];
+const SHOT_K = SC.SHOTS.map((s) => s.k), ANG_K = SC.ANGLES.map((a) => a.k), EXP_K = CH.EXPRS.map((e) => e[0]);
+const cleanPanel = (p) => ({
+  shot: SHOT_K.includes(p && p.shot) ? p.shot : 'LS',
+  angle: ANG_K.includes(p && p.angle) ? p.angle : 'eye',
+  expr: EXP_K.includes(p && p.expr) ? p.expr : 'neutral',
+  text: typeof (p && p.text) === 'string' ? p.text.slice(0, 200) : '',
+  sec: Math.min(20, Math.max(0.5, Math.round((Number(p && p.sec) || 4) * 2) / 2))
+});
+let sb = store.get(SB_KEY, null);
+sb = sb && Array.isArray(sb.panels) && sb.panels.length >= MIN_P ? sb.panels.slice(0, MAX_P).map(cleanPanel) : EXAMPLE.map(cleanPanel);
+const COLORS = ['#8b7cf8', '#5ec4c8', '#f2b866', '#ef8a80', '#6f9bff', '#b38cf5', '#7fd6a0', '#ffb3c7'];
+const saveSb = () => store.set(SB_KEY, { panels: sb, updated: Date.now() });
+const opt = (list, cur, lab) => list.map((k) => `<option value="${k}"${k === cur ? ' selected' : ''}>${lab ? lab(k) : k}</option>`).join('');
+function renderTotals() {
+  const tot = sb.reduce((a, p) => a + p.sec, 0);
+  const ok = tot >= 30 && tot <= 60;
+  $('#sbTotal').innerHTML = `ความยาวรวม <b style="font-size:24px">${tot.toFixed(1)}</b> วินาที · ${sb.length} ช่อง — ` + (ok ? '<span style="color:var(--c2)">✓ อยู่ใน 30–60 วินาที</span>' : `<span style="color:var(--c4)">${tot < 30 ? '✕ สั้นไป ต้องไม่น้อยกว่า 30 วินาที' : '✕ ยาวไป ต้องไม่เกิน 60 วินาที'}</span>`);
+  $('#sbTl').innerHTML = sb.map((p, i) => `<span style="flex:${p.sec};background:${COLORS[i % COLORS.length]}" title="ช่อง ${i + 1}: ${p.sec} วินาที">${i + 1}</span>`).join('');
+  $('#sbAdd').disabled = sb.length >= MAX_P;
+}
+function renderThumb(i) {
+  const card = $(`#sbGrid .sbc[data-i="${i}"]`), p = sb[i];
+  card.querySelector('.frame').innerHTML = `<span class="tag">${p.shot}</span>` + SC.svg({ c: C, shot: p.shot, angle: p.angle, expr: p.expr });
+}
+function renderSb() {
+  $('#sbGrid').innerHTML = sb.map((p, i) => `<div class="sbc" data-i="${i}">
+    <div class="sbh"><span class="num">${i + 1}</span>
+      <button class="ib grip" type="button" aria-label="ลากเพื่อย้ายช่อง ${i + 1}" title="ลากเพื่อย้าย">⠿</button>
+      <button class="ib" type="button" data-act="left" aria-label="ย้ายช่อง ${i + 1} ไปก่อนหน้า"${i === 0 ? ' disabled' : ''}>←</button>
+      <button class="ib" type="button" data-act="right" aria-label="ย้ายช่อง ${i + 1} ไปถัดไป"${i === sb.length - 1 ? ' disabled' : ''}>→</button>
+      <button class="ib" type="button" data-act="del" aria-label="ลบช่อง ${i + 1}"${sb.length <= MIN_P ? ' disabled' : ''}>✕</button></div>
+    <div class="frame"></div>
+    <div class="sbsel">
+      <select data-k="shot" aria-label="ขนาดภาพช่อง ${i + 1}">${opt(SHOT_K, p.shot)}</select>
+      <select data-k="angle" aria-label="มุมกล้องช่อง ${i + 1}">${opt(ANG_K, p.angle, (k) => SC.ANGLES.find((a) => a.k === k).th)}</select>
+      <select data-k="expr" aria-label="สีหน้าช่อง ${i + 1}">${opt(EXP_K, p.expr, (k) => EXPR_TH[k])}</select>
+    </div>
+    <textarea data-k="text" maxlength="200" aria-label="คำอธิบายช่อง ${i + 1}" placeholder="เกิดอะไรขึ้น อะไรขยับ">${esc(p.text)}</textarea>
+    <label class="sec-row">เวลา <input type="number" data-k="sec" min="0.5" max="20" step="0.5" value="${p.sec}" aria-label="วินาทีของช่อง ${i + 1}"> วินาที</label>
+  </div>`).join('');
+  sb.forEach((_, i) => renderThumb(i));
+  $$('#sbGrid .sbc').forEach((card) => {
+    const i = +card.dataset.i;
+    card.querySelectorAll('select').forEach((s) => { s.onchange = () => { sb[i][s.dataset.k] = s.value; saveSb(); renderThumb(i); }; });
+    card.querySelector('textarea').oninput = (e) => { sb[i].text = e.target.value.slice(0, 200); saveSb(); };
+    const num = card.querySelector('input[data-k=sec]');
+    num.oninput = () => { if (num.value === '') return; sb[i].sec = cleanPanel({ sec: num.value }).sec; saveSb(); renderTotals(); };
+    num.onchange = () => { num.value = sb[i].sec; };
+    card.querySelectorAll('[data-act]').forEach((b) => {
+      b.onclick = () => {
+        const a = b.dataset.act;
+        if (a === 'del') sb.splice(i, 1);
+        else { const j = a === 'left' ? i - 1 : i + 1; [sb[i], sb[j]] = [sb[j], sb[i]]; }
+        saveSb(); renderSb();
+        const focusI = a === 'del' ? Math.min(i, sb.length - 1) : (a === 'left' ? i - 1 : i + 1);
+        const nb = $(`#sbGrid .sbc[data-i="${focusI}"] [data-act="${a === 'del' ? 'left' : a}"]`) || $(`#sbGrid .sbc[data-i="${focusI}"] .grip`);
+        if (nb && !nb.disabled) nb.focus({ preventScroll: true });
+      };
+    });
+    bindDrag(card);
+  });
+  renderTotals();
+}
+function bindDrag(card) {
+  const grip = card.querySelector('.grip');
+  let active = false;
+  grip.onpointerdown = (e) => { active = true; grip.setPointerCapture(e.pointerId); card.classList.add('drag'); e.preventDefault(); };
+  grip.onpointermove = (e) => {
+    if (!active) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const over = el && el.closest('#sbGrid .sbc');
+    if (!over || over === card) return;
+    const cards = $$('#sbGrid .sbc');
+    const from = cards.indexOf(card), to = cards.indexOf(over);
+    $('#sbGrid').insertBefore(card, to > from ? over.nextSibling : over);
+    if (e.clientY > innerHeight - 60) scrollBy(0, 16); else if (e.clientY < 70) scrollBy(0, -16);
+  };
+  const end = () => {
+    if (!active) return;
+    active = false;
+    card.classList.remove('drag');
+    const order = $$('#sbGrid .sbc').map((c) => +c.dataset.i);
+    if (order.some((v, k) => v !== k)) { sb = order.map((k) => sb[k]); saveSb(); }
+    renderSb();
+  };
+  grip.onpointerup = end;
+  grip.onpointercancel = end;
+}
+$('#sbAdd').onclick = () => { if (sb.length < MAX_P) { sb.push(cleanPanel({ shot: 'MS', text: '', sec: 4 })); saveSb(); renderSb(); } };
+$('#sbReset').onclick = () => { sb = EXAMPLE.map(cleanPanel); saveSb(); renderSb(); };
+renderSb();
+
+/* ---------- flips + checklist ---------- */
+Lesson.flipCards($('#flips'), [
+  ['ทุกช็อตขนาดเดียวกัน', 'สลับไกล–กลาง–ใกล้ ให้มีจังหวะ'],
+  ['ไม่ใส่เวลาในแต่ละช่อง', 'ใส่วินาทีทุกช่อง รวมให้อยู่ใน 30–60'],
+  ['วาดละเอียดตั้งแต่แรก', 'thumbnail หยาบ ๆ ก่อน แก้ง่ายกว่า'],
+  ['กล้องข้ามเส้น 180°', 'ให้ตัวละครอยู่ฝั่งเดิมตลอดฉาก'],
+  ['ไม่บอกว่าอะไรขยับ', 'ใส่ลูกศรและโน้ตทุกช่อง'],
+  ['เปลี่ยนฉากด้วยลูกเล่นทุกช็อต', 'ใช้ cut เป็นหลัก ใช้ลูกเล่นเมื่อมีความหมาย']
+]);
+Lesson.checklist($('#chks'), [
+  'มีช็อตเปิด กลาง และปิดเรื่องชัดเจน',
+  'มีขนาดภาพอย่างน้อย 3 แบบ',
+  'ทุกช่องบอกขนาดภาพ มุมกล้อง และเวลา',
+  'ความยาวรวมอยู่ใน 30–60 วินาที',
+  'มีลูกศรหรือโน้ตบอกการเคลื่อนไหว',
+  'ตัวละครไม่ข้ามเส้น 180° ในฉากเดียวกัน'
+], { key: 'w04.checklist' });
+
+Lesson.init();
+})();
+</script>
+</body>
+</html>

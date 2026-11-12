@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Character Design · ARTD2303 สัปดาห์ที่ 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/lesson.css">
+<style>
+.fig{background:var(--paper);border:1px solid #d9d4cc;border-radius:18px;overflow:hidden;position:relative}
+.fig svg{display:block;width:100%;height:auto}
+.fig .cap{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:14px;color:#6b6660;pointer-events:none}
+.heroart{cursor:pointer;border:0;padding:0;background:none}
+.heroart .fig{max-width:340px;margin:0 auto}
+.blink .ch-eyes{transform-box:fill-box;transform-origin:center;animation:blink 4.5s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.bob .ch{animation:bob2 3.2s ease-in-out infinite}
+@keyframes bob2{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+/* role frame */
+#roleFrame{border-radius:16px;overflow:hidden;border:1px solid #d9d4cc}
+#roleFrame svg{display:block;width:100%;height:auto}
+
+/* concept */
+.pick p.small{margin-bottom:6px}
+.pick .seg-btns{margin-bottom:14px}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatches span{width:42px;height:42px;border-radius:12px;border:1px solid #444}
+
+/* shape + prop */
+.mini4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.mini4 button{background:var(--paper);border:2px solid transparent;border-radius:12px;padding:4px;min-height:40px}
+.mini4 button.on{border-color:var(--c1)}
+.mini4 svg{display:block;width:100%;height:auto}
+.mini4 span{display:block;font-size:14px;color:#6b6660;padding-bottom:2px}
+
+/* palettes */
+.pal{display:flex;align-items:center;gap:6px;padding:8px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:14px;min-height:44px}
+.pal.on{border-color:var(--c1);color:var(--text)}
+.pal i{width:26px;height:26px;border-radius:7px;display:block}
+
+/* sketches */
+.vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.vcard{background:var(--paper);border:3px solid transparent;border-radius:16px;padding:6px 6px 10px;text-align:center;color:#4a4550;font-size:14px;transition:.2s;min-width:0}
+.vcard:hover{border-color:#b9b0ff}
+.vcard.on{border-color:var(--c1);box-shadow:0 0 0 3px rgba(139,124,248,.25)}
+.vcard svg{display:block;width:100%;height:auto}
+.vcard b{color:#2b2433}
+@media(max-width:860px){.vgrid{grid-template-columns:repeat(2,1fr);gap:10px}}
+
+/* expressions */
+.egrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ecard{background:var(--paper);border:3px solid transparent;border-radius:14px;padding:4px 4px 8px;color:#4a4550;font-size:15px;font-weight:600;min-width:0}
+.ecard.on{border-color:var(--c1)}
+.ecard svg{display:block;width:100%;height:auto}
+.etable{width:100%;border-collapse:collapse;margin-top:12px;font-size:15.5px}
+.etable th,.etable td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.etable th{color:var(--muted);font-weight:500;width:56px}
+.etable td.now{color:var(--text)}
+.etable td.base{color:var(--dim)}
+.etable .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+
+/* turnaround */
+.turnbox{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.turnbox svg{display:block;width:100%;min-width:600px;height:auto}
+@media(min-width:861px){.turnbox svg{min-width:0}}
+
+/* profile */
+.pcard{background:var(--paper);color:#2b2433;border-radius:18px;overflow:hidden;border:1px solid #d9d4cc}
+.pcard .band{background:var(--pc,#8b7cf8);padding:14px 18px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pcard .band h3{font-family:Prompt;font-size:28px;font-weight:800;color:#fff;line-height:1.2;word-break:break-word}
+.pcard .band span{font-size:14px;color:#fff;background:rgba(0,0,0,.18);border-radius:99px;padding:2px 10px}
+.pcard .bodyp{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:16px 18px;align-items:center}
+.pcard .bodyp svg{width:100%;height:auto;display:block}
+.pcard .row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-size:15.5px;line-height:1.45}
+.pcard .row .ic{flex:none;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff}
+.pcard .row div{min-width:0;word-break:break-word}
+.pcard .row small{display:block;font-size:14px;color:#7a7480}
+.pcard .stats{padding:0 18px 16px}
+.pcard .stat{display:grid;grid-template-columns:96px 1fr;align-items:center;gap:10px;margin-top:8px;font-size:14.5px;color:#4a4550}
+.pcard .bar{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.pcard .bar i{height:12px;border-radius:4px;background:#e2ddd5}
+.pcard .bar i.on{background:var(--pc,#8b7cf8)}
+.pcard .src{font-size:14px;color:#8a8590;padding:0 18px 12px}
+@media(max-width:860px){.pcard .bodyp{grid-template-columns:110px 1fr}}
+
+/* ruler */
+.rul text{font-family:Prompt,sans-serif;font-size:11px;fill:#7a7480}
+</style>
+</head>
+<body data-course="ARTD2303" data-title="Character Design">
+
+<!-- HERO -->
+<section class="sec" id="intro" data-nav="เริ่ม">
+  <div class="wrap">
+    <div class="hero">
+      <div style="flex:1;min-width:0">
+        <div class="kicker rv">สัปดาห์ที่ 3</div>
+        <h1 class="rv d1"><span class="grad">Character</span><br>Design</h1>
+        <p class="rv d2" style="font-size:24px;color:var(--text);margin-top:10px;font-weight:500">ออกแบบตัวละครที่จะพาเล่าข้อมูล</p>
+        <p class="rv d3" style="margin-top:12px;max-width:540px">รูปทรง สัดส่วน สี และบุคลิก → ร่างหลายแบบ → เลือก 1 แบบ → ทำ <b>turnaround</b> และ <b>expression sheet</b> ทุกหัวข้อในหน้านี้กดและลากได้</p>
+        <div class="prev rv d3"><span class="tag">ต่อจากสัปดาห์ 2</span><p>เราทำอินโฟกราฟิก “นักศึกษา 7 ใน 10 คนเรียนผ่านมือถือ” ไปแล้ว สัปดาห์นี้ออกแบบ<b>ตัวละครที่จะมาเล่าข้อมูลชุดนั้น</b>ในงานกลางภาค <a href="week02-infographic.html">ทบทวนสัปดาห์ 2</a></p></div>
+      </div>
+      <button class="heroart rv d2" id="heroBtn" type="button" aria-label="แตะเพื่อเปลี่ยนสีหน้าตัวละคร">
+        <div class="fig" id="hero"></div>
+        <p class="small" style="text-align:center;margin-top:8px" id="heroCap">👆 แตะตัวละครเพื่อเปลี่ยนสีหน้า</p>
+      </button>
+    </div>
+    <div class="agenda">
+      <a href="#role" class="rv d1"><div class="n grad">01</div><h3>หน้าที่และคอนเซปต์</h3><p class="small">ฐาน + บุคลิก + ธีม</p></a>
+      <a href="#shape" class="rv d2"><div class="n grad">02</div><h3>รูปทรง สัดส่วน สี</h3><p class="small">shape language · เงาดำ</p></a>
+      <a href="#sketch" class="rv d3"><div class="n grad">03</div><h3>ร่างแล้วเลือก</h3><p class="small">ร่างหลายแบบ</p></a>
+      <a href="#expr" class="rv d4"><div class="n grad">04</div><h3>Sheet</h3><p class="small">expression · turnaround</p></a>
+    </div>
+  </div>
+</section>
+
+<!-- ROLE -->
+<section class="sec" id="role" data-nav="หน้าที่ตัวละคร">
+  <div class="wrap">
+    <div class="kicker rv">ทำไมต้องมีตัวละคร</div>
+    <h2 class="rv d1">ตัวละครคือ “ผู้เล่า” ของข้อมูล</h2>
+    <p class="lead rv d2">งานกลางภาคคือ <b>Motion Infographic 30–60 วินาที</b> ที่มีตัวละครที่ออกแบบเอง ตัวละครช่วยให้คนดูสนใจ รู้ว่าต้องมองตรงไหน และรู้สึกไปกับข้อมูล ลองสลับดูเฟรมเดียวกัน</p>
+    <div class="rv d3">
+      <div class="try">👆 ลองสลับดู</div><br>
+      <div class="switch" id="roleSw"><button data-v="data">ข้อมูลอย่างเดียว</button><button data-v="char">มีตัวละครพาเล่า</button></div>
+      <div class="g2" style="align-items:center">
+        <div id="roleFrame"></div>
+        <ul class="clean" id="roleList">
+          <li><b>ดึงความสนใจ</b> คนมองหน้าคนก่อนมองตัวเลขเสมอ</li>
+          <li><b>พาสายตา</b> ตัวละครชี้หรือหันไปทางไหน คนดูมองตาม</li>
+          <li><b>ใส่อารมณ์</b> สีหน้าบอกว่าข้อมูลนี้ดีหรือน่าห่วง</li>
+          <li><b>ผูกเรื่องให้ต่อเนื่อง</b> ตัวละครตัวเดิมพาไปทุกฉาก</li>
+        </ul>
+      </div>
+      <p class="note" style="margin-top:10px">ตัวเลข 7 ใน 10 เป็นข้อมูลสมมติเพื่อการสอน (ชุดเดียวกับสัปดาห์ 2)</p>
+    </div>
+  </div>
+</section>
+
+<!-- CONCEPT -->
+<section class="sec" id="concept" data-nav="คอนเซปต์">
+  <div class="wrap">
+    <div class="kicker rv">Concept</div>
+    <h2 class="rv d1">ไอเดียตั้งต้น = ฐาน + บุคลิก + ธีม</h2>
+    <p class="lead rv d2">คอนเซปต์ที่ดีอธิบายได้ใน 1 ประโยค ลองผสมดู หรือกดสุ่ม ตัวละครในทุกหัวข้อของหน้านี้จะเปลี่ยนตาม</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2 pick">
+        <div class="try">🎲 เลือกหรือสุ่ม</div>
+        <p class="small">ฐาน (Base) — ของที่เอามาเป็นจุดจำ</p><div class="seg-btns" id="cBase"></div>
+        <p class="small">บุคลิก (Personality)</p><div class="seg-btns" id="cPer"></div>
+        <p class="small">ธีม (Theme) — โลกและชุดสี</p><div class="seg-btns" id="cTheme"></div>
+        <button class="btn on" id="cRand" type="button">🎲 สุ่มคอนเซปต์</button>
+      </div>
+      <div class="rv d3">
+        <div class="card" style="border-color:var(--c1)">
+          <p class="small">คอนเซปต์ของคุณ</p>
+          <h3 id="cOut" style="font-size:26px;margin:6px 0 10px;font-family:Prompt"></h3>
+          <p id="cStory" style="color:var(--text);font-size:16.5px"></p>
+          <div style="display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:center;margin-top:14px">
+            <div class="fig" id="cFig"></div>
+            <div style="min-width:0">
+              <p class="small" style="margin-bottom:6px">สีตั้งต้นจากธีม</p>
+              <div class="swatches" id="cPal"></div>
+              <p class="small" style="margin:12px 0 0">คำค้นหาภาพอ้างอิง</p>
+              <div class="chips" id="cKeys" style="margin-top:6px"></div>
+            </div>
+          </div>
+        </div>
+        <div class="tip"><span>💡</span><p>ฐานคือ<b>จุดจำ</b> บุคลิกคือ<b>การกระทำ</b> ธีมคือ<b>โลกและสี</b> ถ้าตอบได้ครบ 3 อย่าง ก็ร่างต่อได้แล้ว</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SHAPE -->
+<section class="sec" id="shape" data-nav="รูปทรง">
+  <div class="wrap">
+    <div class="kicker rv">Shape Language</div>
+    <h2 class="rv d1">รูปทรงบอกนิสัยก่อนสีหน้า</h2>
+    <p class="lead rv d2">รูปทรงหลักของหัวและลำตัวทำให้คนดูรู้สึกต่อตัวละครต่างกัน ลองเปลี่ยนรูปทรงของ “<span class="chName"></span>”</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2"><div class="fig blink" id="shapeFig" style="max-width:340px;margin:0 auto"></div></div>
+      <div class="rv d3">
+        <div class="try">👆 เลือกรูปทรง</div>
+        <div class="seg-btns" id="shapeBtns" style="margin-bottom:16px">
+          <button class="btn" data-v="circle">● วงกลม</button>
+          <button class="btn" data-v="square">■ สี่เหลี่ยม</button>
+          <button class="btn" data-v="triangle">▲ สามเหลี่ยม</button>
+          <button class="btn" data-v="vtri">▼ สามเหลี่ยมกลับหัว</button>
+        </div>
+        <div class="card" id="shapeMsg"></div>
+        <div class="mini4" id="shape4"></div>
+        <div class="inapp"><h4>ในโปรแกรม · Illustrator</h4><p>วาดวงกลม สี่เหลี่ยม สามเหลี่ยมซ้อนกัน แล้วใช้ <b>Shape Builder</b> <kbd>Shift</kbd>+<kbd>M</kbd> รวมเป็นหัวหรือลำตัว เร็วกว่าวาดด้วยปากกาทีละจุด</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROPORTION -->
+<section class="sec" id="prop" data-nav="สัดส่วน">
+  <div class="wrap">
+    <div class="kicker rv">Proportion</div>
+    <h2 class="rv d1">ตัวละครสูงกี่ “หัว”?</h2>
+    <p class="lead rv d2">วัดความสูงทั้งตัวเป็นจำนวนหัว คนจริงสูงราว 7–8 หัว ตัวละครในโมชันกราฟิกมักอยู่ที่ <b>2–4 หัว</b> เพราะหน้าใหญ่พอให้เห็นสีหน้าบนจอมือถือ ลากดูว่าความรู้สึกเปลี่ยนยังไง</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2"><div class="fig" id="propFig" style="max-width:340px;margin:0 auto"></div></div>
+      <div class="rv d3">
+        <div class="try">🎛️ ลากปรับสัดส่วน</div>
+        <label class="ctl">ความสูง <output id="oH"></output><input type="range" id="rH" min="1.5" max="5" step="0.1" aria-label="ความสูงเป็นจำนวนหัว"></label>
+        <div class="card"><h3 id="propName" style="font-size:22px"></h3><p id="propMsg" style="font-size:16.5px;margin-top:6px"></p></div>
+        <div class="tip"><span>🎬</span><p>คิดเผื่อการขยับ: หัวโต = <b>สีหน้าชัด</b> แต่แขนขาสั้นทำท่าได้น้อย · ตัวสูง = <b>ท่าทางชัด</b> แต่หน้าเล็ก และวาดเฟรมเคลื่อนไหวยากขึ้น</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SILHOUETTE + COLOR -->
+<section class="sec" id="color" data-nav="เงาและสี">
+  <div class="wrap">
+    <div class="kicker rv">Silhouette &amp; Color</div>
+    <h2 class="rv d1">ดูแค่เงาก็ต้องจำได้ · สีน้อยแต่ชัด</h2>
+    <p class="lead rv d2">เปลี่ยนเป็นเงาดำ ถ้ายังรู้ว่าเป็นตัวไหน แปลว่ารูปทรงแข็งแรงพอ จากนั้นลองชุดสี โดยใช้แค่ <b>3–5 สี</b></p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="fig" id="silA"></div>
+          <div class="fig" id="silB"></div>
+          <p class="small" style="text-align:center"><span class="chName"></span><br>(มี<span class="chFeat"></span>)</p>
+          <p class="small" style="text-align:center">ตัวทั่วไป<br>(ไม่มีจุดเด่น)</p>
+        </div>
+      </div>
+      <div class="rv d3">
+        <div class="try">👁️ ทดสอบเงา และเลือกชุดสี</div><br>
+        <button class="btn" id="btnSil" type="button" style="margin-bottom:16px">เปลี่ยนเป็นเงาดำ</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap" id="pals"></div>
+        <ul class="clean" style="margin-top:18px">
+          <li>เงาที่จำได้มาจาก<b>ส่วนที่ยื่นออกมา</b> เช่น หมวก หู หาง งวง</li>
+          <li>สีหลัก 1 + สีรอง 1 + สีเน้น 1 + สีผิว</li>
+          <li>ตัวละครต้องเด่นจาก<b>พื้นหลังของอินโฟกราฟิก</b> ลองวางบนสีพื้นจริงของงานด้วย</li>
+        </ul>
+        <div class="inapp"><h4>ในโปรแกรม · Illustrator</h4><p>เก็บสีของตัวละครไว้ใน <b>Swatches</b> แบบ Global แก้สีครั้งเดียวเปลี่ยนทั้งตัว และลองชุดสีอื่นด้วย <b>Recolor Artwork</b></p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKETCHES -->
+<section class="sec" id="sketch" data-nav="ร่างหลายแบบ">
+  <div class="wrap">
+    <div class="kicker rv">Thumbnail Sketches</div>
+    <h2 class="rv d1">ร่างหลายแบบ แล้วค่อยเลือก</h2>
+    <p class="lead rv d2">อย่าเชื่อแบบแรกที่วาด ร่างคอนเซปต์เดียวกันหลาย ๆ แบบ เปลี่ยนรูปทรง สัดส่วน และสี แล้วเลือกแบบที่<b>เงาจำง่าย เข้ากับบุคลิก และวาดซ้ำได้</b> กดเลือก 1 แบบเป็นตัวหลัก</p>
+    <div class="rv d3">
+      <div class="try">👆 กดเลือกตัวหลัก · สุ่มชุดใหม่ได้</div><br>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+        <div class="switch" id="vMode" style="margin:0"><button data-v="sketch">เส้นร่าง</button><button data-v="color">ลงสี</button></div>
+        <button class="btn" id="vRand" type="button">🎲 สุ่มแบบร่างใหม่</button>
+      </div>
+      <div class="vgrid" id="vgrid"></div>
+      <p id="vMsg" style="margin-top:14px;min-height:28px;color:var(--c2);font-size:16.5px"></p>
+    </div>
+  </div>
+</section>
+
+<!-- EXPRESSIONS -->
+<section class="sec" id="expr" data-nav="สีหน้า">
+  <div class="wrap">
+    <div class="kicker rv">Expression Sheet</div>
+    <h2 class="rv d1">หน้าเดียวกัน 6 อารมณ์</h2>
+    <p class="lead rv d2">อารมณ์อ่านออกจาก 3 จุด: <b>คิ้ว ตา ปาก</b> ถ้าเปลี่ยนแค่ตา คนดูจะแยกอารมณ์ไม่ออก แตะแต่ละช่องเพื่อดูว่าแต่ละจุดเปลี่ยนอย่างไรเมื่อเทียบกับหน้าปกติ</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2"><div class="egrid" id="egrid"></div></div>
+      <div class="rv d3">
+        <div class="try">🔍 ส่วนที่เปลี่ยน</div>
+        <div class="card">
+          <div style="display:grid;grid-template-columns:170px 1fr;gap:14px;align-items:center">
+            <div class="fig" id="eBig"></div>
+            <div style="min-width:0"><h3 id="eName" style="font-size:24px;font-family:Prompt"></h3><button class="btn on" id="eMark" type="button" style="margin-top:8px">ชี้ส่วนที่เปลี่ยน</button></div>
+          </div>
+          <table class="etable" id="eTable"></table>
+        </div>
+        <div class="inapp"><h4>ในโปรแกรม · Illustrator</h4><p>แยก<b>คิ้ว ตา ปาก</b> เป็นคนละเลเยอร์ในแผง <b>Layers</b> จะสลับอารมณ์ได้เร็ว และพร้อมนำไปทำให้เคลื่อนไหวในสัปดาห์ที่ 5</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TURNAROUND -->
+<section class="sec" id="turn" data-nav="Turnaround">
+  <div class="wrap">
+    <div class="kicker rv">Turnaround</div>
+    <h2 class="rv d1">หน้า · ข้าง · หลัง ต้องเป็นตัวเดียวกัน</h2>
+    <p class="lead rv d2">turnaround คือภาพตัวละครหลายมุม <b>ขนาดเท่ากันและเส้นไกด์ตรงกัน</b> ใช้เป็นแบบเวลาวาดตัวละครในฉากต่าง ๆ ของงาน ไม่ให้ตัวละครหน้าตาเปลี่ยนไปเรื่อย ๆ</p>
+    <div class="rv d2">
+      <div class="try">📐 เปิดเส้นไกด์แล้วสังเกตว่าทุกมุมตรงกัน</div>
+      <div class="seg-btns" style="margin-bottom:14px">
+        <button class="btn on" id="tGuide" type="button">เส้นไกด์</button>
+        <button class="btn" id="tSil" type="button">เงาดำ</button>
+        <button class="btn" id="tWrong" type="button">❌ ดูแบบผิด</button>
+      </div>
+      <div class="fig turnbox" id="turnFig"></div>
+      <p class="small" style="margin-top:6px" id="turnHint">บนมือถือเลื่อนภาพไปทางซ้าย–ขวาได้</p>
+    </div>
+    <div class="g3 rv d3" style="margin-top:22px">
+      <div class="card"><h3>ท่ายืนตรง</h3><p style="font-size:16px">แขนกางเล็กน้อย ไม่บังลำตัว เห็นรูปทรงชัด</p></div>
+      <div class="card"><h3>สูงเท่ากันทุกมุม</h3><p style="font-size:16px">ลากเส้นไกด์ก่อนวาด ยอดหัว ตา คาง สะโพก เท้า ต้องตรงกัน</p></div>
+      <div class="card"><h3>ด้านข้างบอกความหนา</h3><p style="font-size:16px">เห็นสิ่งที่ด้านหน้าไม่บอก เช่น หาง ความยาวงวง หรือหมวกที่ยื่น</p></div>
+    </div>
+    <div class="inapp rv"><h4>ในโปรแกรม · Illustrator</h4><ul><li>เปิดไม้บรรทัด <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>R</kbd> แล้วลากเส้นไกด์แนวนอนลงมาจากไม้บรรทัด</li><li>วาดด้านหน้าให้เสร็จก่อน แล้วกด <kbd>Alt</kbd>/<kbd>Option</kbd> ค้างไว้แล้วลาก เพื่อทำสำเนาไปแก้เป็นด้านข้างและด้านหลัง</li></ul></div>
+  </div>
+</section>
+
+<!-- PROFILE -->
+<section class="sec" id="profile" data-nav="โปรไฟล์">
+  <div class="wrap">
+    <div class="kicker rv">Character Profile</div>
+    <h2 class="rv d1">การ์ดโปรไฟล์ = อินโฟกราฟิก 1 ชิ้น</h2>
+    <p class="lead rv d2">ใช้สิ่งที่เรียนสัปดาห์ 2: <b>ชื่อใหญ่สุด</b> (จุดเด่น) ไอคอนนำสายตา และแถบแทนตัวเลข ลองพิมพ์ข้อมูลตัวละครของคุณ การ์ดจะเปลี่ยนตาม</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2">
+        <div class="try">⌨️ พิมพ์และลากปรับ</div>
+        <label class="ctl">ชื่อตัวละคร<input type="text" id="pName" maxlength="40" style="margin-top:6px"></label>
+        <label class="ctl">สิ่งที่ชอบ<input type="text" id="pLike" maxlength="80" placeholder="เช่น นอนกลางวันใต้ร่มไม้" style="margin-top:6px"></label>
+        <label class="ctl">สิ่งที่ไม่ชอบ<input type="text" id="pDislike" maxlength="80" placeholder="เช่น นาฬิกาปลุก" style="margin-top:6px"></label>
+        <div id="pStats"></div>
+      </div>
+      <div class="rv d3"><div class="pcard" id="pcard"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- MISTAKES -->
+<section class="sec" id="mistakes" data-nav="ข้อผิดพลาด">
+  <div class="wrap">
+    <div class="kicker rv">ข้อผิดพลาดที่พบบ่อย</div>
+    <h2 class="rv d1">เจอบ่อย · แก้ง่าย</h2>
+    <p class="lead rv d2">ลองคิดก่อนว่าจะแก้ยังไง แล้วค่อย<b>แตะพลิกการ์ด</b></p>
+    <div class="rv d3" id="flips"></div>
+  </div>
+</section>
+
+<!-- ASSIGNMENT -->
+<section class="sec" id="work" data-nav="งาน">
+  <div class="wrap">
+    <div class="kicker rv">งานประจำสัปดาห์</div>
+    <h2 class="rv d1">Character Sheet <span class="grad">1 ตัว</span></h2>
+    <div class="g2" style="align-items:start;margin-top:24px">
+      <div class="rv d2">
+        <ul class="clean">
+          <li><b>ร่าง 3 แบบ</b> จากคอนเซปต์เดียวกัน และบอกว่าเลือกแบบไหนเพราะอะไร</li>
+          <li><b>ตัวที่เลือก</b> ลงสีเต็มตัว พร้อมชื่อและบุคลิก 1 ประโยค</li>
+          <li><b>Turnaround</b> หน้า · ข้าง · หลัง สูงเท่ากัน มีเส้นไกด์</li>
+          <li><b>Expression</b> อย่างน้อย 4 อารมณ์</li>
+          <li><b>ชุดสี</b> 3–5 สี พร้อมรหัสสี</li>
+        </ul>
+        <div class="card" style="margin-top:18px">
+          <p class="note" style="margin-bottom:10px">ขนาดไฟล์และเกณฑ์คะแนนด้านล่างเป็นตัวอย่าง ปรับได้ตามผู้สอน</p>
+          <ul class="clean" style="margin-bottom:14px"><li><b>ขนาด</b> A3 แนวนอน หรือ 1920 × 1080 px</li><li><b>ส่ง</b> ไฟล์ต้นฉบับเวกเตอร์ + .pdf หรือ .png</li></ul>
+          <h3 style="margin-bottom:14px">เกณฑ์ให้คะแนน (ตัวอย่าง)</h3>
+          <div class="rub"><span class="lab">คอนเซปต์ &amp; บุคลิก</span><div class="track"><div class="fill" style="width:80%"></div></div><span class="pt">20</span></div>
+          <div class="rub"><span class="lab">รูปทรง &amp; เงา</span><div class="track"><div class="fill" style="width:80%"></div></div><span class="pt">20</span></div>
+          <div class="rub"><span class="lab">Turnaround</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="pt">25</span></div>
+          <div class="rub"><span class="lab">Expression</span><div class="track"><div class="fill" style="width:80%"></div></div><span class="pt">20</span></div>
+          <div class="rub"><span class="lab">สี &amp; การนำเสนอ</span><div class="track"><div class="fill" style="width:60%"></div></div><span class="pt">15</span></div>
+        </div>
+      </div>
+      <div class="rv d3">
+        <div class="try">✅ เช็กลิสต์ก่อนส่ง ติ๊กได้ (จำไว้ในเครื่องนี้)</div>
+        <div id="chks"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fig" id="footFig" style="width:150px;margin:0 auto;background:none;border:0"></div>
+  <h2 style="margin-top:12px">รูปทรงชัด + เงาจำได้<br><span class="grad">= ตัวละครที่เล่าเรื่องได้</span></h2>
+  <p class="next">สัปดาห์หน้า → Storyboard (ตัวละครของคุณจะไปอยู่ในช็อตต่าง ๆ)</p>
+</footer>
+
+<script src="../_shared/lesson.js"></script>
+<script src="../_shared/character.js"></script>
+<script>
+(() => {
+const { $, $$, esc, store } = Lesson;
+const CH = Character;
+let C = CH.load();
+const commit = () => { CH.save(C); renderAll(); };
+const setText = (sel, t) => $$(sel).forEach((e) => { e.textContent = t; });
+const into = (svg, x, y, w, h) => svg.replace('<svg ', `<svg x="${x}" y="${y}" width="${w}" height="${h}" `);
+
+/* ---------- hero ---------- */
+const EX_ORDER = CH.EXPRS.map((e) => e[0]);
+let heroExpr = null;
+function renderHero() {
+  $('#hero').innerHTML = CH.svg(C, { expr: heroExpr || undefined, cls: 'blink bob' });
+  const ex = heroExpr ? CH.EXPRS.find((e) => e[0] === heroExpr)[1] : 'ตามบุคลิก' + C.per;
+  $('#heroCap').textContent = `${CH.displayName(C)} · สีหน้า${ex} — แตะเพื่อเปลี่ยน`;
+  $('#footFig').innerHTML = CH.svg(C, { expr: 'happy', armR: -150, cls: 'blink' });
+}
+$('#heroBtn').onclick = () => { const i = heroExpr ? EX_ORDER.indexOf(heroExpr) : -1; heroExpr = EX_ORDER[(i + 1) % EX_ORDER.length]; renderHero(); };
+
+/* ---------- role ---------- */
+let roleMode = 'char';
+function phone(x, y, on) {
+  return `<g transform="translate(${x} ${y})"><rect width="22" height="38" rx="5" fill="${on ? '#8b7cf8' : '#e2ddd5'}"/><rect x="4" y="5" width="14" height="23" rx="2" fill="${on ? '#b9b0ff' : '#f1eee9'}"/><circle cx="11" cy="33" r="2" fill="${on ? '#e9e4ff' : '#cfc9c0'}"/></g>`;
+}
+function renderRole() {
+  const withC = roleMode === 'char';
+  const ox = withC ? 34 : 120;
+  let s = `<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="เฟรมตัวอย่างโมชันอินโฟกราฟิก"><rect width="640" height="360" fill="#fbfaf7"/>`;
+  s += `<text x="${ox}" y="62" font-family="Prompt,'Noto Sans Thai'" font-size="22" font-weight="600" fill="#4a4550">นักศึกษาเรียนผ่านอะไร?</text>`;
+  s += `<text x="${ox}" y="150" font-family="Prompt" font-size="84" font-weight="800" fill="#6b5ce7">7<tspan font-size="36" fill="#4a4550"> ใน 10</tspan></text>`;
+  for (let i = 0; i < 10; i++) s += phone(ox + i * 31, 184, i < 7);
+  s += `<text x="${ox}" y="262" font-family="'Noto Sans Thai',sans-serif" font-size="19" fill="#4a4550">คนเรียนผ่านมือถือเป็นหลัก</text>`;
+  s += `<text x="${ox}" y="330" font-family="'Noto Sans Thai',sans-serif" font-size="13" fill="#9a948c">ข้อมูลสมมติเพื่อการสอน</text>`;
+  if (withC) {
+    s += into(CH.svg(C, { expr: 'happy', armL: 118, noShadow: false }), 420, 66, 210, 294);
+    s += `<g><rect x="372" y="18" width="210" height="58" rx="18" fill="#fff" stroke="#2b2433" stroke-width="2"/><path d="M500 75 l18 18 l2 -18z" fill="#fff" stroke="#2b2433" stroke-width="2" stroke-linejoin="round"/><path d="M501 74 h17" stroke="#fff" stroke-width="4"/><text x="477" y="54" text-anchor="middle" font-family="Prompt,'Noto Sans Thai'" font-size="18" font-weight="600" fill="#2b2433">เกือบทุกคนเลยนะ!</text></g>`;
+  }
+  $('#roleFrame').innerHTML = s + '</svg>';
+}
+Lesson.switcher($('#roleSw'), (v) => { roleMode = v; renderRole(); }, roleMode);
+
+/* ---------- concept ---------- */
+function chips(sel, list, key) {
+  const el = $(sel);
+  el.innerHTML = '';
+  list.forEach((v) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn' + (C[key] === v ? ' on' : '');
+    b.setAttribute('aria-pressed', String(C[key] === v));
+    b.textContent = v;
+    b.onclick = () => { C[key] = v; if (key === 'theme') C.pal = null; heroExpr = null; commit(); };
+    el.appendChild(b);
+  });
+}
+function renderConcept() {
+  chips('#cBase', Object.keys(CH.BASES), 'base');
+  chips('#cPer', Object.keys(CH.PERS), 'per');
+  chips('#cTheme', Object.keys(CH.THEMES), 'theme');
+  $('#cOut').innerHTML = `<span class="grad">${esc(CH.conceptName(C))}</span> ในธีม${esc(C.theme)}`;
+  $('#cStory').textContent = `ตัวละครจาก “${C.base}” ที่${CH.PERS[C.per].story} อยู่ในโลกแบบ${C.theme} จุดจำคือ${CH.BASES[C.base].feat}`;
+  const P = CH.THEMES[C.theme].pal;
+  $('#cPal').innerHTML = [P.cap, P.body, P.acc, P.leg].map((c) => `<span style="background:${c}" title="${c}"></span>`).join('');
+  $('#cKeys').innerHTML = [`${C.base} ภาพจริง`, `${C.base} พื้นผิว`, ...CH.THEMES[C.theme].keys.split(' ')].map((k) => `<span>${esc(k)}</span>`).join('');
+  $('#cFig').innerHTML = CH.svg(C, { cls: 'blink' });
+}
+$('#cRand').onclick = () => {
+  const r = (a) => a[Math.floor(Math.random() * a.length)];
+  Object.assign(C, { base: r(Object.keys(CH.BASES)), per: r(Object.keys(CH.PERS)), theme: r(Object.keys(CH.THEMES)), pal: null });
+  heroExpr = null;
+  commit();
+};
+
+/* ---------- shape ---------- */
+const SHAPE_TXT = {
+  circle: ['● วงกลม = เป็นมิตร อ่อนโยน', 'โค้งมน ไม่มีมุม คนดูรู้สึกปลอดภัยและอยากเข้าใกล้ เหมาะกับตัวละครที่ชวนคนฟังข้อมูล'],
+  square: ['■ สี่เหลี่ยม = มั่นคง น่าเชื่อถือ', 'ขอบตรง ฐานกว้าง ดูหนักแน่น ไว้ใจได้ เหมาะกับตัวละครที่อธิบายเรื่องจริงจัง หรือดื้อนิด ๆ'],
+  triangle: ['▲ สามเหลี่ยม = ติดดิน สบาย ๆ', 'ไหล่แคบ ฐานกว้าง ดูนิ่งและช้า ๆ ขำ ๆ เหมาะกับตัวละครขี้เกียจหรือตัวตลก'],
+  vtri: ['▼ สามเหลี่ยมกลับหัว = มั่นใจ มีพลัง', 'ไหล่กว้าง ช่วงล่างเล็ก ดูพร้อมลุย เหมาะกับตัวละครจอมซ่าหรือฮีโร่']
+};
+const setShape = Lesson.switcher($('#shapeBtns'), (v) => {
+  if (C.shape !== v) { C.shape = v; commit(); }
+});
+function renderShape() {
+  $$('#shapeBtns button').forEach((b) => { b.classList.toggle('on', b.dataset.v === C.shape); b.setAttribute('aria-pressed', String(b.dataset.v === C.shape)); });
+  $('#shapeFig').innerHTML = CH.svg(C);
+  const t = SHAPE_TXT[C.shape], rec = CH.PERS[C.per].shape;
+  $('#shapeMsg').innerHTML = `<h3 style="font-size:22px">${t[0]}</h3><p style="font-size:16.5px;margin-top:6px">${t[1]}</p>`
+    + `<p class="small" style="margin-top:10px">บุคลิก${esc(C.per)} มักเข้ากับรูปทรง ${CH.SHAPES[rec].sym} ${CH.SHAPES[rec].th}${rec === C.shape ? ' ✓ ตรงกับที่เลือก' : ' — หรือจะตั้งใจให้ขัดกันเพื่อเซอร์ไพรส์ก็ได้'}</p>`;
+  $('#shape4').innerHTML = Object.keys(CH.SHAPES).map((k) => `<button type="button" data-v="${k}" class="${k === C.shape ? 'on' : ''}" aria-label="${CH.SHAPES[k].th}">${CH.svg(Object.assign({}, C, { shape: k }), { sil: true, noShadow: true })}<span>${CH.SHAPES[k].sym}</span></button>`).join('');
+  $$('#shape4 button').forEach((b) => { b.onclick = () => setShape(b.dataset.v); });
+}
+
+/* ---------- proportion ---------- */
+function propText(v) {
+  if (v < 2) return ['ซูเปอร์ชิบิ', 'หัวแทบเท่าตัว สีหน้าชัดมากแม้บนจอมือถือ แต่แขนขาสั้น ทำท่าทางได้น้อย'];
+  if (v <= 3.2) return ['ชิบิ / มาสคอต', 'สมดุลที่สุด หน้าชัด ทำท่าทางได้ วาดซ้ำไม่ยาก เหมาะกับโมชันอินโฟกราฟิกส่วนใหญ่'];
+  if (v <= 4.2) return ['การ์ตูนทั่วไป', 'แขนขายาวขึ้น ท่าเดินและท่าทางชัด แต่หน้าเล็กลง ต้องซูมถึงเห็นสีหน้า'];
+  return ['เริ่มสมจริง', 'ทำท่าทางได้หลากหลาย แต่หน้าเล็กมากบนจอมือถือ และวาดเฟรมเคลื่อนไหวยากขึ้นมาก'];
+}
+function renderProp() {
+  const g = CH.geo(C);
+  $('#rH').value = C.heads;
+  $('#oH').textContent = C.heads.toFixed(1) + ' หัว';
+  const x = 100 + Math.max(g.rx, g.bw / 2 + g.armW) + 10;
+  let r = '<g class="rul">';
+  for (let k = 0; k * g.hh < g.H - 0.5; k++) {
+    const y = g.T + k * g.hh, h = Math.min(g.hh, g.G - y);
+    r += `<rect x="${Math.min(x, 182)}" y="${y}" width="8" height="${h}" rx="2" fill="${k % 2 ? '#d6d0f7' : '#8b7cf8'}" opacity=".85"/>`;
+    if (h > 14) r += `<text x="${Math.min(x, 182) + 4}" y="${y + h / 2 + 4}" text-anchor="middle" transform="rotate(0)" style="fill:#fff;font-size:9px">${k + 1}</text>`;
+  }
+  r += '</g>';
+  $('#propFig').innerHTML = CH.svg(C, { extra: r, cls: 'blink' });
+  const [n, m] = propText(C.heads);
+  $('#propName').textContent = n;
+  $('#propMsg').textContent = m;
+}
+$('#rH').addEventListener('input', () => { C.heads = +$('#rH').value; CH.save(C); renderProp(); renderLight(); });
+
+/* ---------- silhouette + palette ---------- */
+let sil = false;
+function renderColor() {
+  $('#silA').innerHTML = CH.svg(C, { sil, expr: 'neutral' });
+  $('#silB').innerHTML = CH.svg(C, { sil, plain: true, expr: 'neutral' });
+  $('#btnSil').classList.toggle('on', sil);
+  $('#btnSil').textContent = sil ? 'กลับเป็นสี' : 'เปลี่ยนเป็นเงาดำ';
+  const cur = CH.palette(C);
+  $('#pals').innerHTML = '';
+  CH.palettes(C).forEach((p, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    const on = cur.cap === p.cap && cur.body === p.body && cur.leg === p.leg;
+    b.className = 'pal' + (on ? ' on' : '');
+    b.setAttribute('aria-pressed', String(on));
+    b.innerHTML = [p.cap, p.body, p.acc, p.face].map((c) => `<i style="background:${c}"></i>`).join('') + `<span style="margin-left:4px">${esc(p.n)}</span>`;
+    b.onclick = () => { C.pal = i === 0 ? null : Object.assign({}, p); sil = false; commit(); };
+    $('#pals').appendChild(b);
+  });
+}
+$('#btnSil').onclick = () => { sil = !sil; renderColor(); };
+
+/* ---------- sketches ---------- */
+let seed = store.get('w03.seed', 7);
+let vMode = 'sketch';
+let vars = [];
+const sameLook = (a, b) => a.shape === b.shape && Math.abs(a.heads - b.heads) < 0.05 && a.pal && b.pal && a.pal.cap === b.pal.cap && a.pal.body === b.pal.body;
+function renderSketch() {
+  vars = CH.variants(C, 6, seed);
+  $('#vgrid').innerHTML = vars.map((v, i) => `<button type="button" class="vcard${sameLook(v, C) ? ' on' : ''}" data-i="${i}" aria-label="แบบที่ ${i + 1}">${CH.svg(v, { sketch: vMode === 'sketch', expr: 'neutral', noShadow: vMode === 'sketch' })}<b>แบบ ${i + 1}</b> · ${CH.SHAPES[v.shape].sym} ${v.heads.toFixed(1)} หัว</button>`).join('');
+  $$('#vgrid .vcard').forEach((b) => {
+    b.onclick = () => {
+      const v = vars[+b.dataset.i];
+      Object.assign(C, { shape: v.shape, heads: v.heads, pal: v.pal });
+      CH.save(C);
+      $('#vMsg').textContent = `✓ เลือกแบบ ${+b.dataset.i + 1} เป็นตัวหลักแล้ว — ทุกหัวข้อในหน้านี้ใช้แบบนี้ และจำไว้ใช้ในสัปดาห์ถัดไป`;
+      renderAll(true);
+    };
+  });
+}
+Lesson.switcher($('#vMode'), (v) => { vMode = v; renderSketch(); }, vMode);
+$('#vRand').onclick = () => { seed = (seed * 48271 + 11) % 2147483647; store.set('w03.seed', seed); $('#vMsg').textContent = ''; renderSketch(); };
+
+/* ---------- expressions ---------- */
+let eSel = 'happy', eMark = true;
+const MARK_COL = { brow: '#ef8a80', eye: '#5ec4c8', mouth: '#f2b866' };
+function renderExpr() {
+  $('#egrid').innerHTML = CH.EXPRS.map(([k, th]) => `<button type="button" class="ecard${k === eSel ? ' on' : ''}" data-k="${k}" aria-pressed="${k === eSel}">${CH.svg(C, { crop: 'head', expr: k })}${th}</button>`).join('');
+  $$('#egrid .ecard').forEach((b) => { b.onclick = () => { eSel = b.dataset.k; renderExpr(); }; });
+  const a = CH.faceAnchors(C, 'front');
+  const e = a.es;
+  const ring = (p, rx, ry, col) => `<ellipse cx="${p[0]}" cy="${p[1]}" rx="${rx}" ry="${ry}" fill="none" stroke="${col}" stroke-width="${Math.max(1.6, e * 0.32)}" stroke-dasharray="${e * 0.7} ${e * 0.45}"/>`;
+  const marks = eMark ? ring([a.brow[0], a.brow[1] - e * 0.2], e * 1.9, e * 0.95, MARK_COL.brow) + ring(a.eye, e * 1.55, e * 1.35, MARK_COL.eye) + ring(a.mouth, e * 2.1, e * 1.5, MARK_COL.mouth) : '';
+  $('#eBig').innerHTML = CH.svg(C, { crop: 'head', expr: eSel, extra: marks });
+  const cur = CH.EXPRS.find((e) => e[0] === eSel), base = CH.EXPRS[0];
+  $('#eName').textContent = cur[1];
+  $('#eMark').classList.toggle('on', eMark);
+  const row = (lab, i, col) => `<tr><th><span class="dot" style="background:${col}"></span>${lab}</th><td class="now">${cur[i]}</td>${eSel === 'neutral' ? '' : `<td class="base">ปกติ: ${base[i]}</td>`}</tr>`;
+  $('#eTable').innerHTML = row('คิ้ว', 2, MARK_COL.brow) + row('ตา', 3, MARK_COL.eye) + row('ปาก', 4, MARK_COL.mouth);
+}
+$('#eMark').onclick = () => { eMark = !eMark; renderExpr(); };
+
+/* ---------- turnaround ---------- */
+let tg = true, ts = false, tw = false;
+function renderTurn() {
+  $('#turnFig').innerHTML = CH.turnaround(C, { guides: tg, sil: ts, wrong: tw });
+  [['#tGuide', tg], ['#tSil', ts], ['#tWrong', tw]].forEach(([s, v]) => { $(s).classList.toggle('on', v); $(s).setAttribute('aria-pressed', String(v)); });
+}
+$('#tGuide').onclick = () => { tg = !tg; renderTurn(); };
+$('#tSil').onclick = () => { ts = !ts; renderTurn(); };
+$('#tWrong').onclick = () => { tw = !tw; renderTurn(); };
+
+/* ---------- profile ---------- */
+const STAT_LAB = ['พลัง', 'ความเป็นมิตร', 'ความซน'];
+$('#pStats').innerHTML = STAT_LAB.map((l, i) => `<label class="ctl">${l} <output id="oS${i}"></output><input type="range" min="1" max="5" step="1" id="rS${i}" aria-label="${l}"></label>`).join('');
+STAT_LAB.forEach((_, i) => {
+  $('#rS' + i).addEventListener('input', (e) => { C.stats[i] = +e.target.value; CH.save(C); renderProfile(); });
+});
+[['#pName', 'name'], ['#pLike', 'likes'], ['#pDislike', 'dislikes']].forEach(([s, k]) => {
+  $(s).addEventListener('input', (e) => { C[k] = e.target.value; CH.save(C); renderProfile(); renderHero(); });
+});
+function renderProfile(fill) {
+  if (fill) {
+    $('#pName').value = C.name; $('#pLike').value = C.likes; $('#pDislike').value = C.dislikes;
+    STAT_LAB.forEach((_, i) => { $('#rS' + i).value = C.stats[i]; });
+  }
+  $('#pName').placeholder = CH.conceptName(C);
+  STAT_LAB.forEach((_, i) => { $('#oS' + i).textContent = C.stats[i] + '/5'; });
+  const P = CH.palette(C);
+  const pc = P.body === '#dcd8f5' || P.body === '#f3e2c4' ? P.leg : P.body;
+  const card = $('#pcard');
+  card.style.setProperty('--pc', pc);
+  card.innerHTML = `<div class="band"><h3>${esc(CH.displayName(C))}</h3><span>${esc(C.per)}</span></div>`
+    + `<div class="bodyp"><div>${CH.svg(C, { cls: 'blink' })}</div><div style="min-width:0">`
+    + `<div class="row"><span class="ic" style="background:#ef8a80">♥</span><div><small>ชอบ</small>${esc(C.likes || '—')}</div></div>`
+    + `<div class="row"><span class="ic" style="background:#6d6e75">✕</span><div><small>ไม่ชอบ</small>${esc(C.dislikes || '—')}</div></div>`
+    + `<div class="row"><span class="ic" style="background:${P.acc};color:#2b2433">★</span><div><small>จุดจำ</small>${esc(CH.BASES[C.base].feat)}</div></div>`
+    + '</div></div><div class="stats">'
+    + STAT_LAB.map((l, i) => `<div class="stat"><span>${l}</span><div class="bar">${[0, 1, 2, 3, 4].map((k) => `<i class="${k < C.stats[i] ? 'on' : ''}"></i>`).join('')}</div></div>`).join('')
+    + `</div><p class="src">ธีม${esc(C.theme)} · ${CH.SHAPES[C.shape].sym} ${C.heads.toFixed(1)} หัว</p>`;
+}
+
+/* ---------- flips + checklist ---------- */
+Lesson.flipCards($('#flips'), [
+  ['เงาดำแล้วจำไม่ได้', 'เพิ่มส่วนที่ยื่นออกมา เช่น หู หมวก หาง'],
+  ['สีเยอะเกินไป', 'คุมไว้ 3–5 สี เก็บเป็นชุดสีของตัวละคร'],
+  ['รายละเอียดเยอะ วาดซ้ำไม่ไหว', 'ตัดให้เรียบ เพราะต้องวาดซ้ำทุกฉาก'],
+  ['turnaround สูงไม่เท่ากัน', 'ลากเส้นไกด์ก่อนวาดทุกมุม'],
+  ['ทุกอารมณ์หน้าเหมือนกัน', 'เปลี่ยนคิ้วและปาก ไม่ใช่แค่ตา'],
+  ['รูปทรงขัดกับบุคลิก', 'เลือก shape language ให้ตรงนิสัย']
+]);
+Lesson.checklist($('#chks'), [
+  'อธิบายคอนเซปต์ได้ใน 1 ประโยค',
+  'ร่างครบ 3 แบบ และบอกเหตุผลที่เลือก',
+  'เปลี่ยนเป็นเงาดำแล้วยังจำได้',
+  'turnaround 3 มุม สูงเท่ากัน เส้นไกด์ตรง',
+  'expression อย่างน้อย 4 อารมณ์ คิ้ว ตา ปาก เปลี่ยนชัด',
+  'ใช้สีไม่เกิน 5 สี และใส่รหัสสี'
+], { key: 'w03.checklist' });
+
+/* ---------- render ---------- */
+function renderLight() { renderHero(); renderShape(); renderColor(); renderExpr(); renderTurn(); renderProfile(); renderRole(); $('#cFig').innerHTML = CH.svg(C, { cls: 'blink' }); }
+function renderAll(keepSketch) {
+  setText('.chName', CH.conceptName(C));
+  setText('.chFeat', CH.BASES[C.base].feat);
+  renderConcept();
+  renderProp();
+  renderLight();
+  if (!keepSketch) renderSketch();
+  else $$('#vgrid .vcard').forEach((b) => b.classList.toggle('on', sameLook(vars[+b.dataset.i], C)));
+}
+renderAll();
+renderProfile(true);
+Lesson.init();
+})();
+</script>
+</body>
+</html>

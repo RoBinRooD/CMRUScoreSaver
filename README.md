@@ -20,6 +20,7 @@ index.html, css/, js/          หน้าเว็บ (GitHub Pages, ไม่
 server/                        โค้ด Google Apps Script (ต้นฉบับ)
 materials/<วิชา>/              สื่อการสอน HTML แบบ interactive — แนบเป็นลิงก์ใน syllabus
                                (https://robinrood.github.io/CMRUScoreSaver/materials/...)
+materials/_shared/             โครงหน้า ธีม และตัวละคร 2D ที่สื่อทุกสัปดาห์ใช้ร่วมกัน
 dist/Code.gs                   ไฟล์รวม — คัดลอกไปวางใน Apps Script (สร้างด้วย npm run build)
 test/                          node --test
 ```

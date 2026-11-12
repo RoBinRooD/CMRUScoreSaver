@@ -18,6 +18,8 @@ index.html, css/, js/          หน้าเว็บ (GitHub Pages, ไม่
   js/views/student.js|teacher.js
   js/mock/memory-backend.js    แทน Google Sheet/Drive ด้วยหน่วยความจำ (โหมดทดลอง + tests)
 server/                        โค้ด Google Apps Script (ต้นฉบับ)
+materials/<วิชา>/              สื่อการสอน HTML แบบ interactive — แนบเป็นลิงก์ใน syllabus
+                               (https://robinrood.github.io/CMRUScoreSaver/materials/...)
 dist/Code.gs                   ไฟล์รวม — คัดลอกไปวางใน Apps Script (สร้างด้วย npm run build)
 test/                          node --test
 ```

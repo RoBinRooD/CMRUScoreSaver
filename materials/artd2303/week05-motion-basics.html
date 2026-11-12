@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion Graphic เบื้องต้น · ARTD2303 สัปดาห์ที่ 5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/lesson.css">
+<style>
+.paperbox{background:var(--paper);border:1px solid #d9d4cc;border-radius:16px;overflow:hidden}
+.paperbox svg{display:block;width:100%;height:auto}
+.heroart{border:0;background:none;padding:0;cursor:pointer}
+#heroChar{width:100%;max-width:300px;margin:0 auto;display:block;transform-origin:50% 100%}
+#heroChar svg{display:block;width:100%;height:auto}
+.vals{font-family:Prompt,monospace;font-size:15px;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:10px;word-break:break-word}
+.lane-lab{font-family:Prompt,sans-serif}
+.ezsvg{touch-action:none;user-select:none;-webkit-user-select:none}
+.ezsvg .h{cursor:grab}
+.ezsvg .h:focus{outline:none}
+.ezsvg .h:focus circle.ring{stroke:#f2b866;stroke-width:3}
+.kftrack{position:relative;height:34px;margin:6px 10px 0}
+.kftrack .line{position:absolute;left:0;right:0;top:16px;height:2px;background:#45464c}
+.kftrack .dia{position:absolute;top:8px;width:18px;height:18px;margin-left:-9px;background:#f2b866;transform:rotate(45deg);border-radius:3px}
+.kftrack .dia.on{background:var(--c1);box-shadow:0 0 0 3px rgba(139,124,248,.35)}
+.kftrack .head{position:absolute;top:0;width:2px;height:34px;background:var(--c4);margin-left:-1px}
+.ex4{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:860px){.ex4{grid-template-columns:1fr}}
+.ex4>*{min-width:0}
+.ex4 .card{padding:14px}
+.ex4 .stage{width:100%;min-width:0;min-height:0;background:var(--paper);border-radius:12px;aspect-ratio:16/9;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ex4 .stage svg{display:block}
+.kt{display:flex;flex-wrap:wrap;gap:.25em;justify-content:center;align-items:baseline;font-family:Prompt,'Noto Sans Thai';font-weight:800;color:#2b2433;padding:0 10px}
+.kt span{display:inline-block;max-width:100%}
+.kt .big{font-size:clamp(44px,8vw,72px);color:#6b5ce7}
+.kt .mid{font-size:clamp(22px,3.6vw,32px)}
+.ex4 h3{margin:10px 0 4px;font-size:18px}
+.ex4 p{font-size:15.5px}
+.rowbtn{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+</style>
+</head>
+<body data-course="ARTD2303" data-title="Motion Graphic เบื้องต้น">
+
+<!-- HERO -->
+<section class="sec" id="intro" data-nav="เริ่ม">
+  <div class="wrap">
+    <div class="hero">
+      <div style="flex:1;min-width:0">
+        <div class="kicker rv">สัปดาห์ที่ 5</div>
+        <h1 class="rv d1"><span class="grad">Motion</span><br>Graphic</h1>
+        <p class="rv d2" style="font-size:24px;color:var(--text);margin-top:10px;font-weight:500">ทำให้ข้อมูลและตัวละครขยับอย่างมีน้ำหนัก</p>
+        <p class="rv d3" style="margin-top:12px;max-width:540px"><b>timing · spacing · easing</b> และ keyframe → ทำให้ตัวอักษร รูปทรง ไอคอน และตัวละครเคลื่อนไหว → เริ่มผลิตงานกลางภาค</p>
+        <div class="prev rv d3"><span class="tag">ต่อจากสัปดาห์ 4</span><p id="prevTxt"></p></div>
+      </div>
+      <div class="heroart rv d2">
+        <button class="heroart" id="heroBtn" type="button" aria-label="แตะให้ตัวละครกระโดด"><div class="paperbox" style="padding:10px 10px 0"><div id="heroChar"></div></div></button>
+        <p class="small" style="text-align:center;margin-top:8px">👆 แตะให้ตัวละครกระโดด</p>
+      </div>
+    </div>
+    <div class="agenda">
+      <a href="#timing" class="rv d1"><div class="n grad">01</div><h3>Timing · Spacing</h3><p class="small">กี่เฟรม ห่างเท่าไร</p></a>
+      <a href="#easing" class="rv d2"><div class="n grad">02</div><h3>Easing · Keyframe</h3><p class="small">เร่ง หน่วง จุดสำคัญ</p></a>
+      <a href="#principles" class="rv d3"><div class="n grad">03</div><h3>หลักแอนิเมชัน</h3><p class="small">squash · anticipation</p></a>
+      <a href="#types" class="rv d4"><div class="n grad">04</div><h3>4 แบบที่ต้องทำ</h3><p class="small">ตัวอักษร → ตัวละคร</p></a>
+    </div>
+  </div>
+</section>
+
+<!-- TIMING vs SPACING -->
+<section class="sec" id="timing" data-nav="Timing · Spacing">
+  <div class="wrap">
+    <div class="kicker rv">Timing vs Spacing</div>
+    <h2 class="rv d1">ระยะทางเท่ากัน แต่ความรู้สึกต่างกัน</h2>
+    <p class="lead rv d2"><b>Timing</b> = ใช้กี่เฟรม (เร็วหรือช้า) · <b>Spacing</b> = แต่ละเฟรมห่างกันเท่าไร (เร่งหรือหน่วง) ลูกบอลจาง ๆ คือตำแหน่งในแต่ละเฟรม (onion skin)</p>
+    <div class="rv d3">
+      <div class="paperbox" id="tsBox"></div>
+      <p class="small" style="margin-top:6px">ขีดใต้ลูกบอล = spacing chart ขีดละ 1 เฟรม ตัวเลขคือเฟรมที่เท่าไร</p>
+      <div class="g2" style="margin-top:16px;align-items:start">
+        <div>
+          <div class="try">🎛️ ปรับ timing</div>
+          <label class="ctl">จำนวนเฟรม <output id="oFrames"></output><input type="range" id="rFrames" min="3" max="24" step="1" value="10" aria-label="จำนวนเฟรม"></label>
+          <p class="small" id="tsSec"></p>
+        </div>
+        <div>
+          <div class="try">👆 เลือก spacing</div>
+          <div class="seg-btns" id="spBtns"><button class="btn" data-v="even">เท่ากัน</button><button class="btn" data-v="in">ช้าตอนเริ่ม</button><button class="btn" data-v="out">ช้าตอนจบ</button><button class="btn" data-v="both">ช้าทั้งสองข้าง</button></div>
+          <div class="rowbtn"><button class="btn on" id="tsPlay" type="button">▶ เล่น</button><span class="small" id="tsFeel"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EASING -->
+<section class="sec" id="easing" data-nav="Easing">
+  <div class="wrap">
+    <div class="kicker rv">Easing Playground</div>
+    <h2 class="rv d1">เส้นกราฟบอกว่าเร่งหรือหน่วงตรงไหน</h2>
+    <p class="lead rv d2">แกนนอนคือเวลา แกนตั้งคือระยะทาง เส้นชัน = เร็ว เส้นราบ = ช้า ลากจุดสีม่วงและสีฟ้าเพื่อดัดเส้น แล้วเทียบกับแบบ linear</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2"><div class="paperbox ezsvg" id="ezBox" style="max-width:380px;margin:0 auto"></div></div>
+      <div class="rv d3">
+        <div class="try">✋ ลากจุด หรือเลือกค่าสำเร็จรูป</div>
+        <div class="seg-btns" id="ezPre">
+          <button class="btn" data-v="linear">linear</button><button class="btn" data-v="ease-in">ease-in</button><button class="btn" data-v="ease-out">ease-out</button><button class="btn" data-v="ease-in-out">ease-in-out</button><button class="btn" data-v="overshoot">overshoot</button>
+        </div>
+        <div class="vals" id="ezCode"></div>
+        <div class="paperbox" id="ezRace" style="margin-top:14px"></div>
+        <div class="rowbtn"><button class="btn on" id="ezPlay" type="button">▶ เล่นเทียบกัน</button><span class="small" id="ezMsg"></span></div>
+        <div class="inapp"><h4>ในโปรแกรมแอนิเมชัน</h4><p>เกือบทุกโปรแกรมมีหน้าต่าง <b>กราฟความเร็ว (graph editor)</b> ที่ดัดเส้นได้แบบเดียวกับตรงนี้ เลือกคีย์เฟรมแล้วเปลี่ยนจาก linear เป็น ease ก่อน แล้วค่อยดัดเส้นละเอียด</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KEYFRAMES -->
+<section class="sec" id="keyframe" data-nav="Keyframe">
+  <div class="wrap">
+    <div class="kicker rv">Keyframe</div>
+    <h2 class="rv d1">กำหนดแค่จุดสำคัญ ที่เหลือโปรแกรมเติมให้</h2>
+    <p class="lead rv d2">keyframe คือค่าที่เรากำหนดไว้ ณ เวลาหนึ่ง เช่น ตำแหน่ง ขนาด ความทึบ การหมุน ระหว่างคีย์โปรแกรมคำนวณให้เอง (in-between) เลือกคีย์ แล้วปรับค่า จากนั้นลากเส้นเวลาหรือกดเล่น</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2">
+        <div class="paperbox" id="kfStage"></div>
+        <div class="kftrack" id="kfTrack" aria-hidden="true"><div class="line"></div></div>
+        <label class="ctl" style="margin-top:4px">เวลา <output id="oT"></output><input type="range" id="kfT" min="0" max="2" step="0.01" value="0" aria-label="เวลา (วินาที)"></label>
+        <div class="vals" id="kfVals"></div>
+      </div>
+      <div class="rv d3">
+        <div class="try">🔑 เลือกคีย์แล้วปรับค่า</div>
+        <div class="seg-btns" id="kfBtns" style="margin-bottom:14px"><button class="btn" data-v="0">คีย์ 1 · 0 วิ</button><button class="btn" data-v="1">คีย์ 2 · 1 วิ</button><button class="btn" data-v="2">คีย์ 3 · 2 วิ</button></div>
+        <label class="ctl">ตำแหน่ง X <output id="oX"></output><input type="range" id="kfX" min="0" max="100" step="1" aria-label="ตำแหน่ง X"></label>
+        <label class="ctl">ขนาด <output id="oS"></output><input type="range" id="kfS" min="0.3" max="1.6" step="0.05" aria-label="ขนาด"></label>
+        <label class="ctl">ความทึบ <output id="oO"></output><input type="range" id="kfO" min="0" max="1" step="0.05" aria-label="ความทึบ"></label>
+        <label class="ctl">การหมุน <output id="oR"></output><input type="range" id="kfR" min="-45" max="45" step="1" aria-label="การหมุน (องศา)"></label>
+        <div class="switch" id="kfEase" style="margin:0 0 6px"><button data-v="linear">linear</button><button data-v="ease">ease-in-out</button></div>
+        <div class="rowbtn"><button class="btn on" id="kfPlay" type="button">▶ เล่น</button><button class="btn" id="kfReset" type="button">ค่าเริ่มต้น</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FRAME RATE -->
+<section class="sec" id="fps" data-nav="เฟรมเรต">
+  <div class="wrap">
+    <div class="kicker rv">Frame Rate</div>
+    <h2 class="rv d1">1 วินาทีมีกี่ภาพ?</h2>
+    <p class="lead rv d2">แอนิเมชันเดียวกันที่ 8, 12, 24 และ 60 ภาพต่อวินาที (fps) เฟรมเรตต่ำดูกระตุกแบบการ์ตูนทำมือ เฟรมเรตสูงลื่นแต่ไฟล์ใหญ่และทำงานมากขึ้น งานวิดีโอส่วนใหญ่ใช้ <b>24 หรือ 30 fps</b></p>
+    <div class="rv d3">
+      <div class="paperbox" id="fpsBox"></div>
+      <div class="rowbtn"><button class="btn on" id="fpsPlay" type="button">⏸ หยุด</button><span class="small">ดูที่ลูกบอลแถวบนสุด จะเห็นว่ากระโดดเป็นช่วง ๆ</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRINCIPLES -->
+<section class="sec" id="principles" data-nav="หลักแอนิเมชัน">
+  <div class="wrap">
+    <div class="kicker rv">Animation Principles</div>
+    <h2 class="rv d1">4 หลักที่ใช้บ่อยที่สุด</h2>
+    <p class="lead rv d2">วัตถุเดียวกันกระโดด ลองปิดทีละหลัก แล้วดูว่าความมีชีวิตหายไปตรงไหน</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2"><div class="paperbox" id="prBox" style="max-width:420px;margin:0 auto"></div></div>
+      <div class="rv d3">
+        <div class="try">👆 เปิด/ปิดทีละหลัก</div>
+        <div class="seg-btns" id="prBtns"><button class="btn on" data-v="squash">Squash &amp; Stretch</button><button class="btn on" data-v="antic">Anticipation</button><button class="btn on" data-v="follow">Follow-through</button><button class="btn on" data-v="over">Overshoot</button></div>
+        <ul class="clean" style="margin-top:16px" id="prList"></ul>
+        <div class="rowbtn"><button class="btn on" id="prPlay" type="button">⏸ หยุด</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 TYPES -->
+<section class="sec" id="types" data-nav="4 แบบ">
+  <div class="wrap">
+    <div class="kicker rv">ทำให้อะไรขยับได้บ้าง</div>
+    <h2 class="rv d1">ตัวอักษร · รูปทรง · ไอคอน · ตัวละคร</h2>
+    <p class="lead rv d2">งานกลางภาคใช้ครบทั้ง 4 แบบ ไอคอนมาจากอินโฟกราฟิกสัปดาห์ 2 ตัวละครมาจากสัปดาห์ 3 กดเล่นทีละแบบ แล้วสังเกตว่าแต่ละชิ้นใช้หลักอะไร</p>
+    <div class="ex4 rv d3" id="ex4">
+      <div class="card"><div class="stage" id="sText"></div><h3>1 · Kinetic Text</h3><p>ข้อความเข้าทีละคำ คำสำคัญใหญ่กว่าและเด้ง (overshoot)</p><div class="rowbtn"><button class="btn" data-play="text" type="button">▶ เล่น</button></div></div>
+      <div class="card"><div class="stage" id="sShape"></div><h3>2 · รูปทรง</h3><p>รูปทรงขยายเข้าแบบเหลื่อมเวลา (offset) ไม่ขึ้นพร้อมกัน</p><div class="rowbtn"><button class="btn" data-play="shape" type="button">▶ เล่น</button></div></div>
+      <div class="card"><div class="stage" id="sIcon"></div><h3>3 · ไอคอน / แผนภูมิ</h3><p>กราฟแท่งค่อย ๆ ขึ้น ตัวเลขนับตาม ใช้ ease-out ให้หยุดนุ่ม</p><div class="rowbtn"><button class="btn" data-play="icon" type="button">▶ เล่น</button></div></div>
+      <div class="card"><div class="stage" id="sChar"></div><h3>4 · ตัวละคร</h3><p>เด้งเข้าฉาก กะพริบตา โบกมือ (หมุนแขนจากจุดหมุนที่ไหล่)</p><div class="rowbtn"><button class="btn" data-play="char" type="button">▶ เล่น</button></div></div>
+    </div>
+    <p class="note rv" style="margin-top:12px">ตัวเลข มือถือ 68 · โน้ตบุ๊ก 24 · แท็บเล็ต 8 เป็นข้อมูลสมมติเพื่อการสอน (ชุดเดียวกับสัปดาห์ 2)</p>
+    <div class="inapp rv"><h4>ในโปรแกรมแอนิเมชัน</h4><p>แยกตัวละครเป็นเลเยอร์ (หัว ลำตัว แขน ขา) ตั้งแต่ในโปรแกรมวาด แล้วย้าย<b>จุดหมุน (anchor point)</b> ของแขนไปไว้ที่ไหล่ก่อนใส่คีย์การหมุน ไม่อย่างนั้นแขนจะหมุนรอบกลางแขนและหลุดจากตัว</p></div>
+  </div>
+</section>
+
+<!-- MISTAKES -->
+<section class="sec" id="mistakes" data-nav="ข้อผิดพลาด">
+  <div class="wrap">
+    <div class="kicker rv">ข้อผิดพลาดที่พบบ่อย</div>
+    <h2 class="rv d1">เจอบ่อย · แก้ง่าย</h2>
+    <p class="lead rv d2">ลองคิดก่อนว่าจะแก้ยังไง แล้วค่อย<b>แตะพลิกการ์ด</b></p>
+    <div class="rv d3" id="flips"></div>
+  </div>
+</section>
+
+<!-- ASSIGNMENT -->
+<section class="sec" id="work" data-nav="งาน">
+  <div class="wrap">
+    <div class="kicker rv">งานประจำสัปดาห์</div>
+    <h2 class="rv d1">ทดลองเคลื่อนไหว <span class="grad">3 ชิ้น</span> + เริ่มผลิตงานกลางภาค</h2>
+    <div class="g2" style="align-items:start;margin-top:24px">
+      <div class="rv d2">
+        <ul class="clean">
+          <li><b>ชิ้นที่ 1 · ตัวอักษร</b> kinetic text จากสารหลักของอินโฟกราฟิก</li>
+          <li><b>ชิ้นที่ 2 · ไอคอน</b> ไอคอนหรือแผนภูมิจากสัปดาห์ 2 ขยับเข้าแบบเหลื่อมเวลา</li>
+          <li><b>ชิ้นที่ 3 · ตัวละคร</b> ตัวละครจากสัปดาห์ 3 ทำท่าอย่างน้อย 1 ท่า (กะพริบตา โบกมือ หรือเด้งเข้าฉาก)</li>
+          <li><b>เริ่มผลิตงานกลางภาค</b> ทำช็อตแรก ๆ ตาม storyboard สัปดาห์ 4</li>
+        </ul>
+        <div class="card" style="margin-top:18px">
+          <p class="note" style="margin-bottom:10px">ความยาวและสเปกไฟล์ด้านล่างเป็นตัวอย่าง ปรับได้ตามผู้สอน</p>
+          <ul class="clean" style="margin-bottom:0"><li><b>ความยาว</b> ชิ้นละ 3–5 วินาที</li><li><b>ไฟล์</b> 1920 × 1080 · 24 fps · MP4</li><li><b>งานกลางภาค</b> ส่งความคืบหน้าอย่างน้อย 2 ช็อต</li></ul>
+        </div>
+      </div>
+      <div class="rv d3">
+        <div class="try">✅ เช็กลิสต์ก่อนส่ง ติ๊กได้ (จำไว้ในเครื่องนี้)</div>
+        <div id="chks"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <h2>timing บอกน้ำหนัก<br><span class="grad">spacing บอกความรู้สึก</span></h2>
+  <p class="next">สัปดาห์หน้า → Midterm Project: Motion Infographic (ส่งและนำเสนอ)</p>
+</footer>
+
+<script src="../_shared/lesson.js"></script>
+<script src="../_shared/character.js"></script>
+<script>
+(() => {
+const { $, $$, esc, store, reduced } = Lesson;
+const CH = Character;
+let hasChar = false;
+try { hasChar = !!localStorage.getItem(CH.KEY); } catch (e) { /* ใช้ตัวอย่าง */ }
+const C = CH.load();
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/* ---------- easing ---------- */
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx, cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const sx = (t) => ((ax * t + bx) * t + cx) * t, sy = (t) => ((ay * t + by) * t + cy) * t, dx = (t) => (3 * ax * t + 2 * bx) * t + cx;
+  return (x) => {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    let t = x;
+    for (let i = 0; i < 8; i++) { const e = sx(t) - x, d = dx(t); if (Math.abs(e) < 1e-5 || Math.abs(d) < 1e-6) break; t -= e / d; }
+    if (t < 0 || t > 1 || Math.abs(sx(t) - x) > 1e-3) { let a = 0, b = 1; for (let i = 0; i < 30; i++) { t = (a + b) / 2; if (sx(t) < x) a = t; else b = t; } }
+    return sy(t);
+  };
+}
+const PRESET = { linear: [0, 0, 1, 1], 'ease-in': [0.42, 0, 1, 1], 'ease-out': [0, 0, 0.58, 1], 'ease-in-out': [0.42, 0, 0.58, 1], overshoot: [0.34, 1.56, 0.64, 1] };
+const easeIO = bezier(0.42, 0, 0.58, 1), easeOut = bezier(0, 0, 0.58, 1), easeIn = bezier(0.42, 0, 1, 1);
+
+/* เล่นลูปเฉพาะตอนที่หัวข้อนั้นอยู่บนจอ */
+function loop(el, fn) {
+  let on = false, vis = false, raf = 0, t0 = 0, acc = 0, last = 0;
+  const tick = (now) => { if (!on || !vis) { raf = 0; return; } acc += Math.min(0.1, (now - last) / 1000); last = now; fn(acc); raf = requestAnimationFrame(tick); };
+  const kick = () => { if (on && vis && !raf) { last = performance.now(); raf = requestAnimationFrame(tick); } };
+  if ('IntersectionObserver' in window) new IntersectionObserver((es) => { vis = es[0].isIntersecting; kick(); }).observe(el); else vis = true;
+  return { play() { on = true; kick(); }, pause() { on = false; }, get on() { return on; }, draw() { fn(acc); } };
+}
+
+/* ---------- intro ---------- */
+const sb = store.get('storyboard', null);
+if (sb && Array.isArray(sb.panels) && sb.panels.length) {
+  const tot = sb.panels.reduce((a, p) => a + (Number(p && p.sec) || 0), 0);
+  $('#prevTxt').innerHTML = `storyboard ของคุณมี <b>${sb.panels.length} ช็อต รวม ${tot.toFixed(1)} วินาที</b> นั่นคือแผนของงาน สัปดาห์นี้เรียนวิธีทำให้แต่ละช็อตขยับจริง`;
+} else {
+  $('#prevTxt').innerHTML = 'storyboard จากสัปดาห์ 4 คือแผนว่าแต่ละช็อตเห็นอะไร นานเท่าไร สัปดาห์นี้ทำให้ช็อตเหล่านั้นขยับจริง <a href="week04-storyboard.html">เปิดสัปดาห์ 4</a>';
+}
+if (!hasChar) $('#prevTxt').insertAdjacentHTML('beforeend', ' · ยังไม่ได้เลือกตัวละครในเครื่องนี้ จึงใช้ตัวอย่างไปก่อน <a href="week03-character-design.html">ออกแบบที่สัปดาห์ 3</a>');
+$('#heroChar').innerHTML = CH.svg(C, { expr: 'happy' });
+$('#heroBtn').onclick = () => {
+  $('#heroChar').animate([
+    { transform: 'translateY(0) scale(1,1)' },
+    { transform: 'translateY(0) scale(1.12,.82)', offset: 0.18 },
+    { transform: 'translateY(-34%) scale(.9,1.12)', offset: 0.45 },
+    { transform: 'translateY(-38%) scale(1,1)', offset: 0.55 },
+    { transform: 'translateY(0) scale(.95,1.06)', offset: 0.8 },
+    { transform: 'translateY(0) scale(1.1,.88)', offset: 0.88 },
+    { transform: 'translateY(0) scale(1,1)' }
+  ], { duration: 1000, easing: 'ease-in-out' });
+};
+
+/* ---------- timing vs spacing ---------- */
+const SP = { even: (t) => t, in: easeIn, out: easeOut, both: easeIO };
+const SP_FEEL = { even: 'ความเร็วคงที่ ดูเหมือนเครื่องจักร', in: 'ออกตัวช้าแล้วเร่ง เหมือนของเริ่มตก', out: 'พุ่งออกเร็วแล้วค่อย ๆ หยุด เหมือนรถเบรก', both: 'ค่อย ๆ ออกตัวและค่อย ๆ หยุด เป็นธรรมชาติที่สุด' };
+let spMode = 'both', tsFrame = -1, tsTimer = 0;
+function renderTS() {
+  const N = +$('#rFrames').value, f = SP[spMode], X0 = 50, X1 = 590;
+  $('#oFrames').textContent = N + ' เฟรม';
+  $('#tsSec').textContent = `${N} เฟรม ที่ 24 fps = ${(N / 24).toFixed(2)} วินาที ${N <= 6 ? '(เร็วมาก)' : N >= 18 ? '(ช้า)' : ''}`;
+  $('#tsFeel').textContent = SP_FEEL[spMode];
+  const xs = Array.from({ length: N }, (_, i) => X0 + (X1 - X0) * f(N === 1 ? 1 : i / (N - 1)));
+  let s = '<svg viewBox="0 0 640 205" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ตำแหน่งลูกบอลในแต่ละเฟรม">';
+  s += `<line x1="${X0}" x2="${X1}" y1="142" y2="142" stroke="#2b2433" stroke-width="2"/>`;
+  let labX = -99;
+  xs.forEach((x, i) => {
+    s += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="132" y2="152" stroke="#8b7cf8" stroke-width="3"/>`;
+    // เลขเฟรม: เว้นเลขที่อยู่ชิดกันเกินไป แต่แสดงเฟรมแรกและเฟรมสุดท้ายเสมอ
+    const roomNext = i === N - 1 || xs[N - 1] - x >= 30;
+    if ((i === 0 || i === N - 1 || (x - labX >= 30 && roomNext))) { s += `<text x="${x.toFixed(1)}" y="192" text-anchor="middle" font-family="Prompt" font-size="24" fill="#6b6660">${i + 1}</text>`; labX = x; }
+    s += `<circle cx="${x.toFixed(1)}" cy="80" r="26" fill="#8b7cf8" opacity="${i === tsFrame ? 0 : 0.16}"/>`;
+  });
+  const cur = tsFrame < 0 ? xs[0] : xs[Math.min(tsFrame, N - 1)];
+  s += `<circle cx="${cur.toFixed(1)}" cy="80" r="26" fill="#8b7cf8" stroke="#2b2433" stroke-width="3"/>`;
+  $('#tsBox').innerHTML = s + '</svg>';
+}
+$('#rFrames').addEventListener('input', () => { tsFrame = -1; renderTS(); });
+Lesson.switcher($('#spBtns'), (v) => { spMode = v; tsFrame = -1; renderTS(); }, spMode);
+$('#tsPlay').onclick = () => {
+  clearInterval(tsTimer);
+  const N = +$('#rFrames').value; tsFrame = 0; renderTS();
+  tsTimer = setInterval(() => { tsFrame++; if (tsFrame >= N + 8) { clearInterval(tsTimer); tsFrame = -1; } renderTS(); }, 1000 / 24);
+};
+
+/* ---------- easing playground ---------- */
+let ez = PRESET['ease-in-out'].slice();
+const PX = (x) => 50 + x * 240, PY = (v) => 250 - v * 170;
+const fromPX = (x) => (x - 50) / 240, fromPY = (y) => (250 - y) / 170;
+function buildEz() {
+  $('#ezBox').innerHTML = `<svg viewBox="0 0 320 330" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="กราฟ easing">
+    <rect x="${PX(0)}" y="${PY(1)}" width="240" height="170" fill="#fff" stroke="#d9d4cc"/>
+    <g stroke="#ece8e1">${[0.25, 0.5, 0.75].map((k) => `<line x1="${PX(k)}" x2="${PX(k)}" y1="${PY(0)}" y2="${PY(1)}"/><line x1="${PX(0)}" x2="${PX(1)}" y1="${PY(k)}" y2="${PY(k)}"/>`).join('')}</g>
+    <line x1="${PX(0)}" y1="${PY(0)}" x2="${PX(1)}" y2="${PY(1)}" stroke="#c9c4bc" stroke-dasharray="5 4"/>
+    <text x="${PX(1)}" y="${PY(0) + 22}" text-anchor="end" font-family="'Noto Sans Thai',sans-serif" font-size="14" fill="#6b6660">เวลา →</text>
+    <text x="${PX(0) - 8}" y="${PY(1) - 8}" font-family="'Noto Sans Thai',sans-serif" font-size="14" fill="#6b6660">ระยะทาง ↑</text>
+    <line id="ezL1" stroke="#8b7cf8" stroke-width="2"/><line id="ezL2" stroke="#5ec4c8" stroke-width="2"/>
+    <path id="ezCurve" fill="none" stroke="#2b2433" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="${PX(0)}" cy="${PY(0)}" r="6" fill="#2b2433"/><circle cx="${PX(1)}" cy="${PY(1)}" r="6" fill="#2b2433"/>
+    <g class="h" id="ezP1" data-h="0" tabindex="0" role="slider" aria-label="จุดควบคุมที่ 1 (ใช้ลูกศร)"><circle r="22" fill="transparent"/><circle class="ring" r="11" fill="#8b7cf8" stroke="#fff" stroke-width="3"/></g>
+    <g class="h" id="ezP2" data-h="1" tabindex="0" role="slider" aria-label="จุดควบคุมที่ 2 (ใช้ลูกศร)"><circle r="22" fill="transparent"/><circle class="ring" r="11" fill="#5ec4c8" stroke="#fff" stroke-width="3"/></g>
+  </svg>`;
+  const svg = $('#ezBox svg');
+  let drag = -1;
+  const pt = (e) => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return [q.x, q.y]; };
+  const set = (h, x, y) => { ez[h * 2] = Math.round(clamp(x, 0, 1) * 100) / 100; ez[h * 2 + 1] = Math.round(clamp(y, -0.4, 1.4) * 100) / 100; markPreset(); renderEz(); };
+  svg.addEventListener('pointerdown', (e) => {
+    const h = e.target.closest('.h');
+    if (h) drag = +h.dataset.h;
+    else { const [x, y] = pt(e); const d = [0, 1].map((k) => Math.hypot(PX(ez[k * 2]) - x, PY(ez[k * 2 + 1]) - y)); drag = d[0] < d[1] ? 0 : 1; }
+    svg.setPointerCapture(e.pointerId);
+    const [x, y] = pt(e); set(drag, fromPX(x), fromPY(y));
+  });
+  svg.addEventListener('pointermove', (e) => { if (drag < 0) return; const [x, y] = pt(e); set(drag, fromPX(x), fromPY(y)); });
+  const end = () => { if (drag >= 0) { drag = -1; race(); } };
+  svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  $$('.h', svg).forEach((g) => g.addEventListener('keydown', (e) => {
+    const k = { ArrowLeft: [-0.05, 0], ArrowRight: [0.05, 0], ArrowUp: [0, 0.05], ArrowDown: [0, -0.05] }[e.key];
+    if (!k) return;
+    e.preventDefault(); e.stopPropagation();
+    const h = +g.dataset.h; set(h, ez[h * 2] + k[0], ez[h * 2 + 1] + k[1]);
+  }));
+}
+function renderEz() {
+  const f = bezier(...ez);
+  let d = '';
+  for (let i = 0; i <= 60; i++) { const x = i / 60; d += (i ? 'L' : 'M') + PX(x).toFixed(1) + ' ' + PY(f(x)).toFixed(1); }
+  $('#ezCurve').setAttribute('d', d);
+  [[1, 0, 0], [2, 1, 1]].forEach(([n, h, end]) => {
+    const l = $('#ezL' + n);
+    l.setAttribute('x1', PX(end)); l.setAttribute('y1', PY(end)); l.setAttribute('x2', PX(ez[h * 2])); l.setAttribute('y2', PY(ez[h * 2 + 1]));
+    const g = $('#ezP' + n); g.setAttribute('transform', `translate(${PX(ez[h * 2]).toFixed(1)} ${PY(ez[h * 2 + 1]).toFixed(1)})`);
+    g.setAttribute('aria-valuetext', `x ${ez[h * 2]}, y ${ez[h * 2 + 1]}`);
+  });
+  $('#ezCode').textContent = `cubic-bezier(${ez.map((v) => +v.toFixed(2)).join(', ')})`;
+  $('#ezMsg').textContent = ez[1] > 1 || ez[3] > 1 ? 'เส้นเกินขอบบน = วิ่งเลยเป้าแล้วเด้งกลับ (overshoot)' : ez[1] < 0 || ez[3] < 0 ? 'เส้นต่ำกว่าศูนย์ = ถอยหลังนิดหนึ่งก่อนออกตัว (anticipation)' : '';
+  drawRace(raceT);
+}
+function markPreset() { $$('#ezPre button').forEach((b) => { const on = PRESET[b.dataset.v].every((v, i) => Math.abs(v - ez[i]) < 0.005); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); }
+let raceT = 0, raceRaf = 0;
+function drawRace(t) {
+  const f = bezier(...ez), X0 = 150, X1 = 570;
+  const lane = (y, v, col, lab) => `<text x="12" y="${y + 9}" font-family="Prompt,'Noto Sans Thai'" font-size="26" fill="#4a4550">${lab}</text><line x1="${X0}" x2="${X1}" y1="${y}" y2="${y}" stroke="#d9d4cc" stroke-width="2"/><circle cx="${(X0 + (X1 - X0) * v).toFixed(1)}" cy="${y}" r="20" fill="${col}" stroke="#2b2433" stroke-width="3"/>`;
+  $('#ezRace').innerHTML = `<svg viewBox="0 0 600 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="เทียบ linear กับเส้นที่ดัด">${lane(45, t, '#d6d0c8', 'linear')}${lane(110, f(t), '#8b7cf8', 'ของเรา')}</svg>`;
+}
+function race() {
+  cancelAnimationFrame(raceRaf);
+  const t0 = performance.now();
+  const step = (now) => { const t = Math.min(1, (now - t0) / 1400); raceT = t; drawRace(t); if (t < 1) raceRaf = requestAnimationFrame(step); };
+  raceRaf = requestAnimationFrame(step);
+}
+buildEz();
+$$('#ezPre button').forEach((b) => { b.type = 'button'; b.onclick = () => { ez = PRESET[b.dataset.v].slice(); markPreset(); renderEz(); race(); }; });
+$('#ezPlay').onclick = race;
+markPreset(); renderEz();
+
+/* ---------- keyframes ---------- */
+const KF0 = [{ x: 8, s: 0.6, o: 0.15, r: -20 }, { x: 50, s: 1.25, o: 1, r: 0 }, { x: 88, s: 1, o: 1, r: 8 }];
+let kf = KF0.map((k) => Object.assign({}, k)), kSel = 0, kEase = 'ease', kRaf = 0;
+const charMini = CH.svg(C, { expr: 'happy', noShadow: true });
+function stateAt(t) {
+  const seg = t >= 1 ? 1 : 0, u = clamp(t - seg, 0, 1), e = kEase === 'ease' ? easeIO(u) : u, a = kf[seg], b = kf[seg + 1];
+  return { x: lerp(a.x, b.x, e), s: lerp(a.s, b.s, e), o: lerp(a.o, b.o, e), r: lerp(a.r, b.r, e) };
+}
+function renderKf() {
+  const t = +$('#kfT').value, st = stateAt(t);
+  $('#oT').textContent = t.toFixed(2) + ' วิ';
+  const cx = 90 + st.x / 100 * 460;
+  const ghosts = kf.map((k, i) => `<g opacity="${i === kSel ? 0.3 : 0.12}" transform="translate(${90 + k.x / 100 * 460} 165) rotate(${k.r}) scale(${k.s}) translate(-75 -105)">${charMini.replace('<svg ', '<svg width="150" height="210" ')}</g>`).join('');
+  $('#kfStage').innerHTML = `<svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ตัวละครเคลื่อนที่ตามคีย์เฟรม"><line x1="20" x2="620" y1="272" y2="272" stroke="#d9d4cc" stroke-width="2"/>${ghosts}<g opacity="${st.o.toFixed(2)}" transform="translate(${cx.toFixed(1)} 165) rotate(${st.r.toFixed(1)}) scale(${st.s.toFixed(3)}) translate(-75 -105)">${charMini.replace('<svg ', '<svg width="150" height="210" ')}</g></svg>`;
+  $('#kfVals').textContent = `X ${st.x.toFixed(0)} · ขนาด ${st.s.toFixed(2)} · ทึบ ${st.o.toFixed(2)} · หมุน ${st.r.toFixed(0)}°`;
+  $('#kfTrack').innerHTML = '<div class="line"></div>' + [0, 1, 2].map((i) => `<span class="dia${i === kSel ? ' on' : ''}" style="left:${i * 50}%"></span>`).join('') + `<span class="head" style="left:${t / 2 * 100}%"></span>`;
+}
+function renderKfCtl() {
+  const k = kf[kSel];
+  $('#kfX').value = k.x; $('#kfS').value = k.s; $('#kfO').value = k.o; $('#kfR').value = k.r;
+  $('#oX').textContent = k.x; $('#oS').textContent = (+k.s).toFixed(2); $('#oO').textContent = (+k.o).toFixed(2); $('#oR').textContent = k.r + '°';
+  $$('#kfBtns button').forEach((b) => { const on = +b.dataset.v === kSel; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+}
+$$('#kfBtns button').forEach((b) => { b.type = 'button'; b.onclick = () => { kSel = +b.dataset.v; $('#kfT').value = kSel; renderKfCtl(); renderKf(); }; });
+[['#kfX', 'x'], ['#kfS', 's'], ['#kfO', 'o'], ['#kfR', 'r']].forEach(([sel, key]) => {
+  $(sel).addEventListener('input', () => { kf[kSel][key] = +$(sel).value; $('#kfT').value = kSel; renderKfCtl(); renderKf(); });
+});
+$('#kfT').addEventListener('input', () => { cancelAnimationFrame(kRaf); renderKf(); });
+Lesson.switcher($('#kfEase'), (v) => { kEase = v; renderKf(); }, kEase);
+$('#kfPlay').onclick = () => {
+  cancelAnimationFrame(kRaf);
+  const t0 = performance.now();
+  const step = (now) => { const t = Math.min(2, (now - t0) / 1000); $('#kfT').value = t; renderKf(); if (t < 2) kRaf = requestAnimationFrame(step); };
+  kRaf = requestAnimationFrame(step);
+};
+$('#kfReset').onclick = () => { kf = KF0.map((k) => Object.assign({}, k)); renderKfCtl(); renderKf(); };
+renderKfCtl(); renderKf();
+
+/* ---------- frame rate ---------- */
+const FPS = [8, 12, 24, 60];
+function drawFps(t) {
+  let s = '<svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="เทียบเฟรมเรต">';
+  FPS.forEach((fps, i) => {
+    const y = 40 + i * 72, tq = Math.floor(t * fps) / fps, v = 0.5 - 0.5 * Math.cos(tq * Math.PI);
+    s += `<text x="16" y="${y + 6}" class="lane-lab" font-family="Prompt" font-weight="700" font-size="28" fill="#2b2433">${fps} fps</text><line x1="150" x2="620" y1="${y}" y2="${y}" stroke="#d9d4cc" stroke-width="2"/><circle cx="${(172 + v * 426).toFixed(1)}" cy="${y}" r="22" fill="${['#ef8a80', '#f2b866', '#8b7cf8', '#5ec4c8'][i]}" stroke="#2b2433" stroke-width="2.5"/>`;
+  });
+  $('#fpsBox').innerHTML = s + '</svg>';
+}
+const fpsLoop = loop($('#fps'), drawFps);
+const setFps = (on) => { on ? fpsLoop.play() : fpsLoop.pause(); $('#fpsPlay').textContent = on ? '⏸ หยุด' : '▶ เล่น'; };
+$('#fpsPlay').onclick = () => setFps(!fpsLoop.on);
+drawFps(0.37);
+setFps(!reduced);
+
+/* ---------- principles ---------- */
+const PR = { squash: true, antic: true, follow: true, over: true };
+const PR_TXT = {
+  squash: ['Squash & Stretch', 'ยืดตอนพุ่ง ยุบตอนกระแทก บอกว่าวัตถุนิ่มหรือแข็ง (ปริมาตรเท่าเดิม)'],
+  antic: ['Anticipation', 'ย่อตัวก่อนกระโดด บอกคนดูว่ากำลังจะเกิดอะไร'],
+  follow: ['Follow-through', 'เสาอากาศขยับตามหลังตัว และยังแกว่งต่อหลังตัวหยุด'],
+  over: ['Overshoot', 'ตอนลงพื้นยุบเลยไปนิดแล้วเด้งกลับ ดูมีน้ำหนักจริง']
+};
+function prState(u) {
+  const H = 120;
+  let y = 0, sx = 1, sy = 1;
+  if (u < 0.2) { const c = PR.antic ? Math.sin(Math.PI * Math.min(1, u / 0.17)) : 0; sy = 1 - 0.24 * c; sx = 1 + 0.16 * c; }
+  else if (u < 0.56) { const p = (u - 0.2) / 0.36; y = H * easeOut(p); if (PR.squash) { sy = 1 + 0.28 * (1 - p); sx = 1 - 0.14 * (1 - p); } }
+  else if (u < 0.86) { const p = (u - 0.56) / 0.3; y = H * (1 - easeIn(p)); if (PR.squash) { sy = 1 + 0.22 * p; sx = 1 - 0.1 * p; } }
+  else { const p = (u - 0.86) / 0.14; let k = PR.over ? Math.exp(-4 * p) * Math.cos(12 * p) : 1 - p; if (!PR.squash) k *= 0.35; sy = 1 - 0.3 * k; sx = 1 + 0.2 * k; }
+  return { y, sx, sy };
+}
+let prPrev = 0, prAng = 0, prVel = 0;
+function drawPr(t) {
+  const T = 1.9, u = (t % T) / T, st = prState(u);
+  // follow-through: สปริงของเสาอากาศ ตามความเร่งแนวตั้ง
+  const dy = st.y - prPrev; prPrev = st.y;
+  if (PR.follow) { prVel += (-dy * 2.2 - prAng) * 0.18; prVel *= 0.86; prAng += prVel; } else { prAng = 0; prVel = 0; }
+  const gx = 210, gy = 270, w = 110 * st.sx, h = 110 * st.sy, top = gy - st.y - h;
+  const sh = Math.max(0.35, 1 - st.y / 200);
+  const tipA = (prAng) * Math.PI / 180, bx = gx, by = top + 4, L = 46;
+  const tx = bx + Math.sin(tipA) * L, ty = by - Math.cos(tipA) * L;
+  let s = '<svg viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="วัตถุกระโดด">';
+  s += `<line x1="20" x2="400" y1="${gy}" y2="${gy}" stroke="#2b2433" stroke-width="3"/><ellipse cx="${gx}" cy="${gy + 6}" rx="${(62 * sh * st.sx).toFixed(1)}" ry="${(9 * sh).toFixed(1)}" fill="#000" opacity=".12"/>`;
+  s += `<path d="M${bx} ${by.toFixed(1)} Q${(bx + (tx - bx) * 0.2).toFixed(1)} ${(by - L * 0.6).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}" stroke="#2b2433" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="10" fill="#f2b866" stroke="#2b2433" stroke-width="3"/>`;
+  s += `<rect x="${(gx - w / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(Math.min(w, h) * 0.32).toFixed(1)}" fill="#8b7cf8" stroke="#2b2433" stroke-width="3.5"/>`;
+  const ey = top + h * 0.42;
+  s += `<ellipse cx="${(gx - w * 0.18).toFixed(1)}" cy="${ey.toFixed(1)}" rx="6" ry="${(8 * st.sy).toFixed(1)}" fill="#2b2433"/><ellipse cx="${(gx + w * 0.18).toFixed(1)}" cy="${ey.toFixed(1)}" rx="6" ry="${(8 * st.sy).toFixed(1)}" fill="#2b2433"/>`;
+  s += `<path d="M${(gx - 10).toFixed(1)} ${(ey + h * 0.18).toFixed(1)} q10 8 20 0" stroke="#2b2433" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  $('#prBox').innerHTML = s + '</svg>';
+}
+function renderPrList() {
+  $('#prList').innerHTML = Object.keys(PR_TXT).map((k) => `<li style="opacity:${PR[k] ? 1 : 0.45}"><b>${PR_TXT[k][0]}</b> ${PR_TXT[k][1]}${PR[k] ? '' : ' <span class="x">(ปิดอยู่)</span>'}</li>`).join('');
+}
+$$('#prBtns button').forEach((b) => {
+  b.type = 'button'; b.setAttribute('aria-pressed', 'true');
+  b.onclick = () => { PR[b.dataset.v] = !PR[b.dataset.v]; b.classList.toggle('on', PR[b.dataset.v]); b.setAttribute('aria-pressed', String(PR[b.dataset.v])); renderPrList(); if (!prLoop.on) drawPr(0.75); };
+});
+const prLoop = loop($('#principles'), drawPr);
+const setPr = (on) => { on ? prLoop.play() : prLoop.pause(); $('#prPlay').textContent = on ? '⏸ หยุด' : '▶ เล่น'; };
+$('#prPlay').onclick = () => setPr(!prLoop.on);
+renderPrList(); drawPr(0.75); setPr(!reduced);
+
+/* ---------- 4 types (Web Animations API: กดเล่นได้เสมอ) ---------- */
+const OVER = 'cubic-bezier(.34,1.56,.64,1)';
+const WORDS = [['7', 'big'], ['ใน', 'mid'], ['10', 'big'], ['คน', 'mid'], ['เรียนผ่านมือถือ', 'mid']];
+$('#sText').innerHTML = `<div class="kt">${WORDS.map(([w, c]) => `<span class="${c}">${w}</span>`).join('')}</div>`;
+$('#sShape').innerHTML = `<svg viewBox="0 0 320 180" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="รูปทรง"><circle class="sh" cx="80" cy="90" r="40" fill="#8b7cf8"/><rect class="sh" x="125" y="50" width="80" height="80" rx="12" fill="#5ec4c8"/><path class="sh" d="M250 48 L292 132 L208 132Z" fill="#f2b866" stroke-linejoin="round"/></svg>`;
+const BARS = [['มือถือ', 68, '#8b7cf8'], ['โน้ตบุ๊ก', 24, '#5ec4c8'], ['แท็บเล็ต', 8, '#f2b866']];
+$('#sIcon').innerHTML = `<svg viewBox="0 0 320 180" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="กราฟแท่ง">${BARS.map(([l, v, c], i) => { const h = v * 1.6, x = 50 + i * 85; return `<rect class="bar" x="${x}" y="${150 - h}" width="56" height="${h}" rx="6" fill="${c}"/><text class="num" x="${x + 28}" y="${142 - h}" text-anchor="middle" font-family="Prompt" font-weight="800" font-size="20" fill="#2b2433" data-v="${v}">${v}</text><text x="${x + 28}" y="172" text-anchor="middle" font-family="'Noto Sans Thai',sans-serif" font-size="15" fill="#4a4550">${l}</text>`; }).join('')}<line x1="30" x2="300" y1="150" y2="150" stroke="#2b2433" stroke-width="2"/></svg>`;
+$('#sChar').innerHTML = `<div id="charWrap" style="position:absolute;left:0;right:0;top:4%;bottom:0">${CH.svg(C, { expr: 'happy', noShadow: true })}</div>`;
+$('#charWrap svg').style.cssText = 'width:100%;height:100%';
+$$('#sIcon .bar').forEach((r) => { r.style.transformBox = 'fill-box'; r.style.transformOrigin = '50% 100%'; });
+$$('#sShape .sh').forEach((r) => { r.style.transformBox = 'fill-box'; r.style.transformOrigin = '50% 50%'; });
+const arm = $('#sChar .ch-armR'), eyes = $('#sChar .ch-eyes');
+if (arm) { const [px, py] = arm.dataset.pivot.split(' '); arm.style.transformBox = 'view-box'; arm.style.transformOrigin = `${px}px ${py}px`; }
+if (eyes) { eyes.style.transformBox = 'fill-box'; eyes.style.transformOrigin = '50% 50%'; }
+const PLAY = {
+  text() { $$('#sText .kt span').forEach((s, i) => s.animate([{ opacity: 0, transform: 'translateY(30px) scale(.6)' }, { opacity: 1, transform: 'none' }], { duration: s.classList.contains('big') ? 600 : 400, delay: i * 260, easing: s.classList.contains('big') ? OVER : 'ease-out', fill: 'backwards' })); },
+  shape() { $$('#sShape .sh').forEach((s, i) => s.animate([{ transform: 'scale(0) rotate(-90deg)' }, { transform: 'scale(1) rotate(0)' }], { duration: 700, delay: i * 180, easing: OVER, fill: 'backwards' })); },
+  icon() {
+    $$('#sIcon .bar').forEach((s, i) => s.animate([{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { duration: 900, delay: i * 200, easing: 'cubic-bezier(0,0,.58,1)', fill: 'backwards' }));
+    $$('#sIcon .num').forEach((n, i) => {
+      const v = +n.dataset.v, t0 = performance.now() + i * 200;
+      const step = (now) => { const p = clamp((now - t0) / 900, 0, 1); n.textContent = Math.round(v * easeOut(p)); if (p < 1) requestAnimationFrame(step); };
+      n.textContent = '0'; requestAnimationFrame(step);
+    });
+  },
+  char() {
+    $('#charWrap').animate([{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], { duration: 700, easing: OVER, fill: 'backwards' });
+    if (eyes) eyes.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(.1)', offset: 0.5 }, { transform: 'scaleY(1)' }], { duration: 220, delay: 900 });
+    if (arm) arm.animate([{ transform: 'rotate(-12deg)' }, { transform: 'rotate(-150deg)', offset: 0.25 }, { transform: 'rotate(-115deg)', offset: 0.42 }, { transform: 'rotate(-150deg)', offset: 0.58 }, { transform: 'rotate(-115deg)', offset: 0.75 }, { transform: 'rotate(-12deg)' }], { duration: 1600, delay: 1200, easing: 'ease-in-out' });
+  }
+};
+$$('#ex4 [data-play]').forEach((b) => { b.onclick = () => PLAY[b.dataset.play](); });
+
+/* ---------- flips + checklist ---------- */
+Lesson.flipCards($('#flips'), [
+  ['ทุกอย่างขยับพร้อมกัน', 'เหลื่อมเวลา (offset) ให้ขยับทีละชิ้น'],
+  ['ใช้ linear ทุกคีย์', 'ใส่ easing ให้มีน้ำหนัก'],
+  ['ข้อความหายก่อนอ่านทัน', 'ค้างข้อความไว้นานพอให้อ่านจบ'],
+  ['เด้งทุกชิ้น', 'overshoot เฉพาะจุดที่อยากเน้น'],
+  ['ตัวละครแข็งทื่อ', 'เพิ่ม anticipation และ follow-through'],
+  ['แขนหลุดจากไหล่ตอนหมุน', 'ย้ายจุดหมุนไปไว้ที่ไหล่ก่อน']
+]);
+Lesson.checklist($('#chks'), [
+  'ทุกชิ้นใช้ easing ไม่ใช่ linear ทั้งหมด',
+  'ชิ้นส่วนขยับเหลื่อมเวลากัน ไม่ขึ้นพร้อมกัน',
+  'ข้อความค้างนานพอให้อ่านจบ',
+  'ตัวละครมีอย่างน้อย 1 ท่า และหมุนจากจุดหมุนที่ถูกต้อง',
+  'ตั้งขนาดภาพและเฟรมเรตเดียวกันทุกชิ้น',
+  'งานกลางภาคเริ่มทำช็อตแรกตาม storyboard แล้ว'
+], { key: 'w05.checklist' });
+
+renderTS();
+Lesson.init();
+})();
+</script>
+</body>
+</html>

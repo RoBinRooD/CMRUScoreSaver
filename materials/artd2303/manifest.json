@@ -1,0 +1,8 @@
+{
+  "weeks": {
+    "2": [{ "title": "Infographic", "file": "week02-infographic.html" }],
+    "3": [{ "title": "Character Design", "file": "week03-character-design.html" }],
+    "4": [{ "title": "Storyboard", "file": "week04-storyboard.html" }],
+    "5": [{ "title": "Motion Graphic เบื้องต้น", "file": "week05-motion-basics.html" }]
+  }
+}

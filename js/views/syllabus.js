@@ -2,6 +2,7 @@
 import { h, mount, loading, errorBox, toast, actionButton, confirmBox, modal, fmtDate, fmtSize, driveUrl, richText } from '../ui.js';
 import { call } from '../api.js';
 import { uploadVia } from '../upload.js';
+import { loadMaterials } from '../materials.js';
 
 const PART_LABEL = { attendance: 'การเข้าเรียน', assignments: 'งาน', midterm: 'สอบกลางภาค', final: 'สอบปลายภาค' };
 // ตามหัวข้อแนวการสอนของมหาวิทยาลัย · before = ก่อนแผนการสอน, after = หลังการวัดผล
@@ -19,22 +20,22 @@ const sectionsIn = (group) => TEXT_SECTIONS.filter((x) => x[3] === group);
 
 export async function renderSyllabus(body, ctx) {
   mount(body, loading());
-  let data;
+  let data, materials;
   try {
-    data = await call('getSyllabus', { courseCode: ctx.course.courseCode });
+    [data, materials] = await Promise.all([call('getSyllabus', { courseCode: ctx.course.courseCode }), loadMaterials(ctx.course.courseCode)]);
   } catch (e) {
     return mount(body, errorBox(e));
   }
   const teacher = ctx.me.role === 'teacher';
   // ยกเลิก = โหลดใหม่ เพราะไฟล์แนบบันทึกทันทีระหว่างแก้ไข
-  const show = () => mount(body, readView(data, teacher, () => mount(body, editView(data, (next) => { data = next; show(); }, () => renderSyllabus(body, ctx)))));
+  const show = () => mount(body, readView(data, materials, teacher, () => mount(body, editView(data, (next) => { data = next; show(); }, () => renderSyllabus(body, ctx)))));
   show();
 }
 
-function readView(data, teacher, onEdit) {
+function readView(data, materials, teacher, onEdit) {
   const { course: c, syllabus: s } = data;
   const has = (k) => !!(s[k] && s[k].trim());
-  const weeks = s.weeks.map((w, i) => ({ ...w, n: i + 1 })).filter((w) => w.topic || w.detail);
+  const weeks = s.weeks.map((w, i) => ({ ...w, n: i + 1 })).filter((w) => w.topic || w.detail || materials[w.n]);
   const empty = !TEXT_SECTIONS.some(([k]) => has(k)) && !weeks.length && !s.attachments.length;
   const section = (title, ...kids) => h('section', { class: 'card stack' }, h('h2', {}, title), ...kids);
 
@@ -53,7 +54,8 @@ function readView(data, teacher, onEdit) {
       h('div', { class: 'table-wrap' }, h('table', {},
         h('thead', {}, h('tr', {}, h('th', { class: 'num' }, 'สัปดาห์'), h('th', {}, 'หัวข้อ'), h('th', {}, 'รายละเอียด'))),
         h('tbody', {}, weeks.map((w) => h('tr', {},
-          h('td', { class: 'num' }, w.n), h('td', {}, w.topic), h('td', {}, w.detail ? richText(w.detail, 'small') : null))))))) : null,
+          h('td', { class: 'num' }, w.n), h('td', {}, w.topic),
+          h('td', {}, w.detail ? richText(w.detail, 'small') : null, materialLinks(materials[w.n], w.detail)))))))) : null,
     section('การวัดและประเมินผล',
       has('assessment') ? richText(s.assessment) : null,
       h('div', { class: 'stats' }, Object.entries(c.weights).map(([k, v]) => h('div', { class: 'stat' },
@@ -61,6 +63,14 @@ function readView(data, teacher, onEdit) {
       h('p', { class: 'muted small' }, 'เกณฑ์เกรด: ' + data.gradeCutoffs.map(([g, min]) => `${g} ≥ ${min}`).join(' · '))),
     sectionsIn('after').map(([k, label]) => (has(k) ? section(label, richText(s[k])) : null)),
     s.attachments.length ? section('ไฟล์และลิงก์', attachmentList(s.attachments)) : null);
+}
+
+// ลิงก์สื่อการสอนของสัปดาห์ (จาก materials/<วิชา>/manifest.json) — ข้ามลิงก์ที่อาจารย์วางไว้ในรายละเอียดแล้ว
+function materialLinks(items, detail) {
+  const list = (items || []).filter((m) => !String(detail || '').includes(m.url));
+  if (!list.length) return null;
+  return h('div', { class: 'row', style: 'margin-top:.35rem;gap:.4rem' }, list.map((m) =>
+    h('a', { class: 'material-link', href: m.url, target: '_blank', rel: 'noopener', title: 'เปิดสื่อการสอนในแท็บใหม่' }, '📘 สื่อการสอน: ' + m.title)));
 }
 
 function attachmentList(list, onRemove) {
@@ -179,7 +189,7 @@ function editView(data, onSaved, onCancel) {
         h('h2', { style: 'margin:0' }, 'แผนการสอน 16 สัปดาห์'),
         h('span', { class: 'spacer' }),
         h('button', { class: 'sm', onclick: () => pasteWeeks(weeks, markDirty) }, 'วางทั้งตาราง')),
-      h('p', { class: 'muted small' }, 'เว้นว่างสัปดาห์ที่ไม่ต้องการแสดง · ลิงก์ https:// ในรายละเอียดจะกดได้'),
+      h('p', { class: 'muted small' }, 'เว้นว่างสัปดาห์ที่ไม่ต้องการแสดง · ลิงก์ https:// ในรายละเอียดจะกดได้ · ลิงก์สื่อการสอนบนเว็บ (materials/) แสดงต่อท้ายสัปดาห์นั้นให้เองโดยไม่ต้องวาง'),
       h('div', { class: 'table-wrap' }, h('table', {},
         h('thead', {}, h('tr', {}, h('th', { class: 'num' }, 'สัปดาห์'), h('th', {}, 'หัวข้อ'), h('th', {}, 'รายละเอียด'))),
         h('tbody', {}, weeks.map((w, i) => h('tr', {},

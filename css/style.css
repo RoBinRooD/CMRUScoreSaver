@@ -138,6 +138,9 @@ label.field > span { color: var(--muted); }
 .chip.bad { background: var(--bad-soft); color: var(--bad); }
 .chip.info { background: var(--info-soft); color: var(--info); }
 .chip.accent { background: var(--accent-soft); color: var(--accent); }
+/* ลิงก์สื่อการสอนในแผนการสอนของ syllabus */
+.material-link { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 2.25rem; padding: 0.3rem 0.75rem; border-radius: 0.6rem; background: var(--accent-soft); color: var(--accent); font-size: 0.9rem; font-weight: 600; text-decoration: none; }
+.material-link:hover { text-decoration: underline; }
 
 /* tables */
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }

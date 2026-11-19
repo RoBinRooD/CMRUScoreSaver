@@ -1,6 +1,22 @@
 {
   "weeks": {
-    "2": [{ "title": "Art Toy Character 3D (สัปดาห์ 2–3)", "file": "week02-03-arttoy-3d.html" }],
-    "3": [{ "title": "Art Toy Character 3D (สัปดาห์ 2–3)", "file": "week02-03-arttoy-3d.html" }]
+    "2": [
+      {
+        "title": "Art Toy Character 3D (สัปดาห์ 2–3)",
+        "file": "week02-03-arttoy-3d.html"
+      }
+    ],
+    "3": [
+      {
+        "title": "Art Toy Character 3D (สัปดาห์ 2–3)",
+        "file": "week02-03-arttoy-3d.html"
+      }
+    ],
+    "4": [
+      {
+        "title": "AI Base · Retopology · Sculpt",
+        "file": "week04-retopology-sculpt.html"
+      }
+    ]
   }
 }

@@ -3,7 +3,7 @@
  * แถบบน + เมนูหัวข้อ, แถบความคืบหน้า, ปุ่มถัดไป, คีย์บอร์ด, แอนิเมชันเผยตัว
  * และตัวช่วย: Lesson.store, Lesson.checklist(), Lesson.flipCards(), Lesson.stepper(), Lesson.switcher()
  *
- * ใช้: <body data-course="ARTD2303" data-title="Character Design" data-home="index.html">
+ * ใช้: <body data-course="ARTD2303" data-title="Character Design" data-home="index.html" data-store="artd2303">
  *      แต่ละหัวข้อเป็น <section class="sec" id="..." data-nav="ชื่อในเมนู">
  * หน้าเรียก Lesson.init() เองหลังสร้างเนื้อหาเสร็จ (สคริปต์ของหน้าวางไว้ท้าย body)
  */
@@ -15,7 +15,8 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   /* ค่าที่นักศึกษาปรับไว้ เก็บในเครื่อง — ใช้ไม่ได้ (โหมดส่วนตัว, ปิด cookie) ก็ทำงานต่อได้ */
-  const PREFIX = 'artd2303.';
+  // แยกค่าของแต่ละวิชา: <body data-store="artd3314"> (ไม่ใส่ = artd2303)
+  const PREFIX = ((document.body && document.body.dataset.store) || 'artd2303') + '.';
   const store = {
     get(key, fallback) {
       try {

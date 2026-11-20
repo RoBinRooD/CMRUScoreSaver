@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Base · Retopology · Sculpt · ARTD3314 สัปดาห์ที่ 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../_shared/lesson.css">
+<style>
+.dark{background:#1a1b22;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.dark svg,.paperbox svg{display:block;width:100%;height:auto}
+.paperbox{background:var(--paper);border:1px solid #d9d4cc;border-radius:16px;overflow:hidden}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;border:0;background:none;padding:0;color:inherit;text-align:center;cursor:pointer}
+.trio>div{min-width:0}
+.trio .dark{transition:.25s}
+.trio .on .dark{border-color:var(--c1);box-shadow:0 0 0 3px rgba(139,124,248,.3)}
+.trio p{font-size:14px;color:var(--muted);margin-top:6px}
+.trio .on p{color:var(--text);font-weight:600}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat .k{font-size:14px;color:var(--muted)}
+.stat .v{font-family:Prompt;font-weight:700;font-size:20px}
+.good{color:var(--c2)}.bad{color:var(--c4)}.mid{color:var(--c3)}
+.qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:860px){.qgrid{grid-template-columns:repeat(2,1fr)}}
+.qcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;text-align:left;color:var(--text);min-width:0}
+.qcard svg{display:block;width:100%;height:auto;border-radius:10px}
+.qcard .ans{font-size:15px;margin-top:6px;min-height:22px}
+.qcard.ok{border-color:var(--c2)}.qcard.no{border-color:var(--c4)}
+.qcard .why{font-size:14.5px;color:var(--muted);margin-top:4px;display:none}
+.qcard.shown .why{display:block}
+.pins{position:relative}
+.pin{cursor:pointer}
+.pin:focus{outline:none}
+.pin:focus circle,.pin.on circle{stroke:#fff;stroke-width:3}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:16px}
+.key{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.key kbd{display:inline-block;margin-bottom:4px}
+.key p{font-size:15.5px;color:var(--text)}
+.key .tag{font-size:14px;color:var(--c5)}
+.btable{width:100%;border-collapse:collapse;margin-top:12px;font-size:15.5px}
+.btable td,.btable th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
+.btable th{color:var(--muted);font-weight:500}
+.btable tr.on td{color:var(--text);font-weight:700;background:rgba(139,124,248,.12)}
+.btable .barw{width:42%}
+.btable .bar{height:10px;border-radius:5px;background:var(--grad)}
+.ctable{width:100%;border-collapse:collapse;font-size:15.5px}
+.ctable th,.ctable td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.ctable th{color:var(--muted);font-weight:500;width:32%}
+.stepbody h3{font-size:22px;margin:4px 0 8px}
+.stepbody ul{padding-left:20px}
+.stepbody li{font-size:16.5px;color:var(--text);margin-bottom:6px}
+.stepdone{margin-top:12px}
+</style>
+</head>
+<body data-course="ARTD3314" data-title="AI Base · Retopology · Sculpt" data-store="artd3314">
+
+<!-- HERO -->
+<section class="sec" id="intro" data-nav="เริ่ม">
+  <div class="wrap">
+    <div class="hero">
+      <div style="flex:1;min-width:0">
+        <div class="divnum grad rv">W4</div>
+        <div class="kicker rv">สัปดาห์ที่ 4</div>
+        <h1 class="rv d1" style="font-size:clamp(42px,8vw,92px)"><span class="grad">Retopology</span></h1>
+        <p class="rv d2" style="font-size:22px;color:var(--text);margin-top:10px;font-weight:500">ให้ AI ขึ้นรูปหยาบ · เราวางตาข่ายใหม่เอง · แล้วค่อย sculpt</p>
+        <p class="rv d3" style="margin-top:12px;max-width:540px">ใช้ <b>Meshy</b> หรือ <b>Tripo</b> แปลงภาพตัวละครเป็นโมเดล 3D รอบหนึ่ง แล้วนำมา <b>retopology ด้วยมือใน Blender</b> ให้ได้ตาข่ายสี่เหลี่ยมที่สะอาด จากนั้นเพิ่ม Multiresolution แล้ว sculpt รายละเอียด</p>
+        <div class="prev rv d3"><span class="tag">ต่อจากสัปดาห์ 2–3</span><p id="prevTxt"></p></div>
+      </div>
+      <div class="heroart rv d2">
+        <button class="trio" id="heroTrio" type="button" aria-label="แตะเพื่อดูทีละขั้น">
+          <div data-i="0"><div class="dark" id="h0"></div><p>1 · จาก AI</p></div>
+          <div data-i="1"><div class="dark" id="h1"></div><p>2 · Retopo</p></div>
+          <div data-i="2"><div class="dark" id="h2"></div><p>3 · Sculpt</p></div>
+        </button>
+        <p class="small" style="text-align:center;margin-top:8px" id="heroCap"></p>
+      </div>
+    </div>
+    <div class="agenda">
+      <a href="#pipeline" class="rv d1"><div class="n grad">01</div><h3>ขั้นตอนทั้งหมด</h3><p class="small">AI → retopo → sculpt</p></a>
+      <a href="#input" class="rv d2"><div class="n grad">02</div><h3>ป้อนภาพให้ AI</h3><p class="small">Meshy · Tripo</p></a>
+      <a href="#why" class="rv d3"><div class="n grad">03</div><h3>Topology ที่ดี</h3><p class="small">quad · pole · loop</p></a>
+      <a href="#blender" class="rv d4"><div class="n grad">04</div><h3>ทำใน Blender</h3><p class="small">snap · shrinkwrap · multires</p></a>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section class="sec" id="pipeline" data-nav="ขั้นตอน">
+  <div class="wrap">
+    <div class="kicker rv">Workflow</div>
+    <h2 class="rv d1">5 ขั้น จาก turnaround สู่งานปั้น</h2>
+    <p class="lead rv d2">AI ช่วยให้ได้ <b>รูปทรงหยาบเร็ว</b> แต่ตาข่ายที่ได้ใช้ปั้นต่อหรือผลิตจริงไม่ได้ เราจึงใช้มันเป็น <b>แบบให้วางตาข่ายใหม่</b> เหมือนภาพอ้างอิงแบบ 3 มิติ กดดูทีละขั้น</p>
+    <div class="rv d3">
+      <div id="pipeBtns"></div>
+      <div class="card stepbody" id="pipeBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- INPUT IMAGE -->
+<section class="sec" id="input" data-nav="ภาพที่ป้อน AI">
+  <div class="wrap">
+    <div class="kicker rv">Image to 3D</div>
+    <h2 class="rv d1">ภาพแบบไหนให้ AI ขึ้นรูปได้ดี?</h2>
+    <p class="lead rv d2">AI เดาด้านที่มองไม่เห็นจากภาพ ภาพที่ชัดและตรงไปตรงมาจะได้โมเดลที่ใกล้แบบที่สุด ทายก่อนว่าภาพไหน “ใช้ได้” แล้วแตะเพื่อดูเฉลย</p>
+    <div class="rv d3">
+      <div class="try">👆 แตะการ์ดเพื่อดูเฉลย</div>
+      <div class="qgrid" id="qgrid"></div>
+      <p id="qScore" style="margin-top:12px;font-size:16.5px;color:var(--c2)"></p>
+      <div class="inapp"><h4>ใช้เครื่องมือ AI อย่างรับผิดชอบ</h4><ul>
+        <li>อัปโหลดเฉพาะภาพที่<b>ออกแบบเอง</b> (turnaround ของเรา) ไม่ใช้ภาพตัวละครของคนอื่น</li>
+        <li>เงื่อนไขการใช้งาน เครดิตฟรี และสิทธิ์ในโมเดลเปลี่ยนได้ <b>ตรวจบนเว็บของ Meshy หรือ Tripo ก่อนใช้ทุกครั้ง</b></li>
+        <li>ระบุในงานว่าใช้เครื่องมือไหนสร้างโมเดลตั้งต้น ส่วนที่ให้คะแนนคือ retopology และ sculpt ที่ทำเอง</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- AI MESH PROBLEMS -->
+<section class="sec" id="inspect" data-nav="ตรวจโมเดล AI">
+  <div class="wrap">
+    <div class="kicker rv">Inspect the AI Mesh</div>
+    <h2 class="rv d1">โมเดลจาก AI ดูดี แต่ข้างในเละ</h2>
+    <p class="lead rv d2">เปิด wireframe ดูทุกครั้ง แตะหมุดแต่ละจุดเพื่อดูปัญหาที่เจอบ่อย และวิธีจัดการใน Blender</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2"><div class="dark pins" id="inspFig"></div></div>
+      <div class="rv d3">
+        <div class="try">📍 แตะหมุด 1–6</div>
+        <div class="card" id="inspMsg"></div>
+        <div class="tip"><span>💡</span><p>ไม่ต้องซ่อมโมเดล AI ให้สมบูรณ์ เราแค่ใช้เป็น<b>แบบ</b> ซ่อมเฉพาะที่ทำให้วางตาข่ายไม่ได้ เช่น ขนาด ทิศ และชิ้นลอย</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY RETOPO -->
+<section class="sec" id="why" data-nav="ทำไมต้องรีโทโป">
+  <div class="wrap">
+    <div class="kicker rv">Why Retopology</div>
+    <h2 class="rv d1">รูปทรงเหมือนกัน แต่ตาข่ายต่างกันมาก</h2>
+    <p class="lead rv d2">ตาข่ายของ AI เป็นสามเหลี่ยมกระจัดกระจาย ความหนาแน่นไม่เท่ากัน สลับดูเทียบกับ retopology ด้วยมือ และแบบอัตโนมัติ (QuadriFlow / Remesh)</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2"><div class="dark" id="whyFig" style="max-width:420px;margin:0 auto"></div></div>
+      <div class="rv d3">
+        <div class="try">👆 สลับดู</div><br>
+        <div class="switch" id="whySw"><button data-v="ai">จาก AI</button><button data-v="auto">อัตโนมัติ</button><button data-v="hand">ด้วยมือ</button></div>
+        <h3 id="whyName" style="font-size:22px"></h3>
+        <p id="whyTxt" style="font-size:16.5px;margin-top:6px"></p>
+        <div class="stats" id="whyStats"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOPOLOGY RULES -->
+<section class="sec" id="rules" data-nav="Quad · Pole">
+  <div class="wrap">
+    <div class="kicker rv">Quad · Triangle · N-gon · Pole</div>
+    <h2 class="rv d1">ทำไมต้องเป็นสี่เหลี่ยม</h2>
+    <p class="lead rv d2">Multiresolution และ Subdivision แบ่งทุกหน้าเป็นสี่เหลี่ยมเล็ก ๆ ถ้าต้นทางเป็นสี่เหลี่ยม ตาข่ายจะเรียงสวย ถ้ามีสามเหลี่ยมหรือ N-gon จะเกิด <b>pole</b> (จุดที่มีเส้นมาบรรจบไม่ใช่ 4 เส้น) ทำให้ผิวย่นเวลาปั้น ลองกดแบ่งดู (คำนวณจริงด้วยวิธี Catmull–Clark)</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2"><div class="paperbox" id="ccFig" style="max-width:420px;margin:0 auto"></div></div>
+      <div class="rv d3">
+        <div class="try">👆 เลือกตาข่าย แล้วกดแบ่ง</div>
+        <div class="seg-btns" id="ccMesh" style="margin-bottom:12px"><button class="btn" data-v="quad">Quad ล้วน</button><button class="btn" data-v="tri">สามเหลี่ยม</button><button class="btn" data-v="ngon">N-gon กลาง</button></div>
+        <div class="seg-btns" id="ccLv" style="margin-bottom:14px"><button class="btn" data-v="0">ต้นฉบับ</button><button class="btn" data-v="1">แบ่ง 1 ครั้ง</button><button class="btn" data-v="2">แบ่ง 2 ครั้ง</button></div>
+        <div class="card" id="ccMsg"></div>
+        <ul class="clean" style="margin-top:14px">
+          <li><span style="color:#e2564f;font-weight:700">●</span> pole 3 เส้น · <span style="color:#d98b1e;font-weight:700">●</span> pole 5 เส้นขึ้นไป</li>
+          <li>pole หลีกเลี่ยงไม่ได้ทั้งหมด แต่ให้ซ่อนไว้ในที่ที่ไม่โค้งมากหรือไม่ต้องปั้นละเอียด</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EDGE LOOPS -->
+<section class="sec" id="loops" data-nav="ลูปสำคัญ">
+  <div class="wrap">
+    <div class="kicker rv">Edge Loops</div>
+    <h2 class="rv d1">วางลูปตามรูปทรงที่จะปั้น</h2>
+    <p class="lead rv d2">เส้นตาข่ายควรวิ่งรอบรูปทรงสำคัญ เวลาปั้นร่อง ขอบ หรือเปลี่ยนสีหน้าจะได้เนียน แตะเพื่อเปิดทีละลูป แล้วอ่านว่าทำไมต้องมี</p>
+    <div class="g2" style="align-items:center">
+      <div class="rv d2"><div class="paperbox" id="loopFig" style="max-width:400px;margin:0 auto"></div></div>
+      <div class="rv d3">
+        <div class="try">👆 เปิด/ปิดทีละลูป</div>
+        <div class="seg-btns" id="loopBtns" style="margin-bottom:14px"></div>
+        <div class="card" id="loopMsg"></div>
+        <div class="tip"><span>🎯</span><p>วางลูปหลักก่อนเสมอ (ตา ปาก แนวกลาง คอ) แล้วค่อยเติมช่องว่างด้วยสี่เหลี่ยม อย่าเริ่มจากมุมใดมุมหนึ่งแล้วไล่ไปเรื่อย ๆ</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BLENDER STEPS -->
+<section class="sec" id="blender" data-nav="ทำใน Blender">
+  <div class="wrap">
+    <div class="kicker rv">Retopology in Blender</div>
+    <h2 class="rv d1">รีโทโปด้วยมือ ทีละขั้น</h2>
+    <p class="lead rv d2">ทำตามลำดับนี้ทุกครั้ง ติ๊ก “ทำแล้ว” ได้ ระบบจำไว้ในเครื่องนี้ ชื่อเมนูอ้างอิง Blender 4.x (เวอร์ชันอื่นอาจต่างเล็กน้อย)</p>
+    <div class="rv d3">
+      <div id="bBtns"></div>
+      <div class="card stepbody" id="bBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- KEYS -->
+<section class="sec" id="keys" data-nav="คีย์ลัด">
+  <div class="wrap">
+    <div class="kicker rv">คีย์ลัดสำหรับรีโทโปและ sculpt (Blender)</div>
+    <h2 class="rv d1">คีย์ที่ใช้บ่อยสัปดาห์นี้</h2>
+    <p class="lead rv d2">พิมพ์ค้นหาได้ทั้งปุ่มและคำอธิบาย</p>
+    <input type="text" id="keySearch" class="rv d2" placeholder="ค้นหา เช่น snap, loop, sculpt, Ctrl" style="max-width:420px" aria-label="ค้นหาคีย์ลัด">
+    <div class="kgrid rv d3" id="keyGrid"></div>
+  </div>
+</section>
+
+<!-- BUDGET -->
+<section class="sec" id="budget" data-nav="จำนวนหน้า">
+  <div class="wrap">
+    <div class="kicker rv">Polygon Budget</div>
+    <h2 class="rv d1">ตาข่ายฐานน้อย · รายละเอียดมาจาก Multires</h2>
+    <p class="lead rv d2">ทุกครั้งที่ Multiresolution แบ่ง 1 ระดับ จำนวนหน้าเพิ่ม <b>4 เท่า</b> ตาข่ายฐานจึงควรเบาและสะอาด แล้วปล่อยให้ระดับสูง ๆ เก็บรายละเอียด ลองปรับดู</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2">
+        <div class="try">🎛️ ลากปรับ</div>
+        <label class="ctl">หน้าของตาข่ายฐาน (retopo) <output id="oBase"></output><input type="range" id="rBase" min="500" max="8000" step="100" value="2000" aria-label="จำนวนหน้าของตาข่ายฐาน"></label>
+        <label class="ctl">ระดับ Multiresolution <output id="oLv"></output><input type="range" id="rLv" min="0" max="6" step="1" value="4" aria-label="ระดับ Multiresolution"></label>
+        <div class="card" id="budMsg"></div>
+      </div>
+      <div class="rv d3"><table class="btable" id="budTable"></table><p class="note" style="margin-top:10px">ตัวเลขแนะนำเป็นค่าประมาณสำหรับอาร์ตทอยตัวเดียว ปรับได้ตามผู้สอนและเครื่องในห้องเรียน</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SCULPT -->
+<section class="sec" id="sculpt" data-nav="Sculpt">
+  <div class="wrap">
+    <div class="kicker rv">Multiresolution + Sculpt</div>
+    <h2 class="rv d1">ปั้นบนตาข่ายของเรา ไม่ใช่ตาข่ายของ AI</h2>
+    <p class="lead rv d2">ปั้นจาก<b>รูปทรงใหญ่ → รอง → รายละเอียด</b> และขึ้นระดับ Multires เมื่อระดับเดิมเก็บรายละเอียดไม่ไหวแล้วเท่านั้น สลับดูความต่างของการปั้นบนตาข่ายสองแบบ</p>
+    <div class="g2" style="align-items:start">
+      <div class="rv d2">
+        <div class="switch" id="scSw"><button data-v="ai">ปั้นบนโมเดล AI ตรง ๆ</button><button data-v="retopo">ปั้นบน retopo + Multires</button></div>
+        <table class="ctable" id="scTable"></table>
+      </div>
+      <div class="rv d3">
+        <div class="try">🖌️ เลือกช่วงงานปั้น ดูว่าใช้แปรงไหน</div>
+        <div id="brushFlips"></div>
+        <div class="inapp"><h4>ในโปรแกรม · Blender Sculpt Mode</h4><ul><li><kbd>F</kbd> ขนาดแปรง · <kbd>Shift</kbd>+<kbd>F</kbd> ความแรง</li><li>กด <kbd>Shift</kbd> ค้าง = Smooth · กด <kbd>Ctrl</kbd> ค้าง = กลับทิศ (ดันเข้าแทนดึงออก)</li><li>เปิด Symmetry แกน X ไว้ตลอด (ค่าเริ่มต้นเปิดอยู่)</li></ul></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MISTAKES -->
+<section class="sec" id="mistakes" data-nav="ข้อผิดพลาด">
+  <div class="wrap">
+    <div class="kicker rv">ข้อผิดพลาดที่พบบ่อย</div>
+    <h2 class="rv d1">เจอบ่อย · แก้ง่าย</h2>
+    <p class="lead rv d2">ลองคิดก่อนว่าจะแก้ยังไง แล้วค่อย<b>แตะพลิกการ์ด</b></p>
+    <div class="rv d3" id="flips"></div>
+  </div>
+</section>
+
+<!-- WORK -->
+<section class="sec" id="work" data-nav="งาน W4">
+  <div class="wrap">
+    <div class="kicker rv">งานสัปดาห์ที่ 4</div>
+    <h2 class="rv d1">AI Base → Retopology → <span class="grad">Sculpt</span></h2>
+    <div class="g2" style="align-items:start;margin-top:22px">
+      <div class="rv d2">
+        <ul class="clean">
+          <li>ใช้ <b>Meshy</b> หรือ <b>Tripo</b> สร้างโมเดลตั้งต้นจาก turnaround ของตัวเอง แนบภาพหน้าจอผลลัพธ์และบอกชื่อเครื่องมือ</li>
+          <li><b>Retopology ด้วยมือ</b> ใน Blender: สี่เหลี่ยมเป็นหลัก สมมาตรด้วย Mirror มีลูปรอบตา ปาก และคอ</li>
+          <li>เพิ่ม <b>Multiresolution</b> แล้ว sculpt รายละเอียดกลับ (รูปทรงใหญ่ → รอง → รายละเอียด)</li>
+          <li>เก็บโมเดล AI ไว้ใน Collection แยก ชื่อ <b>AI_ref</b> ห้ามลบ</li>
+        </ul>
+        <div class="card" style="margin-top:18px">
+          <p class="note" style="margin-bottom:10px">จำนวนหน้าและไฟล์ที่ส่งด้านล่างเป็นตัวอย่าง ปรับได้ตามผู้สอน</p>
+          <ul class="clean" style="margin-bottom:0">
+            <li><b>ตาข่ายฐาน</b> ประมาณ 1,500–4,000 หน้า</li>
+            <li><b>ส่ง</b> ไฟล์ .blend + ภาพหน้าจอ wireframe มุมหน้าและข้าง + ภาพงาน sculpt 3 มุม (หน้า · ข้าง · 3/4)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="rv d3"><div class="try">✅ เช็กก่อนส่ง ติ๊กได้ (จำไว้ในเครื่องนี้)</div><div id="chks"></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <h2>AI ให้รูปทรง<br><span class="grad">ตาข่ายและรายละเอียดคือฝีมือเรา</span></h2>
+  <p class="next">ส่งไฟล์ .blend ที่มี AI_ref · Retopo · Sculpt ก่อนเริ่มเรียนสัปดาห์หน้า</p>
+</footer>
+
+<script src="../_shared/lesson.js"></script>
+<script>
+(() => {
+const { $, $$, esc, store } = Lesson;
+const f1 = (n) => Math.round(n * 10) / 10;
+const fmt = (n) => n.toLocaleString('en-US');
+function rng(seed) { let a = seed >>> 0 || 1; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+/* ---------- Delaunay (Bowyer–Watson) สำหรับตาข่ายสามเหลี่ยมแบบ AI ---------- */
+function delaunay(pts) {
+  const big = [[-1e4, -1e4], [1e4, -1e4], [0, 1e4]];
+  const P = pts.concat(big), n = pts.length;
+  let tris = [[n, n + 1, n + 2]];
+  const circ = (t) => {
+    const [a, b, c] = t.map((i) => P[i]);
+    const d = 2 * (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1]));
+    const ux = ((a[0] ** 2 + a[1] ** 2) * (b[1] - c[1]) + (b[0] ** 2 + b[1] ** 2) * (c[1] - a[1]) + (c[0] ** 2 + c[1] ** 2) * (a[1] - b[1])) / d;
+    const uy = ((a[0] ** 2 + a[1] ** 2) * (c[0] - b[0]) + (b[0] ** 2 + b[1] ** 2) * (a[0] - c[0]) + (c[0] ** 2 + c[1] ** 2) * (b[0] - a[0])) / d;
+    return [ux, uy, (a[0] - ux) ** 2 + (a[1] - uy) ** 2];
+  };
+  tris = tris.map((t) => ({ t, c: circ(t) }));
+  pts.forEach((p, i) => {
+    const bad = tris.filter((o) => (p[0] - o.c[0]) ** 2 + (p[1] - o.c[1]) ** 2 < o.c[2]);
+    const edges = [];
+    bad.forEach((o) => { [[0, 1], [1, 2], [2, 0]].forEach(([u, v]) => { const e = [o.t[u], o.t[v]]; const k = edges.findIndex((x) => (x[0] === e[1] && x[1] === e[0]) || (x[0] === e[0] && x[1] === e[1])); if (k >= 0) edges.splice(k, 1); else edges.push(e); }); });
+    tris = tris.filter((o) => !bad.includes(o));
+    edges.forEach((e) => { const t = [e[0], e[1], i]; tris.push({ t, c: circ(t) }); });
+  });
+  return tris.map((o) => o.t).filter((t) => t.every((i) => i < n));
+}
+// ตาข่ายสามเหลี่ยมในรูปทรง inside(x,y) ความหนาแน่นไม่เท่ากัน
+function aiMesh(inside, box, count, seed, dense) {
+  const r = rng(seed), pts = [];
+  let guard = 0;
+  while (pts.length < count && guard++ < count * 40) {
+    const x = box[0] + r() * box[2], y = box[1] + r() * box[3];
+    if (!inside(x, y)) continue;
+    if (dense && r() > dense(x, y)) continue;
+    pts.push([x, y]);
+  }
+  // เก็บเฉพาะสามเหลี่ยมที่จุดกึ่งกลางและกึ่งกลางทุกขอบอยู่ในรูปทรง (ไม่พาดข้ามช่องว่าง)
+  const mid = (a, b) => [(pts[a][0] + pts[b][0]) / 2, (pts[a][1] + pts[b][1]) / 2];
+  const tris = delaunay(pts).filter((t) => {
+    const c = [(pts[t[0]][0] + pts[t[1]][0] + pts[t[2]][0]) / 3, (pts[t[0]][1] + pts[t[1]][1] + pts[t[2]][1]) / 3];
+    return [c, mid(t[0], t[1]), mid(t[1], t[2]), mid(t[2], t[0])].every((q) => inside(q[0], q[1]));
+  });
+  return { pts, tris };
+}
+const drawTris = (m, col, w) => `<g fill="none" stroke="${col}" stroke-width="${w}" stroke-linejoin="round">${m.tris.map((t) => `<path d="M${t.map((i) => f1(m.pts[i][0]) + ' ' + f1(m.pts[i][1])).join('L')}Z"/>`).join('')}</g>`;
+
+/* ---------- หัวตัวละคร (มุมหน้า) ---------- */
+const HC = [150, 150], HR = 112;
+const inHead = (x, y) => (x - HC[0]) ** 2 + ((y - HC[1]) / 0.95) ** 2 < HR * HR;
+// grid สี่เหลี่ยมที่แมปลงวงกลม (elliptical grid mapping)
+function quadDisk(n, rot, jitter, seed) {
+  const r = rng(seed || 1), V = [], F = [];
+  for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
+    let u = i / n * 2 - 1, v = j / n * 2 - 1;
+    let x = u * Math.sqrt(1 - v * v / 2), y = v * Math.sqrt(1 - u * u / 2);
+    if (rot) { const c = Math.cos(rot), s = Math.sin(rot); [x, y] = [x * c - y * s, x * s + y * c]; }
+    if (jitter) { x += (r() - 0.5) * jitter; y += (r() - 0.5) * jitter; }
+    V.push([HC[0] + x * HR, HC[1] + y * HR * 0.95]);
+  }
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const a = j * (n + 1) + i; F.push([a, a + 1, a + n + 2, a + n + 1]); }
+  return { V, F };
+}
+const drawFaces = (m, col, w, fill) => `<g fill="${fill || 'none'}" stroke="${col}" stroke-width="${w}" stroke-linejoin="round">${m.F.map((fc) => `<path d="M${fc.map((i) => f1(m.V[i][0]) + ' ' + f1(m.V[i][1])).join('L')}Z"/>`).join('')}</g>`;
+const headBase = (fill) => `<ellipse cx="${HC[0]}" cy="${HC[1]}" rx="${HR}" ry="${HR * 0.95}" fill="${fill}"/>`;
+const svgWrap = (inner, vb, label) => `<svg viewBox="${vb || '0 0 300 300'}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label || ''}">${inner}</svg>`;
+
+const AI_HEAD = aiMesh(inHead, [30, 30, 240, 240], 230, 7, (x, y) => 0.35 + 0.65 * Math.abs(Math.sin(x / 31 + y / 47)));
+const HAND = quadDisk(10);
+const AUTO = quadDisk(11, 0.38, 0.05, 3);
+
+/* ---------- hero ---------- */
+const SCULPT = () => {
+  // ตาข่ายของเรา + เงานูนแบบปั้น (ตา คิ้ว แก้ม ปาก)
+  return headBase('#8f87c9') + drawFaces(HAND, 'rgba(255,255,255,.18)', 0.8)
+    + `<ellipse cx="150" cy="160" rx="108" ry="102" fill="url(#shd)"/>`
+    + '<g fill="#6d64a8"><ellipse cx="112" cy="150" rx="18" ry="13"/><ellipse cx="188" cy="150" rx="18" ry="13"/></g>'
+    + '<g fill="#bdb6ee"><ellipse cx="112" cy="146" rx="13" ry="9"/><ellipse cx="188" cy="146" rx="13" ry="9"/><path d="M92 124 q20 -12 40 -2" stroke="#bdb6ee" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M168 122 q20 -10 40 2" stroke="#bdb6ee" stroke-width="6" fill="none" stroke-linecap="round"/></g>'
+    + '<path d="M128 196 q22 18 44 0" stroke="#5b5394" stroke-width="7" fill="none" stroke-linecap="round"/><ellipse cx="96" cy="182" rx="16" ry="10" fill="#a8a0dd" opacity=".7"/><ellipse cx="204" cy="182" rx="16" ry="10" fill="#a8a0dd" opacity=".7"/>';
+};
+const SHD = '<defs><radialGradient id="shd" cx=".38" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient></defs>';
+$('#h0').innerHTML = svgWrap(headBase('#8f87c9') + drawTris(AI_HEAD, '#e9e4ff', 0.8), '', 'โมเดลจาก AI สามเหลี่ยม');
+$('#h1').innerHTML = svgWrap(headBase('#8f87c9') + drawFaces(HAND, '#5ec4c8', 1.6), '', 'ตาข่ายสี่เหลี่ยมหลังรีโทโป');
+$('#h2').innerHTML = svgWrap(SHD + SCULPT(), '', 'งาน sculpt บนตาข่ายใหม่');
+const HERO_CAP = ['โมเดลจาก AI: รูปทรงได้ แต่ตาข่ายสามเหลี่ยมกระจัดกระจาย', 'Retopology: วางตาข่ายสี่เหลี่ยมใหม่ทับรูปทรงเดิม', 'Sculpt: เพิ่ม Multires แล้วปั้นรายละเอียดบนตาข่ายของเรา'];
+let heroI = 0;
+const renderHero = () => { $$('#heroTrio>div').forEach((d) => d.classList.toggle('on', +d.dataset.i === heroI)); $('#heroCap').textContent = '👆 ' + HERO_CAP[heroI]; };
+$('#heroTrio').onclick = () => { heroI = (heroI + 1) % 3; renderHero(); };
+renderHero();
+let concept = '';
+try { const s = JSON.parse(localStorage.getItem('arttoyCH') || 'null'); if (s && s.base && s.per) concept = s.base + s.per; } catch (e) { /* ไม่มี */ }
+$('#prevTxt').innerHTML = (concept ? `ตัวละคร <b>${esc(concept)}</b> ที่ออกแบบไว้ ` : 'ตัวละครที่ออกแบบไว้ ') + 'มี turnaround (สัปดาห์ 2) และ base mesh จาก box modeling (สัปดาห์ 3) แล้ว สัปดาห์นี้ใช้ turnaround ป้อน AI ให้ได้รูปทรงละเอียดขึ้น แล้ววางตาข่ายใหม่เอง <a href="week02-03-arttoy-3d.html">ทบทวนสัปดาห์ 2–3</a>';
+
+/* ---------- pipeline ---------- */
+const PIPE = [
+  ['Turnaround', 'เตรียมภาพ', ['ใช้ turnaround จากสัปดาห์ 2 ภาพหน้าตรง พื้นหลังเรียบ', 'ครอปให้เหลือตัวละครตัวเดียว ท่ายืน A-pose', 'ถ้าเครื่องมือรับได้หลายภาพ เตรียมมุมหน้า ข้าง หลัง แยกไฟล์'], 'ได้: ภาพ .png พื้นหลังเรียบ'],
+  ['AI', 'Meshy / Tripo', ['อัปโหลดภาพในโหมด Image to 3D แล้วให้สร้างโมเดล', 'ลองสร้าง 2–3 ครั้ง เลือกครั้งที่รูปทรงใกล้แบบที่สุด (ไม่ต้องสนใจสีหรือ texture)', 'ดาวน์โหลดเป็น .glb (หรือ .fbx / .obj)'], 'ได้: โมเดลสามเหลี่ยมหยาบ ใช้เป็นแบบเท่านั้น'],
+  ['Clean', 'เตรียมใน Blender', ['Import แล้วตั้งขนาด ทิศ และจุดศูนย์กลางให้ตรง', 'Apply Transforms และลบชิ้นลอย', 'ตั้งชื่อ AI_ref แล้วปิดการเลือก'], 'ได้: แบบ 3 มิติที่พร้อมให้ snap'],
+  ['Retopo', 'วางตาข่ายใหม่', ['สร้าง object ใหม่ เปิด Snap ไปที่ผิว + Mirror + Shrinkwrap', 'วางลูปหลัก (ตา ปาก แนวกลาง คอ) แล้วเติมด้วยสี่เหลี่ยม', 'ตรวจ N-gon, non-manifold, normal'], 'ได้: ตาข่ายสี่เหลี่ยมสะอาด 1,500–4,000 หน้า (ตัวอย่าง)'],
+  ['Sculpt', 'Multires + ปั้น', ['Apply Mirror แล้วเพิ่ม Multiresolution', 'ปั้นรูปทรงใหญ่ที่ระดับต่ำ แล้วค่อยขึ้นระดับไปเก็บรายละเอียด', 'ดูโมเดล AI เป็นแบบได้ แต่ปั้นเองทั้งหมด'], 'ได้: งาน sculpt ที่แก้ต่อได้ทุกระดับ']
+];
+Lesson.stepper($('#pipeBtns'), $('#pipeBody'), PIPE.map((p, i) => ({
+  label: p[0],
+  render(el) { el.innerHTML = `<p class="small">ขั้นที่ ${i + 1}/5 · ${p[0]}</p><h3>${p[1]}</h3><ul>${p[2].map((x) => `<li>${x}</li>`).join('')}</ul><p style="margin-top:10px;color:var(--c2);font-size:16.5px">✓ ${p[3]}</p>`; }
+})));
+
+/* ---------- input quiz ---------- */
+const fig = (x, y, k, col, pose) => {
+  const arm = pose === 'action' ? `<path d="M${x + 14 * k} ${y + 34 * k} l${22 * k} ${-26 * k}" stroke="${col}" stroke-width="${8 * k}" stroke-linecap="round"/><path d="M${x + 36 * k} ${y + 8 * k} l${16 * k} ${-30 * k}" stroke="#c9c4bc" stroke-width="${4 * k}" stroke-linecap="round"/><path d="M${x - 14 * k} ${y + 34 * k} l${-14 * k} ${20 * k}" stroke="${col}" stroke-width="${8 * k}" stroke-linecap="round"/>`
+    : `<path d="M${x - 16 * k} ${y + 32 * k} l${-14 * k} ${26 * k} M${x + 16 * k} ${y + 32 * k} l${14 * k} ${26 * k}" stroke="${col}" stroke-width="${8 * k}" stroke-linecap="round"/>`;
+  return `${arm}<rect x="${x - 17 * k}" y="${y + 24 * k}" width="${34 * k}" height="${44 * k}" rx="${12 * k}" fill="${col}"/><rect x="${x - 13 * k}" y="${y + 64 * k}" width="${10 * k}" height="${22 * k}" rx="${4 * k}" fill="${col}"/><rect x="${x + 3 * k}" y="${y + 64 * k}" width="${10 * k}" height="${22 * k}" rx="${4 * k}" fill="${col}"/><circle cx="${x}" cy="${y}" r="${24 * k}" fill="${col}"/><path d="M${x - 20 * k} ${y - 10 * k} q${20 * k} ${-36 * k} ${40 * k} 0z" fill="#e25b5b"/>`;
+};
+const QS = [
+  [true, 'หน้าตรง พื้นหลังเรียบ', 'มุมหน้าตรง ท่า A-pose แขนไม่บังตัว พื้นหลังเรียบ AI แยกตัวละครออกจากพื้นหลังได้ง่าย', `<rect width="200" height="150" fill="#f4f2ee"/>${fig(100, 40, 1, '#8b7cf8')}`],
+  [false, 'ท่าแอ็กชัน มุมเฉียง', 'มุมเฉียงและแขนบังลำตัว AI ต้องเดาด้านที่ไม่เห็นเยอะ อาวุธบาง ๆ มักขาดหรือติดกับมือ', `<rect width="200" height="150" fill="#f4f2ee"/><g transform="rotate(-12 100 80)">${fig(96, 42, 1, '#8b7cf8', 'action')}</g>`],
+  [false, 'พื้นหลังรก', 'พื้นหลังมีของเยอะ AI อาจปั้นต้นไม้หรือพื้นติดมากับตัวละคร ลบพื้นหลังก่อน', `<rect width="200" height="150" fill="#cfe7f7"/><rect y="104" width="200" height="46" fill="#9fcf8a"/><circle cx="34" cy="60" r="26" fill="#6fae5c"/><rect x="28" y="70" width="10" height="40" fill="#9a6b47"/><rect x="146" y="40" width="44" height="66" fill="#f2e3cf"/>${fig(100, 40, 1, '#8b7cf8')}`],
+  [false, 'มีหลายตัวในภาพ', 'AI จะพยายามสร้างทุกตัวรวมเป็นก้อนเดียว ครอปให้เหลือตัวเดียว', `<rect width="200" height="150" fill="#f4f2ee"/>${fig(62, 44, 0.85, '#8b7cf8')}${fig(138, 44, 0.85, '#5ec4c8')}`],
+  [true, 'turnaround หลายมุม', 'ถ้าเครื่องมือรองรับการใส่หลายภาพ ให้แยกไฟล์มุมหน้า ข้าง หลัง จาก turnaround ที่สูงเท่ากัน จะได้รูปทรงด้านข้างตรงกว่า', `<rect width="200" height="150" fill="#f4f2ee"/>${fig(40, 50, 0.7, '#8b7cf8')}<g transform="translate(100 0)">${fig(0, 50, 0.7, '#8b7cf8')}</g>${fig(160, 50, 0.7, '#6d64a8')}<path d="M0 30H200M0 112H200" stroke="#ef8a80" stroke-dasharray="4 3"/>`],
+  [false, 'เงาแรง ภาพมืด', 'เงาและไฮไลต์แรง ๆ AI อาจตีความเป็นรอยบุ๋มหรือก้อนนูน ใช้ภาพแสงเรียบ สีชัด', `<rect width="200" height="150" fill="#3a3550"/>${fig(100, 40, 1, '#5b5394')}<ellipse cx="128" cy="70" rx="40" ry="70" fill="#000" opacity=".45"/>`]
+];
+const qState = store.get('w04.quiz', {});
+function renderQuiz() {
+  $('#qgrid').innerHTML = QS.map((q, i) => `<button type="button" class="qcard${qState[i] ? ' shown ' + (q[0] ? 'ok' : 'no') : ''}" data-i="${i}" aria-pressed="${!!qState[i]}">${svgWrap(q[3], '0 0 200 150', q[1])}<div class="ans"><b>${q[1]}</b>${qState[i] ? `<br>${q[0] ? '<span class="ok">✓ ใช้ได้</span>' : '<span class="x">✕ ไม่เหมาะ</span>'}` : '<br><span class="small">แตะเพื่อดูเฉลย</span>'}</div><div class="why">${q[2]}</div></button>`).join('');
+  $$('#qgrid .qcard').forEach((b) => { b.onclick = () => { qState[b.dataset.i] = 1; store.set('w04.quiz', qState); renderQuiz(); }; });
+  const n = Object.keys(qState).length;
+  $('#qScore').textContent = n === QS.length ? '✓ ดูครบแล้ว — ภาพที่ใช้ได้มี 2 แบบ: หน้าตรงพื้นเรียบ และ turnaround หลายมุม' : `ดูแล้ว ${n}/${QS.length}`;
+}
+renderQuiz();
+
+/* ---------- inspect AI mesh ---------- */
+const inFig = (x, y) => ((x - 150) ** 2 + ((y - 110) / 0.92) ** 2 < 78 * 78) || (((x - 150) / 62) ** 2 + ((y - 245) / 70) ** 2 < 1) || (Math.abs(x - 128) < 16 && y > 290 && y < 350) || (Math.abs(x - 172) < 16 && y > 290 && y < 350) || (((x - 84) / 16) ** 2 + ((y - 248) / 46) ** 2 < 1) || (((x - 216) / 16) ** 2 + ((y - 248) / 46) ** 2 < 1);
+const FIGM = aiMesh(inFig, [40, 20, 220, 340], 420, 11, (x, y) => (x > 150 ? 0.35 : 1) * (y < 190 ? 1 : 0.6));
+const PINS = [
+  [118, 70, 'สามเหลี่ยมหนาแน่นไม่เท่ากัน', 'บางจุดละเอียดมาก บางจุดหยาบมาก และเป็นสามเหลี่ยมทั้งหมด ปั้นต่อแล้วผิวย่น', 'ไม่ต้องแก้ ใช้เป็นแบบเท่านั้น ถ้าเครื่องหน่วงใส่ Decimate modifier ไว้ดู (ไม่ต้อง Apply)'],
+  [214, 118, 'ไม่สมมาตร', 'ซีกซ้ายกับขวาไม่เท่ากัน เพราะ AI เดาจากภาพ', 'ตัวใหม่ของเราใช้ Mirror วางตามซีกที่ดีกว่า หรือเฉลี่ยระหว่างสองซีก'],
+  [150, 236, 'รูหรือผิวทะลุ', 'มีรูเล็ก ๆ หรือผิวซ้อนกันข้างใน (non-manifold)', 'Select › Select All by Trait › Non Manifold เพื่อดูตำแหน่ง ไม่ต้องซ่อม แต่อย่า snap ลงไปในรู'],
+  [262, 180, 'ชิ้นลอย', 'ก้อนเล็ก ๆ ลอยอยู่นอกตัว มาจากพื้นหลังหรือเงาในภาพ', 'Edit Mode ชี้ที่ชิ้นแล้วกด L เลือก แล้ว X ลบ'],
+  [84, 290, 'มือหรือส่วนบางติดกัน', 'นิ้ว หู หรือของบาง ๆ ติดเป็นก้อนเดียว', 'ตอนรีโทโป วางตาข่ายแยกตามแบบใน turnaround ไม่ต้องตามโมเดล AI'],
+  [150, 104, 'รายละเอียดเป็นแค่สี', 'ตา ปาก ลวดลาย อยู่ใน texture ไม่ได้เป็นรูปทรงจริง', 'ปิด texture ดู (Solid mode) แล้วค่อย sculpt ตา ปากเองหลังเพิ่ม Multires']
+];
+let pinSel = 0;
+function renderInspect() {
+  let s = `<svg viewBox="0 0 300 370" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="โมเดลจาก AI พร้อมหมุดชี้ปัญหา">`;
+  s += `<g fill="#3f3a63">${FIGM.tris.map((t) => `<path d="M${t.map((i) => f1(FIGM.pts[i][0]) + ' ' + f1(FIGM.pts[i][1])).join('L')}Z"/>`).join('')}</g>` + drawTris(FIGM, '#bdb6ee', 0.7);
+  s += '<ellipse cx="150" cy="236" rx="9" ry="6" fill="#1a1b22" stroke="#ef8a80" stroke-width="1.5"/><g transform="translate(262 196)"><path d="M-10 0 L0 -14 L12 -4 L6 10 Z" fill="#3f3a63" stroke="#bdb6ee" stroke-width=".8"/><path d="M0 -14 L6 10" stroke="#bdb6ee" stroke-width=".8"/></g>';
+  s += '<g fill="#8b7cf8" opacity=".55"><ellipse cx="128" cy="104" rx="10" ry="7"/><ellipse cx="172" cy="104" rx="10" ry="7"/></g>';
+  PINS.forEach((p, i) => { s += `<g class="pin${i === pinSel ? ' on' : ''}" data-i="${i}" tabindex="0" role="button" aria-label="ปัญหาที่ ${i + 1}: ${p[2]}" transform="translate(${p[0]} ${p[1]})"><circle r="22" fill="transparent" stroke="none"/><circle r="13" fill="${i === pinSel ? '#f2b866' : '#ef8a80'}" stroke="#1a1b22" stroke-width="2"/><text y="5" text-anchor="middle" font-family="Prompt" font-weight="800" font-size="15" fill="#1a1b22">${i + 1}</text></g>`; });
+  $('#inspFig').innerHTML = s + '</svg>';
+  const p = PINS[pinSel];
+  $('#inspMsg').innerHTML = `<p class="small">ปัญหาที่ ${pinSel + 1}/6</p><h3 style="font-size:22px;margin:4px 0 6px">${p[2]}</h3><p style="font-size:16.5px;color:var(--text)">${p[3]}</p><div class="inapp" style="margin-top:12px"><h4>จัดการใน Blender</h4><p>${p[4]}</p></div>`;
+  $$('#inspFig .pin').forEach((g) => {
+    const go = () => { pinSel = +g.dataset.i; renderInspect(); $(`#inspFig .pin[data-i="${pinSel}"]`).focus({ preventScroll: true }); };
+    g.addEventListener('click', go);
+    g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); go(); } });
+  });
+}
+renderInspect();
+
+/* ---------- why retopo ---------- */
+const WHY = {
+  ai: ['ตาข่ายจาก AI', 'สามเหลี่ยมกระจัดกระจาย เส้นไม่วิ่งตามรูปทรง ซ้ายขวาไม่เท่ากัน ใช้ดูได้ แต่ปั้นต่อหรือเพิ่ม Multires แล้วผิวย่น', [['ประเภทหน้า', 'สามเหลี่ยม 100%', 'bad'], ['ความหนาแน่น', 'ไม่สม่ำเสมอ', 'bad'], ['สมมาตร', 'ไม่', 'bad'], ['พร้อม Multires', 'ไม่', 'bad']]],
+  auto: ['รีโทโปอัตโนมัติ', 'QuadriFlow หรือ Remesh ให้สี่เหลี่ยมเร็ว ใช้ได้กับงานที่รีบ แต่เส้นไม่วิ่งรอบตาและปาก และขอบมีจุดแปลก ๆ ต้องแก้ต่อ', [['ประเภทหน้า', 'สี่เหลี่ยมเกือบทั้งหมด', 'mid'], ['ความหนาแน่น', 'สม่ำเสมอ', 'good'], ['เส้นตามรูปทรง', 'ไม่ตาม', 'bad'], ['พร้อม Multires', 'พอใช้', 'mid']]],
+  hand: ['รีโทโปด้วยมือ', 'สี่เหลี่ยมทั้งหมด เส้นวิ่งตามรูปทรง ซ้ายขวาเท่ากันด้วย Mirror ใช้เวลามากกว่า แต่ปั้นต่อได้เนียนและแก้ง่ายที่สุด', [['ประเภทหน้า', 'สี่เหลี่ยม 100%', 'good'], ['ความหนาแน่น', 'ตามที่ต้องการ', 'good'], ['สมมาตร', 'ใช่ (Mirror)', 'good'], ['พร้อม Multires', 'พร้อม', 'good']]]
+};
+Lesson.switcher($('#whySw'), (v) => {
+  const w = WHY[v];
+  const mesh = v === 'ai' ? drawTris(AI_HEAD, '#e9e4ff', 0.9) : v === 'auto' ? `<clipPath id="hclip">${headBase('#000')}</clipPath><g clip-path="url(#hclip)">${drawFaces(AUTO, '#f2b866', 1.4)}</g>` : drawFaces(HAND, '#5ec4c8', 1.6) + '<line x1="150" y1="40" x2="150" y2="260" stroke="#ef8a80" stroke-width="1.5" stroke-dasharray="5 4"/>';
+  $('#whyFig').innerHTML = svgWrap(headBase('#4a4380') + mesh, '', w[0]);
+  $('#whyName').textContent = w[0];
+  $('#whyTxt').textContent = w[1];
+  $('#whyStats').innerHTML = w[2].map(([k, val, c]) => `<div class="stat"><div class="k">${k}</div><div class="v ${c}">${val}</div></div>`).join('');
+}, 'ai');
+
+/* ---------- Catmull–Clark 2D (คำนวณจริง) ---------- */
+function catmull(m) {
+  const V = m.V, F = m.F, edges = new Map(), vf = V.map(() => []), ve = V.map(() => new Set());
+  const ek = (a, b) => (a < b ? a + '_' + b : b + '_' + a);
+  F.forEach((fc, fi) => fc.forEach((a, i) => { const b = fc[(i + 1) % fc.length], k = ek(a, b); if (!edges.has(k)) edges.set(k, { a, b, f: [] }); edges.get(k).f.push(fi); vf[a].push(fi); ve[a].add(k); ve[b].add(k); }));
+  const fp = F.map((fc) => [fc.reduce((s, i) => s + V[i][0], 0) / fc.length, fc.reduce((s, i) => s + V[i][1], 0) / fc.length]);
+  const NV = [], idxV = [], idxE = new Map(), idxF = [];
+  V.forEach((p, i) => {
+    const es = [...ve[i]].map((k) => edges.get(k)), bnd = es.filter((e) => e.f.length < 2);
+    let q;
+    if (bnd.length) { const nb = bnd.map((e) => V[e.a === i ? e.b : e.a]); q = bnd.length === 2 ? [0.75 * p[0] + 0.125 * (nb[0][0] + nb[1][0]), 0.75 * p[1] + 0.125 * (nb[0][1] + nb[1][1])] : p; }
+    else {
+      const n = es.length, Fa = [0, 1].map((d) => vf[i].reduce((s, fi) => s + fp[fi][d], 0) / vf[i].length), Ra = [0, 1].map((d) => es.reduce((s, e) => s + (V[e.a][d] + V[e.b][d]) / 2, 0) / n);
+      q = [0, 1].map((d) => (Fa[d] + 2 * Ra[d] + (n - 3) * p[d]) / n);
+    }
+    idxV[i] = NV.push(q) - 1;
+  });
+  edges.forEach((e, k) => { const q = e.f.length === 2 ? [0, 1].map((d) => (V[e.a][d] + V[e.b][d] + fp[e.f[0]][d] + fp[e.f[1]][d]) / 4) : [0, 1].map((d) => (V[e.a][d] + V[e.b][d]) / 2); idxE.set(k, NV.push(q) - 1); });
+  fp.forEach((q, fi) => { idxF[fi] = NV.push(q) - 1; });
+  const NF = [];
+  F.forEach((fc, fi) => fc.forEach((a, i) => { const b = fc[(i + 1) % fc.length], z = fc[(i - 1 + fc.length) % fc.length]; NF.push([idxV[a], idxE.get(ek(a, b)), idxF[fi], idxE.get(ek(z, a))]); }));
+  return { V: NV, F: NF };
+}
+function poles(m) {
+  const edges = new Map(), val = m.V.map(() => 0), bnd = m.V.map(() => false);
+  const ek = (a, b) => (a < b ? a + '_' + b : b + '_' + a);
+  m.F.forEach((fc) => fc.forEach((a, i) => { const b = fc[(i + 1) % fc.length], k = ek(a, b); edges.set(k, (edges.get(k) || 0) + 1); }));
+  edges.forEach((c, k) => { const [a, b] = k.split('_').map(Number); val[a]++; val[b]++; if (c < 2) { bnd[a] = true; bnd[b] = true; } });
+  return m.V.map((p, i) => (!bnd[i] && val[i] !== 4 ? [p, val[i]] : null)).filter(Boolean);
+}
+function gridVerts(n, s, o) { const V = []; for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) V.push([o + i * s, o + j * s]); return V; }
+const CC_BASE = {
+  quad: (() => { const V = gridVerts(3, 80, 30), F = []; for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) { const a = j * 4 + i; F.push([a, a + 1, a + 5, a + 4]); } return { V, F }; })(),
+  tri: (() => { const V = gridVerts(3, 80, 30), F = []; for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) { const a = j * 4 + i; if ((i + j) % 2) { F.push([a, a + 1, a + 5]); F.push([a, a + 5, a + 4]); } else { F.push([a, a + 1, a + 4]); F.push([a + 1, a + 5, a + 4]); } } return { V, F }; })(),
+  // N-gon: รวมหน้า (1,2,6,5) กับหน้ากลาง (5,6,10,9) เป็น 6 เหลี่ยม (1,2,6,10,9,5)
+  ngon: (() => { const V = gridVerts(3, 80, 30), F = []; for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) { if (i === 1 && j < 2) continue; const a = j * 4 + i; F.push([a, a + 1, a + 5, a + 4]); } F.push([1, 2, 6, 10, 9, 5]); return { V, F }; })()
+};
+const CC_TXT = {
+  quad: 'สี่เหลี่ยมทั้งหมด แบ่งแล้วยังเป็นตารางเรียบร้อย ไม่มี pole เกิดใหม่ ผิวเนียนเวลาปั้น',
+  tri: 'สามเหลี่ยมแต่ละหน้ากลายเป็นสี่เหลี่ยม 3 ชิ้นที่บิด และเกิด pole จำนวนมาก แบ่งกี่ครั้ง pole ก็ไม่หาย',
+  ngon: 'N-gon (6 เหลี่ยม) กลายเป็น pole 6 เส้นตรงกลาง และมุมของมันเป็น pole 3 เส้น เส้นมาบรรจบกันผิดปกติ ปั้นบริเวณนี้แล้วผิวยุบหรือเป็นจีบ'
+};
+let ccM = 'quad', ccL = 0;
+function renderCC() {
+  let m = CC_BASE[ccM];
+  for (let i = 0; i < ccL; i++) m = catmull(m);
+  const pl = poles(m), counts = { 3: 0, 5: 0 };
+  pl.forEach(([, v]) => { if (v === 3) counts[3]++; else counts[5]++; });
+  const sw = ccL === 0 ? 2.4 : ccL === 1 ? 1.6 : 1.1;
+  let s = drawFaces(m, '#2b2433', sw, 'rgba(139,124,248,.12)');
+  s += pl.map(([p, v]) => `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="${ccL === 2 ? 4 : 6}" fill="${v === 3 ? '#e2564f' : '#d98b1e'}" stroke="#fff" stroke-width="1.5"/>`).join('');
+  $('#ccFig').innerHTML = svgWrap(s, '0 0 300 300', 'ตาข่ายหลังแบ่ง');
+  const tri = m.F.filter((fc) => fc.length === 3).length, ng = m.F.filter((fc) => fc.length > 4).length;
+  $('#ccMsg').innerHTML = `<p style="font-size:16.5px;color:var(--text)">${CC_TXT[ccM]}</p><div class="stats"><div class="stat"><div class="k">จำนวนหน้า</div><div class="v">${fmt(m.F.length)}</div></div><div class="stat"><div class="k">pole ภายใน</div><div class="v ${pl.length ? 'bad' : 'good'}">${pl.length}</div></div></div>${ccL === 0 && (tri || ng) ? `<p class="small" style="margin-top:8px">ต้นฉบับ: สามเหลี่ยม ${tri} หน้า · N-gon ${ng} หน้า</p>` : ''}`;
+}
+Lesson.switcher($('#ccMesh'), (v) => { ccM = v; renderCC(); }, ccM);
+Lesson.switcher($('#ccLv'), (v) => { ccL = +v; renderCC(); }, '0');
+
+/* ---------- edge loops ---------- */
+const LOOPS = [
+  ['eye', 'รอบตา', '#5ec4c8', 'ลูปซ้อนกัน 2–3 วงรอบตา ปั้นเบ้าตา เปลือกตา และกะพริบตาได้เนียน', '<ellipse cx="112" cy="150" rx="22" ry="16"/><ellipse cx="112" cy="150" rx="34" ry="26"/><ellipse cx="188" cy="150" rx="22" ry="16"/><ellipse cx="188" cy="150" rx="34" ry="26"/>'],
+  ['mouth', 'รอบปาก', '#f2b866', 'ลูปรอบปาก ใช้ปั้นริมฝีปาก มุมปาก และเปลี่ยนสีหน้า', '<ellipse cx="150" cy="202" rx="24" ry="10"/><ellipse cx="150" cy="202" rx="38" ry="20"/>'],
+  ['mask', 'หน้ากากใบหน้า', '#b38cf5', 'ลูปใหญ่ล้อมตาและปากไว้ด้วยกัน แยกบริเวณใบหน้าที่ต้องละเอียดออกจากหัวส่วนอื่น', '<path d="M70 150 Q70 96 150 96 Q230 96 230 150 Q232 236 150 240 Q68 236 70 150Z"/>'],
+  ['center', 'แนวกลาง', '#ef8a80', 'เส้นกลางต้องตรงและอยู่บนแกน X พอดี เพื่อให้ Mirror ต่อสองซีกได้ไม่มีร่อง', '<path d="M150 38 V262"/>'],
+  ['neck', 'รอบคอ', '#6f9bff', 'ลูปรอบคอแยกหัวกับลำตัว ทำให้หันหัวหรือแยกชิ้นตอนผลิตได้ง่าย', '<ellipse cx="150" cy="262" rx="54" ry="12"/>']
+];
+const loopOn = new Set(['eye', 'mouth', 'center']);
+let loopLast = 'eye';
+function renderLoops() {
+  let s = '<ellipse cx="150" cy="150" rx="112" ry="106" fill="#ffe2c6" stroke="#2b2433" stroke-width="3"/><path d="M98 268 Q150 250 202 268 L210 300 H90Z" fill="#8b7cf8" stroke="#2b2433" stroke-width="3"/>';
+  s += drawFaces(HAND, 'rgba(43,36,51,.13)', 1);
+  s += '<g fill="#2b2433"><ellipse cx="112" cy="150" rx="9" ry="11"/><ellipse cx="188" cy="150" rx="9" ry="11"/></g><path d="M134 200 q16 12 32 0" stroke="#7a3b3b" stroke-width="4" fill="none" stroke-linecap="round"/>';
+  LOOPS.forEach(([k, , col, , d]) => { if (loopOn.has(k)) s += `<g fill="none" stroke="${col}" stroke-width="${k === loopLast ? 4 : 3}" stroke-dasharray="${k === 'center' ? '7 5' : 'none'}">${d}</g>`; });
+  $('#loopFig').innerHTML = svgWrap(s, '0 0 300 300', 'ลูปสำคัญบนใบหน้า');
+  $('#loopBtns').innerHTML = LOOPS.map(([k, th, col]) => `<button type="button" class="btn${loopOn.has(k) ? ' on' : ''}" data-v="${k}" aria-pressed="${loopOn.has(k)}" style="${loopOn.has(k) ? `background:${col};border-color:${col};color:#1a1530` : ''}">${th}</button>`).join('');
+  $$('#loopBtns button').forEach((b) => { b.onclick = () => { const k = b.dataset.v; if (loopOn.has(k)) loopOn.delete(k); else loopOn.add(k); loopLast = k; renderLoops(); $(`#loopBtns button[data-v="${k}"]`).focus({ preventScroll: true }); }; });
+  const L = LOOPS.find((x) => x[0] === loopLast);
+  $('#loopMsg').innerHTML = `<h3 style="font-size:20px;color:${L[2]}">${L[1]}${loopOn.has(L[0]) ? '' : ' (ปิดอยู่)'}</h3><p style="font-size:16.5px;margin-top:6px;color:var(--text)">${L[3]}</p>`;
+}
+renderLoops();
+
+/* ---------- blender steps ---------- */
+const BSTEPS = [
+  ['นำเข้า', 'นำเข้าและเตรียม AI_ref', ['<b>File › Import › glTF 2.0</b> (.glb) หรือ FBX / OBJ ตามไฟล์ที่ดาวน์โหลด', 'จัดให้ยืนบนพื้น หันหน้าไปทางมุมหน้า (<kbd>Numpad 1</kbd>) แล้ว <kbd>Ctrl</kbd>+<kbd>A</kbd> › All Transforms', 'ลบชิ้นลอย: Edit Mode ชี้แล้วกด <kbd>L</kbd> จากนั้น <kbd>X</kbd>', 'ตั้งชื่อ <b>AI_ref</b> ย้ายเข้า Collection แยก แล้วปิดการเลือกใน Outliner ถ้าหนักใส่ <b>Decimate</b> ไว้ดู (ไม่ต้อง Apply)']],
+  ['ตั้งค่า', 'ตั้งค่าให้ snap ติดผิว', ['<kbd>Shift</kbd>+<kbd>A</kbd> › Mesh › Plane ตั้งชื่อ <b>Retopo</b> แล้ว <kbd>Tab</kbd> เข้า Edit Mode', 'เปิด Snap <kbd>Shift</kbd>+<kbd>Tab</kbd> ตั้ง Snap To เป็น <b>Face Project</b>', 'Overlays › เปิด <b>Retopology</b> ให้ตาข่ายใหม่ลอยอยู่หน้าโมเดล AI เสมอ (หรือ Object Properties › Viewport Display › In Front)']],
+  ['Modifier', 'Mirror + Shrinkwrap', ['เพิ่ม <b>Mirror</b> ติ๊ก <b>Clipping</b> จุดบนแนวกลางจะไม่หลุดข้ามแกน', 'เพิ่ม <b>Shrinkwrap</b> ไว้ใต้ Mirror ตั้ง Target เป็น AI_ref ทุกจุดจะเกาะผิวเอง', 'ลำดับ modifier สำคัญ: Mirror ต้องอยู่บนสุด']],
+  ['วางลูป', 'วางลูปหลักแล้วเติมช่อง', ['เริ่มจากลูปรอบตา รอบปาก และแนวกลาง ด้วย <kbd>E</kbd> (Extrude) ทีละขอบ', 'ใช้ <b>Poly Build</b> ในแถบเครื่องมือ: <kbd>Ctrl</kbd>+คลิก เพิ่มหน้า · <kbd>Shift</kbd>+คลิก ลบ', 'เติมช่องว่าง: เลือกขอบแล้ว <kbd>F</kbd> หรือ <b>Face › Grid Fill</b> · เพิ่มเส้นรอบ <kbd>Ctrl</kbd>+<kbd>R</kbd>', 'ต่อจาก หัว → ลำตัว → แขน ขา ใช้ความหนาแน่นใกล้เคียงกันทั้งตัว']],
+  ['ตรวจ', 'ตรวจตาข่ายก่อนปั้น', ['<b>Select › Select All by Trait › Faces by Sides</b> (มากกว่า 4) เพื่อหา N-gon', '<b>Select All by Trait › Non Manifold</b> หาขอบที่ไม่ปิด (ยกเว้นขอบที่ตั้งใจเปิด)', 'Overlays › <b>Face Orientation</b> ต้องเป็นสีน้ำเงินทั้งตัว ถ้าแดงเลือกทั้งหมดแล้ว <kbd>Shift</kbd>+<kbd>N</kbd>', 'Apply <b>Shrinkwrap</b> แล้วเปิด wireframe ดูจากมุมหน้าและข้าง']],
+  ['Sculpt', 'Multires แล้วปั้น', ['Apply <b>Mirror</b> แล้วเพิ่ม <b>Multiresolution</b> กด <b>Subdivide</b> ทีละระดับ', 'เข้า <b>Sculpt Mode</b> ปั้นรูปทรงใหญ่ที่ระดับต่ำก่อน แล้วค่อยขึ้นระดับไปเก็บรายละเอียด', 'ซ่อนหรือเปิด AI_ref ไว้ดูเป็นแบบได้ แต่ปั้นตา ปาก ลวดลาย ด้วยตัวเอง', 'บันทึกบ่อย ๆ (<kbd>Ctrl</kbd>+<kbd>S</kbd>) ระดับสูงใช้หน่วยความจำมาก']]
+];
+const bDone = store.get('w04.steps', []);
+Lesson.stepper($('#bBtns'), $('#bBody'), BSTEPS.map((b, i) => ({
+  label: b[0],
+  render(el) {
+    el.innerHTML = `<p class="small">ขั้นที่ ${i + 1}/${BSTEPS.length}</p><h3>${b[1]}</h3><ul>${b[2].map((x) => `<li>${x}</li>`).join('')}</ul><button type="button" class="chk stepdone${bDone[i] ? ' on' : ''}" aria-pressed="${!!bDone[i]}"><span class="cb" aria-hidden="true"></span><span>ทำขั้นนี้แล้ว</span></button>`;
+    const btn = el.querySelector('.stepdone');
+    btn.onclick = () => { bDone[i] = !bDone[i]; store.set('w04.steps', bDone); btn.classList.toggle('on', bDone[i]); btn.setAttribute('aria-pressed', String(bDone[i])); markSteps(); };
+  }
+})));
+function markSteps() { $$('#bBtns button').forEach((b, i) => { b.querySelector('.n').textContent = bDone[i] ? '✓' : String(i + 1); }); }
+markSteps();
+
+/* ---------- keys ---------- */
+const KEYS = [
+  ['Shift + Tab', 'เปิด/ปิด Snap', 'retopo'], ['Tab', 'สลับ Object / Edit Mode', 'ทั่วไป'], ['E', 'Extrude ดึงขอบออกเป็นหน้าใหม่', 'retopo'],
+  ['Ctrl + R', 'Loop Cut เพิ่มเส้นรอบ', 'retopo'], ['F', 'สร้างหน้าจากขอบที่เลือก', 'retopo'], ['M', 'Merge รวมจุด', 'retopo'],
+  ['K', 'Knife ตัดเส้นเอง', 'retopo'], ['Alt + คลิก', 'เลือกทั้งลูป', 'retopo'], ['L', 'เลือกทั้งชิ้นที่ต่อกัน (ใช้ลบชิ้นลอย)', 'clean'],
+  ['Ctrl + A', 'Apply ขนาด/การหมุน/ตำแหน่ง', 'clean'], ['Shift + N', 'คำนวณทิศผิว (normal) ใหม่', 'clean'], ['Alt + Z', 'X-Ray มองทะลุ', 'ทั่วไป'],
+  ['Numpad 1 · 3 · 7', 'มุมหน้า · ข้าง · บน', 'ทั่วไป'], ['F (Sculpt)', 'ปรับขนาดแปรง', 'sculpt'], ['Shift + F (Sculpt)', 'ปรับความแรงแปรง', 'sculpt'],
+  ['Shift ค้าง (Sculpt)', 'Smooth ลบรอยให้เรียบ', 'sculpt'], ['Ctrl ค้าง (Sculpt)', 'กลับทิศแปรง ดันเข้า', 'sculpt'], ['Ctrl + S', 'บันทึกไฟล์', 'ทั่วไป']
+];
+function renderKeys(q) {
+  q = (q || '').trim().toLowerCase();
+  const list = KEYS.filter((k) => !q || (k[0] + ' ' + k[1] + ' ' + k[2]).toLowerCase().includes(q));
+  $('#keyGrid').innerHTML = list.map((k) => `<div class="key"><kbd>${esc(k[0])}</kbd><p>${esc(k[1])}</p><span class="tag">${esc(k[2])}</span></div>`).join('') || '<p class="small">ไม่พบ ลองคำอื่น</p>';
+}
+$('#keySearch').addEventListener('input', (e) => renderKeys(e.target.value));
+renderKeys('');
+
+/* ---------- budget ---------- */
+function renderBudget() {
+  const base = +$('#rBase').value, lv = +$('#rLv').value;
+  $('#oBase').textContent = fmt(base) + ' หน้า';
+  $('#oLv').textContent = 'ระดับ ' + lv;
+  const rows = [];
+  for (let l = 0; l <= 6; l++) rows.push([l, base * 4 ** l]);
+  const max = Math.log10(rows[6][1]);
+  $('#budTable').innerHTML = '<tr><th>ระดับ</th><th>จำนวนหน้า</th><th class="barw" aria-hidden="true"></th></tr>' + rows.map(([l, n]) => `<tr class="${l === lv ? 'on' : ''}"><td>${l}</td><td>${fmt(n)}</td><td class="barw" aria-hidden="true"><div class="bar" style="width:${Math.max(4, Math.log10(n) / max * 100).toFixed(0)}%;opacity:${n > 4e6 ? 0.5 : 1}"></div></td></tr>`).join('');
+  const n = base * 4 ** lv;
+  let msg;
+  if (base > 5000) msg = ['bad', 'ตาข่ายฐานหนาไป', 'วางลูปยากและแก้รูปทรงช้า ลดให้เหลือประมาณ 1,500–4,000 หน้า แล้วให้ Multires เก็บรายละเอียดแทน'];
+  else if (n < 150000) msg = ['mid', 'ยังหยาบสำหรับรายละเอียด', 'พอสำหรับปั้นรูปทรงใหญ่ ถ้าจะปั้นรอยพับ ขอบตา หรือลวดลาย ให้ขึ้นอีกระดับ'];
+  else if (n <= 2000000) msg = ['good', 'กำลังดีสำหรับรายละเอียดอาร์ตทอย', 'เก็บรายละเอียดหน้าและเสื้อผ้าได้ เครื่องทั่วไปยังทำงานได้'];
+  else msg = ['bad', 'หนักมาก', 'เกิน 2 ล้านหน้า เครื่องในห้องเรียนอาจหน่วงหรือค้าง ปั้นที่ระดับต่ำกว่าให้ได้มากที่สุด แล้วขึ้นระดับสูงเฉพาะตอนเก็บงานสุดท้าย'];
+  $('#budMsg').innerHTML = `<p class="small">ระดับ ${lv} = ${fmt(base)} × 4<sup>${lv}</sup></p><h3 style="font-size:24px;font-family:Prompt">${fmt(n)} หน้า</h3><p class="${msg[0]}" style="font-weight:700;margin-top:6px;font-size:17px">${msg[1]}</p><p style="font-size:16px;margin-top:4px">${msg[2]}</p>`;
+}
+['#rBase', '#rLv'].forEach((s) => $(s).addEventListener('input', renderBudget));
+renderBudget();
+
+/* ---------- sculpt compare ---------- */
+const SC = {
+  ai: [['ผิวเวลาปั้น', '<span class="bad">ย่น เป็นเหลี่ยม</span> ตามสามเหลี่ยมที่ไม่สม่ำเสมอ'], ['เพิ่มรายละเอียด', '<span class="bad">ต้อง Remesh หรือ Dyntopo</span> ตาข่ายเปลี่ยนทั้งตัว'], ['แก้รูปทรงใหญ่ทีหลัง', '<span class="bad">ยาก</span> ต้องดันทีละจุด'], ['สมมาตร', '<span class="bad">ไม่ได้</span> ตาข่ายสองซีกไม่เท่ากัน'], ['ผลงานของใคร', '<span class="mid">ส่วนใหญ่เป็นของ AI</span>']],
+  retopo: [['ผิวเวลาปั้น', '<span class="good">เนียน</span> สี่เหลี่ยมแบ่งตัวสม่ำเสมอ'], ['เพิ่มรายละเอียด', '<span class="good">ขึ้นระดับ Multires</span> ตาข่ายฐานเหมือนเดิม'], ['แก้รูปทรงใหญ่ทีหลัง', '<span class="good">ง่าย</span> ลงไประดับต่ำ แก้แล้วรายละเอียดตามไปเอง'], ['สมมาตร', '<span class="good">ได้</span> Symmetry X ทำงานเต็มที่'], ['ผลงานของใคร', '<span class="good">ของเรา</span> AI เป็นแค่แบบ']]
+};
+Lesson.switcher($('#scSw'), (v) => { $('#scTable').innerHTML = SC[v].map(([k, t]) => `<tr><th>${k}</th><td>${t}</td></tr>`).join(''); }, 'retopo');
+const BRUSHES = [
+  ['Grab', 'ลากรูปทรงใหญ่ ใช้ที่ระดับ Multires ต่ำ', 1],
+  ['Draw', 'ดึงหรือดันผิวทั่วไป ใช้ร่างรูปทรงรอง', 2],
+  ['Clay Strips', 'เติมเนื้อทีละชั้น เหมาะกับแก้ม หน้าท้อง กล้ามเนื้อ', 2],
+  ['Inflate', 'พองหรือยุบเป็นก้อน เช่น แก้มป่อง นิ้ว', 2],
+  ['Crease', 'ร่องคม เช่น ขอบปาก รอยพับเสื้อ', 3],
+  ['Smooth', 'กด Shift ค้าง ลบรอยและทำผิวเรียบ ใช้ได้ทุกช่วง', 0]
+];
+const STAGE = ['ทุกช่วง', 'รูปทรงใหญ่', 'รูปทรงรอง', 'รายละเอียด'];
+let brushStage = 1;
+function renderBrushes() {
+  $('#brushFlips').innerHTML = `<div class="seg-btns" id="stBtns" style="margin-bottom:10px">${[1, 2, 3].map((k) => `<button type="button" class="btn${k === brushStage ? ' on' : ''}" aria-pressed="${k === brushStage}" data-v="${k}">${k} · ${STAGE[k]}</button>`).join('')}</div>`
+    + `<div class="kgrid" style="margin-top:0">${BRUSHES.map(([n, t, st]) => { const on = st === brushStage || st === 0; return `<div class="key" style="opacity:${on ? 1 : 0.4};${on && st ? 'border-color:var(--c1)' : ''}"><p style="font-weight:700">${n}</p><p class="small" style="color:var(--muted)">${t}</p></div>`; }).join('')}</div>`;
+  $$('#stBtns button').forEach((b) => { b.onclick = () => { brushStage = +b.dataset.v; renderBrushes(); $(`#stBtns button[data-v="${brushStage}"]`).focus({ preventScroll: true }); }; });
+}
+renderBrushes();
+
+/* ---------- flips + checklist ---------- */
+Lesson.flipCards($('#flips'), [
+  ['ปั้นบนโมเดล AI ตรง ๆ', 'รีโทโปก่อน แล้วค่อยปั้นบน Multires'],
+  ['Snap แล้วจุดจมหายในตัว', 'ใช้ Face Project + Shrinkwrap และเปิด Retopology overlay'],
+  ['ซีกกลางเป็นร่อง', 'เปิด Clipping ใน Mirror จุดกลางต้องอยู่บนแกน'],
+  ['ตาข่ายหนาเกินตั้งแต่ฐาน', 'ฐานเบา ๆ ให้ Multires เก็บรายละเอียด'],
+  ['ขนาดโมเดล AI ผิด modifier เพี้ยน', 'Ctrl+A › All Transforms ก่อนเริ่ม'],
+  ['ลบโมเดล AI ทิ้งหลังรีโทโป', 'เก็บ AI_ref ไว้ใน Collection แยก ใช้เทียบและส่งงาน']
+]);
+Lesson.checklist($('#chks'), [
+  'แนบภาพผลจาก Meshy หรือ Tripo และบอกชื่อเครื่องมือ',
+  'ตาข่ายใหม่เป็นสี่เหลี่ยมทั้งหมด ไม่มี N-gon',
+  'มีลูปรอบตา ปาก และคอ แนวกลางตรง',
+  'Face Orientation เป็นสีน้ำเงินทั้งตัว ไม่มีขอบเปิดที่ไม่ตั้งใจ',
+  'Multires อย่างน้อย 3 ระดับ และปั้นรายละเอียดเอง',
+  'เก็บ AI_ref, Retopo และงาน sculpt ไว้ในไฟล์ .blend เดียว'
+], { key: 'w04.checklist' });
+
+Lesson.init();
+})();
+</script>
+</body>
+</html>

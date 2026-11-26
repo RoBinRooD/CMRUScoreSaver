@@ -57,6 +57,26 @@
 #tsArt svg{display:block;width:100%;height:auto}
 
 /* builder */
+/* examples */
+.exgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:860px){.exgrid{grid-template-columns:1fr}}
+.excard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;text-align:left;color:var(--text);min-width:0;transition:border-color .2s}
+.excard:hover{border-color:var(--c1)}
+.excard img{display:block;width:100%;height:auto;border-radius:9px;aspect-ratio:1000/563;object-fit:cover;background:#2a2b30}
+.excard b{display:block;font-size:16px;margin:8px 4px 2px}
+.excard span{display:block;font-size:14.5px;color:var(--muted);margin:0 4px 4px}
+#exDlg{margin:auto;width:min(1100px,96vw);max-height:94vh;padding:0;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--text)}
+#exDlg::backdrop{background:rgba(0,0,0,.75)}
+#exDlg .in{display:grid;grid-template-columns:1.6fr 1fr;gap:0;max-height:94vh}
+@media(max-width:860px){#exDlg .in{grid-template-columns:1fr;overflow-y:auto}}
+#exDlg .pic{background:#111;display:flex;align-items:center;justify-content:center;min-width:0}
+#exDlg .pic img{display:block;width:100%;height:auto}
+#exDlg .txt{padding:18px;overflow-y:auto;min-width:0}
+#exDlg h3{font-family:Prompt;font-size:22px;margin-bottom:8px}
+#exDlg ul{padding-left:20px}
+#exDlg li{font-size:16px;margin-bottom:8px;color:var(--text)}
+#exDlg .q{margin-top:12px;background:rgba(242,184,102,.1);border:1px solid rgba(242,184,102,.3);border-radius:12px;padding:10px 12px;font-size:15.5px;color:var(--c3)}
+#exDlg .nav{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .sbgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 @media(max-width:1000px){.sbgrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.sbgrid{grid-template-columns:1fr}}
@@ -220,6 +240,21 @@ select{background:var(--panel2);color:var(--text);border:1px solid var(--line);b
     </div>
   </div>
 </section>
+
+<!-- EXAMPLES -->
+<section class="sec" id="examples" data-nav="ตัวอย่างงานจริง">
+  <div class="wrap">
+    <div class="kicker rv">Storyboard Examples</div>
+    <h2 class="rv d1">ตัวอย่าง storyboard จากงานจริง</h2>
+    <p class="lead rv d2">storyboard ของโมชันอินโฟกราฟิกเรื่องละ 9 ช่อง แต่ละเรื่องเปิด เล่า และปิดต่างกัน <b>แตะเพื่อดูภาพใหญ่</b> พร้อมสิ่งที่ควรสังเกต แล้วลองตอบคำถามท้ายภาพ</p>
+    <div class="rv d3">
+      <div class="try">👆 แตะดูทีละเรื่อง (เลื่อนด้วยปุ่มลูกศรซ้าย–ขวาได้)</div>
+      <div class="exgrid" id="exGrid"></div>
+      <p class="note" style="margin-top:12px">ภาพตัวอย่างผลงานที่ผู้สอนคัดมาเพื่อใช้ศึกษาในรายวิชา ชื่อและโลโก้ในภาพเป็นของเจ้าของผลงานและหน่วยงานนั้น ๆ</p>
+    </div>
+  </div>
+</section>
+<dialog id="exDlg" aria-labelledby="exTitle"><div class="in"><div class="pic"><img id="exImg" alt=""></div><div class="txt"><p class="small" id="exNum"></p><h3 id="exTitle"></h3><ul id="exList"></ul><div class="q" id="exQ"></div><div class="nav"><button type="button" class="btn" id="exPrev">← ก่อนหน้า</button><button type="button" class="btn" id="exNext">ถัดไป →</button><button type="button" class="btn on" id="exClose">ปิด</button></div></div></div></dialog>
 
 <!-- BUILDER -->
 <section class="sec" id="builder" data-nav="สร้าง storyboard">
@@ -496,6 +531,49 @@ Lesson.stepper($('#tsBtns'), $('#tsTxt'), TS.map((t, i) => ({
   label: t[1],
   render(el) { el.innerHTML = `<p class="small">ขั้นที่ ${i + 1}/3 · ${t[0]}</p><h3 style="font-size:22px;margin:4px 0 6px">${t[1]}</h3><p style="color:var(--text);font-size:16.5px">${t[2]}</p>`; $('#tsArt').innerHTML = tsArt(i); }
 })));
+
+/* ---------- examples ---------- */
+// เพิ่มตัวอย่างใหม่: วางไฟล์ใน img/week04/ แล้วเพิ่มรายการในอาร์เรย์นี้
+const EXAMPLES = [
+  ['storyboard-example-1.jpg', 'แอปแชตขายของ', 'เปิดด้วยปัญหา แล้วแนะนำทางแก้',
+    ['เปิดด้วย<b>ปัญหาของคนดู</b> (โดนบล็อก ขายไม่ออก น่าเบื่อ) ก่อนพูดถึงตัวแอป', 'ตัวละครตัวเดียวพาเรื่องตั้งแต่ต้นจนจบ', 'สลับช็อตตัวละคร (MS) กับช็อตใกล้หน้าจอแอป (CU) เพื่ออธิบายฟีเจอร์', 'ข้อความบนเฟรมสั้นมาก อยู่ในกล่องคำพูดสีเดียวกันทุกช่อง', 'ปิดด้วยโลโก้และหน้าจอแอป'],
+    'ช่องไหนคือจุดเปลี่ยนจาก “ปัญหา” ไปเป็น “ทางแก้”?'],
+  ['storyboard-example-2.jpg', 'ของสะสมกีฬา', 'เปิดด้วยคำถาม ผสมภาพถ่ายกับภาพวาด',
+    ['เปิดด้วยคำถาม “คุณรู้หรือไม่ว่า…” ดึงความสนใจ', 'ผสม<b>ภาพถ่ายจริง</b>กับ<b>ภาพเวกเตอร์</b> แต่คุมกรอบและสีแดง–ทองให้เป็นชุดเดียวกัน', 'ใช้ไอคอนคนและลูกศรอธิบายกลไกตลาดแทนข้อความยาว', 'ปิดด้วยเส้นกราฟขึ้น บอกโอกาสเติบโต'],
+    'ถ้าตัดภาพถ่ายออกทั้งหมด เรื่องนี้จะเสียอะไรไป?'],
+  ['storyboard-example-3.jpg', 'ช้อปปิ้งออนไลน์อย่างฉลาด', 'ตัวละครพาเล่าเป็นข้อ 1–2–3',
+    ['ตัวละครผู้หญิงคนเดิมอยู่เกือบทุกช่อง คนดูจำได้ทันที', 'ใช้<b>แถบข้อความด้านล่าง</b>ตำแหน่งเดียวกันทุกช่อง บอกว่ากำลังพูดข้อไหน', 'เปลี่ยนฉากตามเนื้อหา: ร้านค้า หน้าจอ กองขยะ', 'ปิดด้วยภาพโลกและข้อความ “สู่ความยั่งยืน” ขยายจากเรื่องส่วนตัวไปเรื่องสังคม'],
+    'ช็อตกองขยะใช้สีหน้าและฉากอย่างไรให้รู้สึกว่าเป็น “ผลเสีย”?'],
+  ['storyboard-example-4.jpg', 'ตรวจสอบตัวแทนประกัน', 'บทสนทนา + ขั้นตอนการใช้งาน',
+    ['เปิดด้วยฉากสนทนาในสวน (LS) บอกสถานที่และตัวละครพร้อมกัน', 'ใช้ช็อตใกล้มือถือ บัตร และ QR Code อธิบาย<b>ขั้นตอนทีละขั้น</b>', 'ตัวละครหันหน้าเข้าหาข้อมูลและชี้ ช่วยพาสายตา', 'ปิดด้วยตัวละครทั้งหมดหน้าอาคารสำนักงาน (ภาพกว้าง) เป็นการสรุป'],
+    'ลองหาช็อต ELS, MS และ CU ในเรื่องนี้ อย่างละ 1 ช่อง'],
+  ['storyboard-example-5.jpg', 'แพลตฟอร์มเรียนออนไลน์', 'แยกมุมมองผู้สอนกับผู้เรียน',
+    ['เปิดด้วยโลโก้และเครื่องหมายคำถาม ชวนสงสัยว่าคืออะไร', 'แยกเล่า<b>สองมุมมอง</b> ผู้สอนกับผู้เรียน แต่ละฝั่งมีตัวละครของตัวเอง', 'ใช้ป้ายวงกลมเส้นชี้รอบตัวละครและมือถือ (callout) แทนข้อความยาว', 'คุมโทนเขียวทั้งเรื่อง ตรงกับสีของแบรนด์'],
+    'ถ้าต้องตัดให้เหลือ 6 ช่อง จะตัดช่องไหนออก เพราะอะไร?']
+];
+let exI = 0;
+const dlg = $('#exDlg');
+$('#exGrid').innerHTML = EXAMPLES.map((e, i) => `<button type="button" class="excard" data-i="${i}" aria-label="ดูตัวอย่าง ${i + 1}: ${esc(e[1])}"><img src="img/week04/${e[0]}" alt="storyboard ตัวอย่าง: ${esc(e[1])}" loading="lazy" width="1000" height="563"><b>${i + 1} · ${esc(e[1])}</b><span>${esc(e[2])}</span></button>`).join('');
+function showEx(i) {
+  exI = (i + EXAMPLES.length) % EXAMPLES.length;
+  const e = EXAMPLES[exI];
+  $('#exImg').src = 'img/week04/' + e[0];
+  $('#exImg').alt = 'storyboard ตัวอย่าง: ' + e[1];
+  $('#exNum').textContent = `ตัวอย่าง ${exI + 1}/${EXAMPLES.length} · ${e[2]}`;
+  $('#exTitle').textContent = e[1];
+  $('#exList').innerHTML = e[3].map((x) => `<li>${x}</li>`).join('');
+  $('#exQ').textContent = '🤔 ' + e[4];
+}
+$$('#exGrid .excard').forEach((b) => { b.onclick = () => { showEx(+b.dataset.i); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); }; });
+$('#exPrev').onclick = () => showEx(exI - 1);
+$('#exNext').onclick = () => showEx(exI + 1);
+$('#exClose').onclick = () => dlg.close();
+dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+dlg.addEventListener('keydown', (e) => {
+  // ไม่ให้ลูกศรไปเลื่อนหัวข้อของหน้าขณะเปิดภาพ
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); showEx(exI + (e.key === 'ArrowRight' ? 1 : -1)); }
+  if (['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp', ' '].includes(e.key)) e.stopPropagation();
+});
 
 /* ---------- builder ---------- */
 const SB_KEY = 'storyboard';

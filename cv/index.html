@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เอกราช ศรีสุรักษ์ วิทยากร</title>
+<meta name="description" content="ประวัติวิทยากร เอกราช ศรีสุรักษ์ — AI ประยุกต์ เทคโนโลยีสร้างสรรค์ และการผลิตสื่อดิจิทัล">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=IBM+Plex+Sans+Thai:wght@400;600&family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday-professional: a speaker profile a training organiser scans in a minute
+   IDEA a Maker Space workshop board — risograph-printed topic stamps you press to see where each was taught
+   PICTURE eight overprinted topic tiles; pressing one filters experience, courses and materials below
+   COLOUR pure white, cobalt #2f45e8 dominant, hot pink #ff3d7f accent, sun yellow #ffcf33 support; night #10111f
+   TYPE Prompt 700 display + IBM Plex Sans Thai text
+   LAYOUT laptop: name and profile left, topic board right; below, full-width bands. phone: name, board, list */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#10111f);--ink:light-dark(#15151d,#f1f1f6);--mute:light-dark(#5b5b6b,#a9aac0);--line:light-dark(#e3e3ea,#2a2c44);--blue:light-dark(#2f45e8,#7b8bff);--pink:light-dark(#ff3d7f,#ff6f9e);--sun:#ffcf33;--card:light-dark(#f5f6ff,#181a30)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "IBM Plex Sans Thai",system-ui,sans-serif;overflow-x:clip}
+a{color:var(--blue)}
+h1,h2,h3{font-family:Prompt,"IBM Plex Sans Thai",sans-serif;line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,5vw,52px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(26px,3.2vw,34px);font-weight:700;margin-bottom:8px}
+h3{font-size:18px;font-weight:500}
+.wrap{max-width:1240px;margin:0 auto}
+.band{padding:clamp(28px,4vw,64px) max(5vw,16px)}
+nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:6px;align-items:center;padding:10px max(5vw,16px);overflow-x:auto}
+nav b{font-family:Prompt;margin-right:auto;white-space:nowrap}
+nav a{flex:none;text-decoration:none;color:var(--ink);padding:8px 12px;border-radius:999px;font-size:15px}
+nav a:hover,nav a:focus-visible{background:var(--card)}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(24px,4vw,56px);align-items:center}
+.role{font-size:19px;color:var(--blue);font-weight:600;margin:10px 0 14px}
+.hero p{max-width:62ch;margin:0 0 12px}
+.contact{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.btn{font:inherit;font-size:15px;min-height:44px;padding:9px 16px;border-radius:12px;border:2px solid var(--ink);background:var(--bg);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn.fill{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn:hover{transform:translateY(-1px)}
+.btn:focus-visible,.tile:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile{position:relative;overflow:hidden;border:0;border-radius:18px;min-height:132px;padding:12px;text-align:left;font:inherit;color:#15151d;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;transition:transform .25s,box-shadow .25s}
+.tile svg{position:absolute;inset:0;width:100%;height:100%}
+.tile span{position:relative;font-family:Prompt;font-weight:500;font-size:15px;line-height:1.25}
+.tile small{position:relative;font-size:13px;opacity:.8}
+.tile[aria-pressed=true]{transform:translateY(-4px) rotate(-1.5deg);box-shadow:0 0 0 3px var(--ink)}
+.tile:hover{transform:translateY(-3px)}
+.hint{font-size:14px;color:var(--mute);margin-top:10px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hint button{font:inherit;font-size:14px;background:none;border:0;color:var(--blue);cursor:pointer;min-height:32px;padding:0}
+.blueband{background:var(--blue);color:#fff}
+.blueband .wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(10em,1fr));gap:18px}
+.stat b{display:block;font-family:Prompt;font-size:clamp(34px,4vw,48px);line-height:1}
+.stat span{font-size:15px;opacity:.9}
+.lead{color:var(--mute);margin:0 0 24px;max-width:70ch}
+.filterline{font-size:15px;margin:-12px 0 20px;min-height:24px;color:var(--pink);font-weight:600}
+.tl{list-style:none;margin:0;padding:0;border-left:3px solid var(--line)}
+.tl li{position:relative;display:grid;grid-template-columns:9.5em minmax(0,1fr);gap:16px;padding:16px 0 16px 22px;border-bottom:1px solid var(--line)}
+.tl li::before{content:"";position:absolute;left:-9px;top:24px;width:15px;height:15px;border-radius:50%;background:var(--sun);border:3px solid var(--bg)}
+.tl time{font-family:Prompt;font-weight:500;color:var(--blue);white-space:nowrap}
+.tl h3{margin-bottom:4px}
+.tl p{margin:0;color:var(--mute);font-size:15px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:13px;padding:2px 10px;border-radius:999px;background:var(--card);color:var(--ink)}
+.empty{padding:20px;border:2px dashed var(--line);border-radius:14px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,17em),1fr));gap:14px}
+.course{background:var(--card);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.course .meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--mute)}
+.course .dur{font-weight:600;color:var(--pink);white-space:nowrap}
+.mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,15em),1fr));gap:12px}
+.mat{display:flex;gap:12px;align-items:center;padding:14px;border:2px solid var(--line);border-radius:14px;text-decoration:none;color:var(--ink);min-height:72px}
+.mat:hover{border-color:var(--blue)}
+.mat i{font-style:normal;font-family:Prompt;font-weight:700;font-size:13px;background:var(--sun);color:#15151d;border-radius:10px;padding:6px 8px;white-space:nowrap}
+.mat span small{display:block;color:var(--mute);font-size:13px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,48px)}
+ul.plain{margin:0;padding-left:1.1em}
+ul.plain li{margin-bottom:8px}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:Prompt;font-weight:500;width:9em}
+.lmsband{background:var(--blue);color:#fff}
+.lmsband .lead{color:#e6e9ff}
+.lmshead{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:end;margin-bottom:18px}
+.seg{display:inline-flex;background:rgba(255,255,255,.16);border-radius:14px;padding:4px;gap:4px}
+.seg button{font:inherit;font-size:15px;min-height:44px;padding:8px 16px;border:0;border-radius:10px;background:transparent;color:#fff;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed=true]{background:#fff;color:#15151d;font-weight:600}
+.seg button:focus-visible,.nav2 button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.lmsgrid{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:clamp(18px,3vw,36px);align-items:start}
+.car{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;border-radius:16px;scrollbar-width:none}
+.car::-webkit-scrollbar{display:none}
+.car figure{flex:0 0 100%;scroll-snap-align:start;margin:0;min-width:0}
+.car .frame{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.08);aspect-ratio:1366/900}
+.car img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.car figcaption{margin-top:10px;font-size:15px;color:#e6e9ff}
+.car figcaption b{color:#fff;font-family:Prompt;font-weight:500;margin-right:6px}
+.nav2{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:10px}
+.nav2 button{font:inherit;min-height:44px;min-width:44px;padding:8px 14px;border-radius:12px;border:2px solid #fff;background:transparent;color:#fff;cursor:pointer}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35)}
+.dots i.on{background:var(--sun)}
+.feat{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.feat li{background:rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;font-size:15px}
+.feat b{display:block;font-family:Prompt;font-weight:500;font-size:16px;color:#fff}
+.note{font-size:13px;color:#d5daff;margin-top:12px}
+.exp{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.exp .btn{border-style:dashed}
+.busy{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;font-family:Prompt;font-size:20px;text-align:center;padding:20px}
+#docroot{position:absolute;left:0;top:0;width:794px;z-index:-5}
+#docroot .pg{width:794px;height:1123px;padding:72px 76px 64px;background:#fff;color:#000;font:15.5px/1.6 Sarabun,"IBM Plex Sans Thai",sans-serif;position:relative;overflow:hidden;box-sizing:border-box}
+#docroot h1{font:700 22px/1.3 Sarabun,sans-serif;text-align:center;margin:0 0 4px}
+#docroot .sub{text-align:center;margin:0 0 18px}
+#docroot h2{font:700 17px/1.4 Sarabun,sans-serif;margin:16px 0 6px;padding-bottom:3px;border-bottom:1px solid #000}
+#docroot p{margin:0 0 6px;text-indent:2.5em}
+#docroot ul{margin:0;padding-left:1.4em}
+#docroot table{width:100%;border-collapse:collapse;font-size:14.5px;line-height:1.45}
+#docroot th,#docroot td{border:1px solid #000;padding:4px 6px;vertical-align:top;text-align:left;width:auto;font-family:Sarabun,sans-serif;font-weight:400}
+#docroot th{background:#eeeeee;font-weight:700}
+#docroot .kv td{border:0;padding:2px 0}
+#docroot .kv td:first-child{width:9.5em;font-weight:700}
+#docroot .sign{margin-top:28px;margin-left:50%;text-align:center;line-height:2}
+#docroot .pno{position:absolute;bottom:28px;left:0;right:0;text-align:center;font-size:13px}
+footer{background:var(--ink);color:var(--bg)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
+footer .btn{border-color:var(--bg);background:transparent;color:var(--bg)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media(max-width:900px){.hero{grid-template-columns:minmax(0,1fr)}.two{grid-template-columns:minmax(0,1fr)}.lmsgrid{grid-template-columns:minmax(0,1fr)}.lmshead{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}.tile{min-height:104px}.tl li{grid-template-columns:minmax(0,1fr);gap:4px}th{width:6.5em}nav b{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><b>เอกราช ศรีสุรักษ์</b><a href="#topics">หัวข้อ</a><a href="#experience">ประสบการณ์</a><a href="#courses">หลักสูตร</a><a href="#materials">สื่อการสอน</a><a href="#lms">ระบบส่งงาน</a><a href="#tools">เครื่องมือ</a><a href="#contact">ติดต่อ</a></div></nav>
+
+<header class="band" id="topics"><div class="wrap hero">
+  <div>
+    <h1>เอกราช ศรีสุรักษ์</h1>
+    <div class="role">วิทยากรด้าน AI ประยุกต์ เทคโนโลยีสร้างสรรค์ และการผลิตสื่อดิจิทัล · เชียงใหม่</div>
+    <p>วิทยากรและอาจารย์ผู้สอนที่เชื่อม AI เข้ากับงานสร้างสรรค์จริง ตั้งแต่การผลิตวิดีโอ กราฟิก 3D/VR ไปจนถึง AI Agent สำหรับงานสำนักงาน</p>
+    <p>ถนัดออกแบบหลักสูตรสำหรับผู้เรียน <b>non-technical</b> (อาจารย์ บุคลากร นักศึกษาต่างสาขา) ให้ลงมือทำได้จริงภายในวันอบรม ด้วยกิจกรรมแบบทีม สถานีหมุนเวียน และสื่อการสอนที่พัฒนาเองบนเว็บ</p>
+    <p>มีพื้นหลังจากการบริหารเอเจนซี่ดิจิทัลครีเอทีฟ (แอป เกม เว็บ AI และ interactive installation) จึงสอนจากโปรเจกต์ที่ส่งมอบลูกค้าจริง ไม่ใช่แค่ทฤษฎี</p>
+    <div class="contact">
+      <button class="btn fill" id="copyMail" type="button">คัดลอกอีเมล · commanroot@gmail.com</button>
+      <a class="btn" href="tel:0885478988">โทร 088-547-8988</a>
+    </div>
+    <div class="exp" id="exp" hidden>
+      <button class="btn" type="button" id="pdfWeb">ดาวน์โหลด PDF หน้าเว็บนี้</button>
+      <button class="btn" type="button" id="pdfDoc">ดาวน์โหลด PDF แบบเอกสารแนบราชการ</button>
+    </div>
+  </div>
+  <div>
+    <div class="board" id="board" role="group" aria-label="หัวข้อที่บรรยายได้"></div>
+    <div class="hint"><span id="hintText">กดหัวข้อเพื่อดูว่าเคยสอนที่ไหน หลักสูตรไหน</span><button type="button" id="clearBtn" hidden>ดูทั้งหมด</button></div>
+  </div>
+</div></header>
+
+<section class="band blueband" aria-label="สรุป"><div class="wrap" id="stats"></div></section>
+
+<section class="band" id="experience"><div class="wrap">
+  <h2>ประสบการณ์การสอนและวิทยากร</h2>
+  <p class="lead">ตั้งแต่ห้องเรียนปริญญาตรีถึงเวิร์กช็อปบุคลากรมหาวิทยาลัยและผู้ดูแลเด็กปฐมวัย</p>
+  <div class="filterline" id="f1"></div>
+  <ol class="tl" id="tl"></ol>
+  <p class="lead" style="margin-top:18px">พัฒนาหลักสูตรให้ Creative Technology Studio อีก 2 วิชา: การผลิตวิดีโอมัลติมีเดีย/Pitch ด้วย AI และการสร้างงาน 3D สำหรับ VR และการพิมพ์ 3 มิติ</p>
+</div></section>
+
+<section class="band" id="courses" style="background:var(--card)"><div class="wrap">
+  <h2>หลักสูตรที่พร้อมเปิดอบรม</h2>
+  <p class="lead">ปรับเนื้อหาและระยะเวลาตามกลุ่มผู้เรียนได้</p>
+  <div class="filterline" id="f2"></div>
+  <div class="grid" id="courseGrid"></div>
+</div></section>
+
+<section class="band" id="materials"><div class="wrap">
+  <h2>สื่อการสอนที่พัฒนาเอง</h2>
+  <div class="two">
+    <ul class="plain">
+      <li>เว็บไซต์รายวิชาบน GitHub Pages (robinrood.github.io) ส่งงาน ดูคะแนน และประมวลรายวิชาในที่เดียว</li>
+      <li>หน้าเว็บสอนแบบ interactive ใช้แทนสไลด์ เชื่อมกับแผนการสอนรายสัปดาห์ใน syllabus</li>
+      <li>เกมควิซห้องสมุดควบคุมด้วยมือผ่านเว็บแคม (MediaPipe) บรรณารักษ์แก้ไขคำถามเองได้โดยไม่แตะโค้ด</li>
+      <li>3D Viewer บนเว็บ (GLB) และแพลตฟอร์ม WebXR สำหรับ Meta Quest / Pico ไม่ต้องติดตั้งแอป</li>
+      <li>แบบทดสอบ Pre/Post-test และเอกสารประกอบการอบรมภาษาไทย</li>
+    </ul>
+    <div>
+      <h3 style="margin-bottom:12px">ตัวอย่างหน้าเว็บสอน กดเปิดดูได้</h3>
+      <div class="mats" id="mats"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="band lmsband" id="lms"><div class="wrap">
+  <div class="lmshead">
+    <div>
+      <h2>ระบบส่งงานและเก็บคะแนนที่สร้างเองสำหรับรายวิชา</h2>
+      <p class="lead" style="margin:0">เว็บแอปที่ใช้จริงใน ARTD2303 และ ARTD3314 นักศึกษาเข้าด้วยบัญชี Google ของมหาวิทยาลัย อาจารย์ตรวจงาน เช็คชื่อ และสรุปคะแนนส่งระบบทะเบียนได้ในที่เดียว</p>
+    </div>
+    <div class="seg" role="group" aria-label="มุมมอง">
+      <button type="button" id="v-t" aria-pressed="true">มุมอาจารย์</button>
+      <button type="button" id="v-s" aria-pressed="false">มุมนักศึกษา</button>
+    </div>
+  </div>
+  <div class="lmsgrid">
+    <div>
+      <div class="car" id="car" tabindex="0" aria-label="ภาพหน้าจอระบบ"></div>
+      <div class="nav2"><button type="button" id="prev" aria-label="ภาพก่อนหน้า">←</button><div class="dots" id="dots"></div><button type="button" id="next" aria-label="ภาพถัดไป">→</button></div>
+    </div>
+    <div>
+      <ul class="feat" id="feat"></ul>
+      <p class="note">ภาพจากโหมดทดลองของระบบ รหัสและชื่อนักศึกษาเบลอไว้</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="band" id="tools" style="background:var(--card)"><div class="wrap">
+  <h2>เครื่องมือที่สอนได้</h2>
+  <div class="scroll"><table>
+    <tr><th>กราฟิกและวิดีโอ</th><td>Adobe Photoshop, Adobe Illustrator, Adobe After Effects, Adobe Premiere Pro</td></tr>
+    <tr><th>3D</th><td>Blender, Autodesk Maya</td></tr>
+    <tr><th>AI ทั่วไป</th><td>Claude, ChatGPT, Gemini, NotebookLM, Google AI Studio, GitHub Copilot</td></tr>
+    <tr><th>วิดีโอและเสียง</th><td>HeyGen, Kling, Google Flow/Veo, LTX, ElevenLabs, Botnoi Voice, CapCut</td></tr>
+    <tr><th>ภาพ</th><td>Stable Diffusion, SDXL/Illustrious, LoRA, ComfyUI, Canva</td></tr>
+    <tr><th>AI 3D / VR</th><td>Meshy AI, Scaniverse, Polycam, Three.js, WebXR</td></tr>
+  </table></div>
+</div></section>
+
+<footer class="band" id="contact"><div class="wrap">
+  <div><h2 style="color:inherit">เชิญเป็นวิทยากร</h2><div>commanroot@gmail.com · <a href="tel:0885478988" style="color:inherit">088-547-8988</a> · เชียงใหม่</div></div>
+  <button class="btn" id="copyMail2" type="button">คัดลอกอีเมล</button>
+</div></footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+{
+const T=[
+ {k:'agent',n:'AI สำหรับงานองค์กร',d:'AI Agent · Vibe Coding',c:'#2f45e8',f:'#fff',s:'c'},
+ {k:'learn',n:'AI เพื่อการเรียนรู้',d:'Gemini · NotebookLM',c:'#ffcf33',f:'#15151d',s:'t'},
+ {k:'video',n:'AI ผลิตวิดีโอและสื่อ',d:'Avatar · เสียงไทย',c:'#ff3d7f',f:'#fff',s:'r'},
+ {k:'image',n:'AI สร้างภาพ',d:'SD · LoRA · ComfyUI',c:'#ffcf33',f:'#15151d',s:'c'},
+ {k:'d3',n:'3D และ VR',d:'AI 3D · Scan · WebXR',c:'#ff3d7f',f:'#fff',s:'t'},
+ {k:'graphic',n:'กราฟิกและคาแรกเตอร์',d:'Infographic · Art Toy',c:'#2f45e8',f:'#fff',s:'r'},
+ {k:'system',n:'ออกแบบระบบเบื้องต้น',d:'UX/UI · Data Schema',c:'#2f45e8',f:'#fff',s:'t'},
+ {k:'film',n:'ถ่ายทำและตัดต่อ',d:'มุมกล้อง · Green screen',c:'#ffcf33',f:'#15151d',s:'r'}
+];
+const E=[
+ {t:'ปัจจุบัน',h:'อาจารย์ผู้สอน ARTD2303 คอมพิวเตอร์กราฟิกส์เพื่อการออกแบบ',w:'นักศึกษาปริญญาตรี ม.ราชภัฏเชียงใหม่',p:'รายสัปดาห์: Infographic, Character Design, Storyboard, Motion Graphic',g:['graphic']},
+ {t:'ปัจจุบัน',h:'อาจารย์ผู้สอน ARTD3314 ออกแบบคาแรกเตอร์ Art Toy',w:'นักศึกษาปริญญาตรี ม.ราชภัฏเชียงใหม่',p:'จากออกแบบตัวละครสู่งานปั้น 3D',g:['graphic','d3']},
+ {t:'5–7 ส.ค. 2569',h:'วิทยากร “การประยุกต์ใช้ AI Agent เพื่อพัฒนานวัตกรรมและเพิ่มประสิทธิภาพงานสายสนับสนุน” (ในนาม Tansamai)',w:'บุคลากรสายสนับสนุน ม.ราชภัฏยะลา',p:'Workshop 3 วัน มี Pre/Post-test จบด้วยโปรเจกต์กลุ่มและนำเสนอ',g:['agent','system']},
+ {t:'2569',h:'วิทยากร Maker Space Workshop — Creative Technology Studio หอสมุด ม.นเรศวร',w:'นิสิต non-technical ประมาณ 50 คน 2 กลุ่ม',p:'2 วัน (9:00–16:00) ทีมละ 5 คน หมุนเวียนสถานี 3D/VR และ Green screen',g:['d3','video','film']},
+ {t:'2569',h:'ผู้อบรมการผลิตวิดีโอด้วย AI',w:'บุคลากรหอสมุด ม.นเรศวร',p:'บรรยาย + สาธิต',g:['video']},
+ {t:'2567–2568',h:'วิทยากร AI เพื่อช่วยในการออกแบบกิจกรรมการสอนสำหรับเด็กปฐมวัย ร่วมกับ ม.ราชภัฏเชียงใหม่',w:'ผู้ดูแลเด็ก กองกำกับการตำรวจตระเวนชายแดนที่ 33 (กก.ตชด.33)',p:'ใช้ AI ช่วยคิดและออกแบบกิจกรรมการเรียนรู้ปฐมวัย',g:['learn']}
+];
+const C=[
+ {h:'AI Agent เพิ่มประสิทธิภาพงานสายสนับสนุน',w:'บุคลากรองค์กร ไม่ต้องเขียนโค้ด',d:'1–3 วัน',g:['agent','system']},
+ {h:'AI Ready : เรียนรู้ • คิด • สร้าง',w:'นักศึกษาทุกสาขา',d:'6 ชม.',g:['learn']},
+ {h:'AI สำหรับอาจารย์และบุคลากร (บรรยาย + สาธิต)',w:'อาจารย์ บุคลากร บุคคลทั่วไป',d:'1 วัน · 50 คน',g:['learn','agent']},
+ {h:'ผลิตวิดีโอด้วย AI (Avatar, เสียงไทย, Green screen)',w:'บุคลากรฝ่ายสื่อ อาจารย์ นักศึกษา',d:'1–2 วัน',g:['video','film']},
+ {h:'3D และ VR สำหรับผู้เริ่มต้น (AI 3D, 3D Scan, WebXR)',w:'นักศึกษา ห้องสมุด Maker Space',d:'1–2 วัน',g:['d3']},
+ {h:'ออกแบบคาแรกเตอร์และ Art Toy',w:'นักศึกษาออกแบบ ครีเอทอร์',d:'1 วัน – ต่อเนื่อง',g:['graphic','d3']}
+];
+const base='https://robinrood.github.io/CMRUScoreSaver/materials/';
+const M=[
+ {c:'ARTD2303',wk:'สัปดาห์ 2',n:'Infographic',u:'artd2303/week02-infographic.html'},
+ {c:'ARTD2303',wk:'สัปดาห์ 3',n:'Character Design',u:'artd2303/week03-character-design.html'},
+ {c:'ARTD2303',wk:'สัปดาห์ 4',n:'Storyboard',u:'artd2303/week04-storyboard.html'},
+ {c:'ARTD2303',wk:'สัปดาห์ 5',n:'Motion Graphic เบื้องต้น',u:'artd2303/week05-motion-basics.html'},
+ {c:'ARTD3314',wk:'สัปดาห์ 2–3',n:'Art Toy Character 3D',u:'artd3314/week02-03-arttoy-3d.html'},
+ {c:'ARTD3314',wk:'สัปดาห์ 4',n:'AI Base · Retopology · Sculpt',u:'artd3314/week04-retopology-sculpt.html'}
+];
+const name=k=>T.find(t=>t.k===k).n;
+const $=id=>document.getElementById(id);
+let sel=null;
+const shape=(s,i)=>{
+ const o=(i*37)%60;
+ if(s==='c')return `<circle cx="${70+o}" cy="38" r="46" fill="#fff" opacity=".22"/><circle cx="${110+o/2}" cy="18" r="30" fill="#15151d" opacity=".12"/>`;
+ if(s==='t')return `<polygon points="${60+o},-10 ${170+o},-10 ${120+o},80" fill="#fff" opacity=".25"/><polygon points="${20+o},10 ${90+o},10 ${55+o},60" fill="#15151d" opacity=".1"/>`;
+ return `<rect x="${50+o}" y="-20" width="80" height="80" rx="14" transform="rotate(18 ${90+o} 20)" fill="#fff" opacity=".22"/><rect x="${100+o/2}" y="0" width="40" height="40" rx="8" fill="#15151d" opacity=".12"/>`;
+};
+$('board').innerHTML=T.map((t,i)=>`<button type="button" class="tile" id="tile-${t.k}" data-k="${t.k}" aria-pressed="false" style="background:${t.c};color:${t.f}"><svg viewBox="0 0 200 130" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${shape(t.s,i)}</svg><span>${t.n}</span><small>${t.d}</small></button>`).join('');
+const tags=g=>`<div class="tags">${g.map(k=>`<span class="tag">${name(k)}</span>`).join('')}</div>`;
+const render=()=>{
+ const e=sel?E.filter(x=>x.g.includes(sel)):E;
+ const c=sel?C.filter(x=>x.g.includes(sel)):C;
+ $('tl').innerHTML=e.length?e.map(x=>`<li><time>${x.t}</time><div><h3>${x.h}</h3><p>${x.w}</p><p>${x.p}</p>${tags(x.g)}</div></li>`).join(''):`<li style="display:block"><div class="empty">ยังไม่มีงานสอนในหัวข้อนี้ที่ลงไว้ แต่เปิดอบรมได้</div></li>`;
+ $('courseGrid').innerHTML=c.length?c.map(x=>`<article class="course"><h3>${x.h}</h3><div class="meta"><span>${x.w}</span><span class="dur">${x.d}</span></div>${tags(x.g)}</article>`).join(''):`<div class="empty">ยังไม่มีหลักสูตรสำเร็จรูปในหัวข้อนี้ ออกแบบเฉพาะให้ได้</div>`;
+ const line=sel?`กำลังดูหัวข้อ: ${name(sel)} · ${e.length} งานสอน · ${c.length} หลักสูตร`:'';
+ $('f1').textContent=line;$('f2').textContent=line;
+ $('hintText').textContent=sel?`${name(sel)}: ${e.length} งานสอน · ${c.length} หลักสูตร`:'กดหัวข้อเพื่อดูว่าเคยสอนที่ไหน หลักสูตรไหน';
+ $('clearBtn').hidden=!sel;
+ document.querySelectorAll('.tile').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===sel)));
+};
+$('board').addEventListener('click',ev=>{const b=ev.target.closest('.tile');if(!b)return;sel=sel===b.dataset.k?null:b.dataset.k;render();});
+$('clearBtn').addEventListener('click',()=>{sel=null;render();});
+$('stats').innerHTML=[[E.length,'งานสอนและวิทยากร'],[C.length,'หลักสูตรพร้อมเปิด'],[T.length,'หัวข้อที่บรรยายได้'],[M.length,'หน้าเว็บสอนออนไลน์']].map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
+$('mats').innerHTML=M.map(m=>`<a class="mat" href="${base+m.u}" target="_blank" rel="noopener"><i>${m.c}</i><span>${m.n}<small>${m.wk}</small></span></a>`).join('');
+const toast=msg=>{const t=$('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800);};
+const copy=async()=>{try{await navigator.clipboard.writeText('commanroot@gmail.com');toast('คัดลอกอีเมลแล้ว');}catch(err){toast('คัดลอกไม่ได้ อีเมลคือ commanroot@gmail.com');}};
+$('copyMail').addEventListener('click',copy);$('copyMail2').addEventListener('click',copy);
+render();
+const V={
+ t:{shots:[['t-overview','ภาพรวมรายวิชา','ความคืบหน้าแต่ละงาน นักศึกษาที่ควรติดตาม และแนวโน้มเกรด'],['t-grade','ตรวจงาน','ดูไฟล์ที่ส่ง ให้คะแนนและความเห็นทีละคน'],['t-timeline','Timeline','ช่วงเวลาของทุกงานเทียบวันนี้ เห็นสัดส่วนที่ส่งแล้ว'],['t-board','บอร์ดกลุ่ม','งานกลุ่มแบ่งงานย่อย ดูความคืบหน้าของแต่ละกลุ่ม'],['t-attend','เช็คชื่อ','คลิกเปลี่ยน มา/สาย/ขาด/ลา บันทึกอัตโนมัติ คิดชั่วโมงขาดให้'],['t-gradebook','สมุดคะแนน','ตั้งสัดส่วนคะแนน คัดลอกเข้าระบบทะเบียน หรือดาวน์โหลด Excel'],['login','เข้าสู่ระบบ','ใช้บัญชี Google ของมหาวิทยาลัย']],
+  feat:[['ติดตามนักศึกษาอัตโนมัติ','เตือนเมื่อขาดเรียนหรือขาดส่งเกินเกณฑ์'],['ตรวจงานในหน้าเดียว','คะแนน + ความเห็น ส่งถึงนักศึกษาทันที'],['เช็คชื่อและใบลา','อนุมัติใบลาแล้วระบบลงชื่อให้เอง'],['สรุปคะแนนส่งทะเบียน','คำนวณตามสัดส่วนที่ตั้ง ส่งออก Excel']]},
+ s:{shots:[['s-overview','ภาพรวมของนักศึกษา','งานที่ต้องส่งเร็ว ๆ นี้ งานในกลุ่ม ความเห็นจากอาจารย์ และการเข้าเรียน'],['s-score','คะแนนของฉัน','คะแนนงาน การเข้าเรียน และคะแนนสอบ ดูได้ตลอดเทอม']],
+  feat:[['รู้ว่าต้องส่งอะไร','เห็นกำหนดส่งและนับวันถอยหลัง'],['เห็นคะแนนและความเห็น','ไม่ต้องรอประกาศปลายเทอม'],['รู้สถานะการเข้าเรียน','บอกชัดว่าขาดได้อีกกี่ครั้ง'],['ทำงานกลุ่มเป็นระบบ','แบ่งงานย่อยบนบอร์ดกลุ่ม']]}
+};
+let view='t',idx=0;
+const car=$('car');
+const drawV=()=>{
+ const v=V[view];
+ car.innerHTML=v.shots.map(([f,h,d],i)=>`<figure><div class="frame"><img src="shots/${f}.webp" alt="${h}" loading="${i?'lazy':'eager'}" width="1366" height="900"></div><figcaption><b>${h}</b>${d}</figcaption></figure>`).join('');
+ $('feat').innerHTML=v.feat.map(([h,d])=>`<li><b>${h}</b>${d}</li>`).join('');
+ $('v-t').setAttribute('aria-pressed',String(view==='t'));$('v-s').setAttribute('aria-pressed',String(view==='s'));
+ idx=0;car.scrollLeft=0;dots();
+};
+const dots=()=>{$('dots').innerHTML=V[view].shots.map((_,i)=>`<i class="${i===idx?'on':''}"></i>`).join('');};
+const go=i=>{const n=V[view].shots.length;idx=(i+n)%n;const f=car.children[idx];if(f)car.scrollTo({left:f.offsetLeft-car.offsetLeft,behavior:'smooth'});dots();};
+car.addEventListener('scroll',()=>{const i=Math.round(car.scrollLeft/Math.max(1,car.clientWidth));if(i!==idx){idx=i;dots();}},{passive:true});
+$('prev').addEventListener('click',()=>go(idx-1));$('next').addEventListener('click',()=>go(idx+1));
+car.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'){e.preventDefault();go(idx-1);}if(e.key==='ArrowRight'){e.preventDefault();go(idx+1);}});
+$('v-t').addEventListener('click',()=>{view='t';drawV();});$('v-s').addEventListener('click',()=>{view='s';drawV();});
+drawV();
+
+const loadJs=src=>new Promise((ok,no)=>{if([...document.scripts].some(x=>x.src===src))return ok();const el=document.createElement('script');el.src=src;el.onload=ok;el.onerror=no;document.head.appendChild(el);});
+const libs=async()=>{await loadJs('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');await loadJs('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');};
+let dl=null;
+const direct=!(window.claude&&window.claude.use);
+if(direct)$('exp').hidden=false;
+else(async()=>{try{dl=await window.claude.use('downloads');}catch(err){dl=null;}if(dl)$('exp').hidden=false;})();
+const busyOn=msg=>{const b=document.createElement('div');b.className='busy';b.id='busy';b.setAttribute('data-html2canvas-ignore','true');b.textContent=msg;document.body.appendChild(b);};
+const busyOff=()=>{const b=$('busy');if(b)b.remove();const r=$('docroot');if(r)r.remove();};
+const saveIt=async(pdf,name)=>{if(direct){pdf.save(name);toast('ดาวน์โหลดแล้ว');return;}try{await dl.save({filename:name,data:pdf.output('blob')});toast('บันทึกไฟล์แล้ว');}catch(err){const c=err&&err.code;toast(c==='declined'?'ยกเลิกการบันทึก':c==='host_unavailable'?'แอปนี้บันทึกไฟล์ไม่ได้ ลองเปิดในเบราว์เซอร์':c==='rate_limited'?'รอสักครู่แล้วลองใหม่':'บันทึกไม่สำเร็จ');}};
+const prep=d=>{d.documentElement.setAttribute('data-theme','light');d.querySelectorAll('nav,#busy,#toast,#exp').forEach(x=>x.remove());d.querySelectorAll('.car .frame').forEach(f=>{f.style.aspectRatio='auto';});d.querySelectorAll('.car img').forEach(i=>{i.style.height='auto';});};
+const exportWeb=async()=>{
+ const y=window.scrollY;busyOn('กำลังสร้าง PDF หน้าเว็บ…');
+ try{await libs();await document.fonts.ready;window.scrollTo(0,0);
+  const cv=await window.html2canvas(document.body,{scale:1.5,backgroundColor:'#ffffff',windowWidth:1240,useCORS:true,scrollX:0,scrollY:0,ignoreElements:el=>el.id==='busy'||el.tagName==='NAV'||el.id==='toast'||el.id==='docroot',onclone:prep});
+  const {jsPDF}=window.jspdf;const w=210,h=w*cv.height/cv.width;
+  const pdf=new jsPDF({unit:'mm',format:[w,h],orientation:'portrait',compress:true});
+  pdf.addImage(cv.toDataURL('image/jpeg',0.88),'JPEG',0,0,w,h);
+  busyOff();window.scrollTo(0,y);await saveIt(pdf,'CV-เอกราช-ศรีสุรักษ์-เว็บ.pdf');
+ }catch(err){busyOff();window.scrollTo(0,y);toast('สร้าง PDF ไม่สำเร็จ ลองอีกครั้ง');}
+};
+const docBlocks=()=>{
+ const intro=[...document.querySelectorAll('.hero p')].map(p=>`<p>${p.innerHTML}</p>`).join('');
+ const tools=[...document.querySelectorAll('#tools tr')].map(r=>`<tr><td style="width:9em">${r.cells[0].textContent}</td><td>${r.cells[1].textContent}</td></tr>`).join('');
+ const mats=[...document.querySelectorAll('#materials ul.plain li')].map(li=>`<li>${li.textContent}</li>`).join('');
+ return [
+ `<h1>ประวัติและผลงานวิทยากร</h1><p class="sub" style="text-indent:0">ด้าน AI ประยุกต์ เทคโนโลยีสร้างสรรค์ และการผลิตสื่อดิจิทัล</p>
+  <table class="kv"><tr><td>ชื่อ–สกุล</td><td>เอกราช ศรีสุรักษ์</td></tr><tr><td>ที่อยู่ปัจจุบัน</td><td>จังหวัดเชียงใหม่</td></tr><tr><td>โทรศัพท์</td><td>088-547-8988</td></tr><tr><td>อีเมล</td><td>commanroot@gmail.com</td></tr><tr><td>เว็บไซต์รายวิชา</td><td>robinrood.github.io</td></tr></table>`,
+ `<h2>1. ประวัติโดยย่อ</h2>${intro}`,
+ `<h2>2. หัวข้อที่เชี่ยวชาญและบรรยายได้</h2><ul>${T.map(t=>`<li>${t.n} (${t.d.replace(/ · /g,', ')})</li>`).join('')}</ul>`,
+ `<h2>3. ประสบการณ์การเป็นวิทยากรและการสอน</h2><table><tr><th style="width:2.6em">ที่</th><th style="width:7.5em">ช่วงเวลา</th><th>หลักสูตร / บทบาท</th><th>กลุ่มผู้เรียน</th><th>รูปแบบ</th></tr>${E.map((x,i)=>`<tr><td>${i+1}</td><td>${x.t}</td><td>${x.h}</td><td>${x.w}</td><td>${x.p}</td></tr>`).join('')}</table>`,
+ `<p style="margin-top:8px">นอกจากนี้ได้พัฒนาหลักสูตรให้ Creative Technology Studio หอสมุด ม.นเรศวร อีก 2 วิชา ได้แก่ การผลิตวิดีโอมัลติมีเดีย/Pitch ด้วย AI และการสร้างงาน 3D สำหรับ VR และการพิมพ์ 3 มิติ</p>`,
+ `<h2>4. หลักสูตรที่พร้อมเปิดอบรม</h2><table><tr><th style="width:2.6em">ที่</th><th>หลักสูตร</th><th>กลุ่มเป้าหมาย</th><th style="width:7em">ระยะเวลา</th></tr>${C.map((x,i)=>`<tr><td>${i+1}</td><td>${x.h}</td><td>${x.w}</td><td>${x.d}</td></tr>`).join('')}</table>`,
+ `<h2>5. สื่อการสอนและระบบสนับสนุนการสอนที่พัฒนา</h2><ul>${mats}<li>ระบบส่งงานและเก็บคะแนนออนไลน์สำหรับรายวิชา ARTD2303 และ ARTD3314 รองรับการตรวจงาน เช็คชื่อ ใบลา บอร์ดงานกลุ่ม และสรุปคะแนนส่งระบบทะเบียน</li></ul><p style="text-indent:0;margin-top:6px">ตัวอย่างหน้าเว็บสอน: ${M.map(m=>`${m.c} ${m.wk} ${m.n}`).join(' · ')}</p>`,
+ `<h2>6. โปรแกรมและเครื่องมือที่ใช้สอน</h2><table>${tools}</table>`,
+ `<p style="margin-top:22px">ข้าพเจ้าขอรับรองว่าข้อความข้างต้นเป็นความจริงทุกประการ</p><div class="sign">ลงชื่อ .............................................<br>( เอกราช ศรีสุรักษ์ )<br>วันที่ ........ เดือน .................... พ.ศ. ..........</div>`
+ ];
+};
+const exportDoc=async()=>{
+ const y=window.scrollY;busyOn('กำลังจัดหน้าเอกสาร PDF…');
+ try{await libs();await document.fonts.load('400 16px Sarabun');await document.fonts.load('700 16px Sarabun');await document.fonts.ready;window.scrollTo(0,0);
+  const root=document.createElement('div');root.id='docroot';document.body.appendChild(root);
+  const LIM=1123-72-64-30;const pages=[];
+  const newPage=()=>{const pg=document.createElement('div');pg.className='pg';const c=document.createElement('div');pg.appendChild(c);root.appendChild(pg);pages.push(pg);return c;};
+  let cur=newPage();
+  for(const html of docBlocks()){const b=document.createElement('div');b.innerHTML=html;cur.appendChild(b);
+   if(cur.scrollHeight<=LIM)continue;
+   const tb=b.querySelector('table:not(.kv)');
+   if(tb&&tb.rows.length>2){const nt=tb.cloneNode(false);nt.appendChild(tb.rows[0].cloneNode(true));
+    while(cur.scrollHeight>LIM&&tb.rows.length>2){nt.insertBefore(tb.rows[tb.rows.length-1],nt.rows[1]||null);}
+    if(cur.scrollHeight<=LIM){cur=newPage();const nb=document.createElement('div');nb.appendChild(nt);cur.appendChild(nb);continue;}
+    while(nt.rows.length>1)tb.appendChild(nt.rows[1]);}
+   if(cur.children.length>1){cur.removeChild(b);cur=newPage();cur.appendChild(b);}}
+  pages.forEach((pg,i)=>{const n=document.createElement('div');n.className='pno';n.textContent=`หน้า ${i+1} / ${pages.length}`;pg.appendChild(n);});
+  const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+  for(let i=0;i<pages.length;i++){const cv=await window.html2canvas(pages[i],{scale:2,backgroundColor:'#ffffff',windowWidth:1240,scrollX:0,scrollY:0,onclone:d=>d.documentElement.setAttribute('data-theme','light')});if(i)pdf.addPage('a4','portrait');pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);}
+  busyOff();window.scrollTo(0,y);await saveIt(pdf,'ประวัติวิทยากร-เอกราช-ศรีสุรักษ์.pdf');
+ }catch(err){busyOff();window.scrollTo(0,y);toast('สร้าง PDF ไม่สำเร็จ ลองอีกครั้ง');}
+};
+$('pdfWeb').addEventListener('click',exportWeb);$('pdfDoc').addEventListener('click',exportDoc);
+}
+</script>
+</body>
+</html>

@@ -118,7 +118,6 @@ th{font-family:Prompt;font-weight:500;width:9em}
 #docroot th{background:#eeeeee;font-weight:700}
 #docroot .kv td{border:0;padding:2px 0}
 #docroot .kv td:first-child{width:9.5em;font-weight:700}
-#docroot .sign{margin-top:28px;margin-left:50%;text-align:center;line-height:2}
 #docroot .pno{position:absolute;bottom:28px;left:0;right:0;text-align:center;font-size:13px}
 footer{background:var(--ink);color:var(--bg)}
 footer .wrap{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
@@ -353,8 +352,7 @@ const docBlocks=()=>{
  `<p style="margin-top:8px">นอกจากนี้ได้พัฒนาหลักสูตรให้ Creative Technology Studio หอสมุด ม.นเรศวร อีก 2 วิชา ได้แก่ การผลิตวิดีโอมัลติมีเดีย/Pitch ด้วย AI และการสร้างงาน 3D สำหรับ VR และการพิมพ์ 3 มิติ</p>`,
  `<h2>4. หลักสูตรที่พร้อมเปิดอบรม</h2><table><tr><th style="width:2.6em">ที่</th><th>หลักสูตร</th><th>กลุ่มเป้าหมาย</th><th style="width:7em">ระยะเวลา</th></tr>${C.map((x,i)=>`<tr><td>${i+1}</td><td>${x.h}</td><td>${x.w}</td><td>${x.d}</td></tr>`).join('')}</table>`,
  `<h2>5. สื่อการสอนและระบบสนับสนุนการสอนที่พัฒนา</h2><ul>${mats}<li>ระบบส่งงานและเก็บคะแนนออนไลน์สำหรับรายวิชา ARTD2303 และ ARTD3314 รองรับการตรวจงาน เช็คชื่อ ใบลา บอร์ดงานกลุ่ม และสรุปคะแนนส่งระบบทะเบียน</li></ul><p style="text-indent:0;margin-top:6px">ตัวอย่างหน้าเว็บสอน: ${M.map(m=>`${m.c} ${m.wk} ${m.n}`).join(' · ')}</p>`,
- `<h2>6. โปรแกรมและเครื่องมือที่ใช้สอน</h2><table>${tools}</table>`,
- `<p style="margin-top:22px">ข้าพเจ้าขอรับรองว่าข้อความข้างต้นเป็นความจริงทุกประการ</p><div class="sign">ลงชื่อ .............................................<br>( เอกราช ศรีสุรักษ์ )<br>วันที่ ........ เดือน .................... พ.ศ. ..........</div>`
+ `<h2>6. โปรแกรมและเครื่องมือที่ใช้สอน</h2><table>${tools}</table>`
  ];
 };
 const exportDoc=async()=>{

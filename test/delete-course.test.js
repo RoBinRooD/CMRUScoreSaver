@@ -17,17 +17,19 @@ test('delete PIN: set once, changing needs the current PIN, stored only as a has
   assert.match(err(b, T, 'updateSettings', { deletePin: { next: 'abcd' } }), /4–8 หลัก/);
   assert.equal(b.ok(T, 'updateSettings', { deletePin: { next: '2468' } }).hasDeletePin, true);
 
-  const stored = b.db().Settings.filter((r) => /^deletePin/.test(r.key));
-  assert.deepEqual([...stored.map((r) => r.key)].sort(), ['deletePinHash', 'deletePinSalt']);
-  assert.ok(stored.every((r) => r.value !== '2468'), 'PIN itself is never stored');
+  const me = () => b.db().Teachers.find((r) => r.email === T);
+  assert.ok(me().pinHash && me().pinSalt);
+  assert.ok(me().pinHash !== '2468' && me().pinSalt !== '2468', 'PIN itself is never stored');
   assert.equal(JSON.stringify(b.ok(T, 'getSettings')).includes('2468'), false);
-  const oldSalt = stored.find((r) => r.key === 'deletePinSalt').value;
+  const oldSalt = me().pinSalt;
+  // PIN เป็นของแต่ละคน
+  assert.equal(b.ok('teacher2@demo.ac.th', 'getSettings').hasDeletePin, false);
 
   assert.match(err(b, T, 'updateSettings', { deletePin: { next: '1357' } }), /PIN ไม่ถูกต้อง/);
   assert.match(err(b, T, 'updateSettings', { deletePin: { current: '0000', next: '1357' } }), /PIN ไม่ถูกต้อง/);
   b.ok(T, 'updateSettings', { deletePin: { current: '2468', next: '1357' } });
   // salt ใหม่ทุกครั้งที่ตั้ง PIN
-  assert.notEqual(b.db().Settings.find((r) => r.key === 'deletePinSalt').value, oldSalt);
+  assert.notEqual(me().pinSalt, oldSalt);
 });
 
 test('deleteCourse: preview counts, PIN required, removes only that course', () => {

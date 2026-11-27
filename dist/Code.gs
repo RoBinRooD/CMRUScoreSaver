@@ -207,6 +207,7 @@ var WRITE_ACTIONS = {
   saveTask: 1, deleteTask: 1,
   submitLeave: 1, finalizeLeaveUpload: 1, cancelLeave: 1, decideLeave: 1,
   openCheckIn: 1, closeCheckIn: 1,
+  setCourseOwners: 1, adminSaveTeacher: 1, adminRemoveTeacher: 1,
   // checkIn ตรวจรหัสก่อน แล้วค่อยเข้า lock เอง (ดู CheckIn.js)
   // สร้างโฟลเดอร์ใน Drive + Script Properties และนับ rate limit
   startUpload: 1, startLeaveUpload: 1, startSyllabusUpload: 1
@@ -237,6 +238,10 @@ function handleRequest_(req) {
     var run = function () {
       resetCache_();
       var user = authenticate_(req.idToken);
+      // สมาชิกหมดอายุ = ดูได้อย่างเดียว (นักศึกษายังส่งงานได้ตามปกติ)
+      if (user.expired && hasOwn_(WRITE_ACTIONS, name)) {
+        throw new Error('สมาชิกของคุณหมดอายุแล้ว (' + user.expiresAt + ') — ดูข้อมูลได้อย่างเดียว ติดต่อผู้ดูแลระบบเพื่อต่ออายุ');
+      }
       return fn(user, req.payload || {});
     };
     var data = hasOwn_(WRITE_ACTIONS, name) ? withLock_(run) : run();
@@ -259,8 +264,9 @@ function json_(obj) {
 
 var SCHEMA = {
   Settings: ['key', 'value'],
+  Teachers: ['email', 'name', 'role', 'status', 'expiresAt', 'quotaGB', 'note', 'createdAt', 'pinSalt', 'pinHash'],
   Courses: ['courseCode', 'title', 'section', 'term', 'schedule', 'credits', 'teacher',
-    'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks', 'syllabus', 'syllabusUpdatedAt'],
+    'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks', 'syllabus', 'syllabusUpdatedAt', 'owners'],
   Students: ['courseCode', 'studentId', 'name', 'group', 'email', 'boundAt', 'nickname', 'phone', 'note'],
   Assignments: ['id', 'courseCode', 'title', 'description', 'maxScore', 'dueAt', 'allowLate', 'published', 'createdAt',
     'groupMax', 'half'],
@@ -465,14 +471,17 @@ function domainAllowed_(email, domains) {
 }
 
 /**
- * อาจารย์ = อีเมลอยู่ใน Settings.teacherEmails
+ * อาจารย์ = อีเมลอยู่ในแท็บ Teachers และไม่ถูกปิดบัญชี (role admin = ผู้ดูแลระบบ) — เห็นเฉพาะวิชาที่ตัวเองสอน (Courses.owners)
  * นักศึกษา = บัญชีโดเมนมหาวิทยาลัย (Settings.allowedDomains) ที่สมัครแล้ว คือผูกกับรหัสนักศึกษาในแท็บ Students
  *   ยังไม่สมัคร → studentId = null และเว็บจะแสดงหน้าสมัคร (apiRegister_)
  */
 function resolveUser_(ident) {
   var email = ident.email;
-  if (listSetting_('teacherEmails').indexOf(email) >= 0) {
-    return { email: email, name: ident.name, role: 'teacher', courses: [] };
+  var t = teacherRow_(email);
+  if (t && t.status !== 'disabled') {
+    var admin = t.role === 'admin';
+    return { email: email, name: ident.name || t.name, role: 'teacher', admin: admin, expiresAt: t.expiresAt,
+      expired: !admin && teacherExpired_(t), courses: [] };
   }
   var domains = listSetting_('allowedDomains');
   if (!domains.length) throw new Error('AUTH_DOMAIN: ระบบยังไม่เปิดรับนักศึกษา (อาจารย์ยังไม่ได้ตั้งค่าโดเมนมหาวิทยาลัย)');
@@ -524,16 +533,17 @@ function hashPin_(salt, pin) {
     Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + ':' + pin, Utilities.Charset.UTF_8));
 }
 
-function hasDeletePin_() {
-  return !!settings_().deletePinHash;
+function hasDeletePin_(user) {
+  var t = teacherRow_(user.email);
+  return !!(t && t.pinHash);
 }
 
 /** ผิดเกิน 5 ครั้ง/ชม. ต่อบัญชี → ล็อก 1 ชม. */
 function checkDeletePin_(user, pin) {
-  if (!hasDeletePin_()) throw new Error('ยังไม่ได้ตั้ง PIN สำหรับลบ — ตั้งได้ที่แท็บ ตั้งค่า');
+  if (!hasDeletePin_(user)) throw new Error('ยังไม่ได้ตั้ง PIN สำหรับลบ — ตั้งได้ที่แท็บ ตั้งค่า');
   var hit = rateLimit_('pin_' + user.email, 5, 3600, 'ใส่ PIN ผิดหลายครั้งเกินไป กรุณารอ 1 ชั่วโมง');
-  var s = settings_();
-  if (hashPin_(s.deletePinSalt || '', String(pin || '')) !== s.deletePinHash) {
+  var t = teacherRow_(user.email);
+  if (hashPin_(t.pinSalt || '', String(pin || '')) !== t.pinHash) {
     hit();
     throw new Error('PIN ไม่ถูกต้อง');
   }
@@ -615,7 +625,12 @@ function actions_() {
     gradebook: apiGradebook_,
     updateCourse: apiUpdateCourse_,
     getSettings: apiGetSettings_,
-    updateSettings: apiUpdateSettings_
+    updateSettings: apiUpdateSettings_,
+    setCourseOwners: apiSetCourseOwners_,
+    // ผู้ดูแลระบบ
+    adminOverview: apiAdminOverview_,
+    adminSaveTeacher: apiAdminSaveTeacher_,
+    adminRemoveTeacher: apiAdminRemoveTeacher_
   };
 }
 
@@ -736,14 +751,16 @@ function studentView_(r) {
 }
 
 function checkEnrolled_(user, courseCode) {
-  if (user.role === 'teacher') return;
+  if (user.role === 'teacher') {
+    if (!ownsCourse_(user, courseRow_(courseCode))) throw new Error('ไม่พบวิชา ' + courseCode);
+    return;
+  }
   if (user.courses.indexOf(courseCode) < 0) throw new Error('คุณไม่ได้ลงทะเบียนวิชานี้');
 }
 
 function settingsView_() {
   var s = settings_();
   return {
-    teacherEmails: listSetting_('teacherEmails'),
     allowedDomains: listSetting_('allowedDomains'),
     allowedOrigins: String(s.allowedOrigins || '').split(/[,\s]+/).filter(Boolean),
     gradeCutoffs: jsonSetting_('gradeCutoffs', Grade.DEFAULT_CUTOFFS),
@@ -751,7 +768,7 @@ function settingsView_() {
     attendanceRules: jsonSetting_('attendanceRules', Grade.DEFAULT_ATTENDANCE_RULES),
     uploadMaxMB: Number(s.uploadMaxMB) || 2048,
     allowNameRegistration: s.allowNameRegistration === 'true',
-    hasDeletePin: !!s.deletePinHash
+    hasDeletePin: false
   };
 }
 
@@ -832,9 +849,15 @@ function scoreInRange_(v, max, label) {
 /* ---------- ทุกคน ---------- */
 
 function apiMe_(user) {
-  var courses = rows_('Courses').map(courseView_);
+  var courses;
   if (user.role === 'student') {
-    courses = courses.filter(function (c) { return user.courses.indexOf(c.courseCode) >= 0; });
+    courses = rows_('Courses').map(courseView_).filter(function (c) { return user.courses.indexOf(c.courseCode) >= 0; });
+  } else {
+    courses = rows_('Courses').filter(function (c) { return ownsCourse_(user, c); }).map(function (c) {
+      var v = courseView_(c);
+      v.owners = courseOwners_(c);
+      return v;
+    });
   }
   return {
     email: user.email,
@@ -845,7 +868,10 @@ function apiMe_(user) {
     needsBinding: user.role === 'student' && !user.studentId,
     courses: courses,
     registration: user.role === 'student' && !user.studentId ? registrationInfo_(user) : null,
-    warnings: user.role === 'teacher' ? setupWarnings_() : []
+    warnings: user.role === 'teacher' ? setupWarnings_() : [],
+    admin: !!user.admin,
+    expiresAt: user.role === 'teacher' ? user.expiresAt || '' : '',
+    expired: !!user.expired
   };
 }
 
@@ -992,13 +1018,18 @@ function apiImportRoster_(user, p) {
 
   var course = find_(rows_('Courses'), function (r) { return r.courseCode === code; });
   var fields = ['title', 'section', 'term', 'schedule', 'credits', 'teacher'];
+  if (course && !ownsCourse_(user, course)) {
+    throw new Error('รหัสวิชา ' + code + ' มีอาจารย์ท่านอื่นใช้อยู่ — ถ้าสอนร่วมกัน ให้อาจารย์ผู้สอนเพิ่มคุณเป็นผู้สอนร่วม' +
+      ' ถ้าสอนคนละตอนเรียน ให้เติมตอนเรียนต่อท้ายรหัส เช่น ' + code + '-02');
+  }
   if (!course) {
     course = {
       courseCode: code, weights: JSON.stringify(Grade.DEFAULT_WEIGHTS), maxMidterm: '100', maxFinal: '100',
-      gradesVisible: 'false', heldWeeks: '[]'
+      gradesVisible: 'false', heldWeeks: '[]', owners: '[]'
     };
     fields.forEach(function (f) { course[f] = str_(c[f], 200); });
     insert_('Courses', course);
+    setCourseOwners_(course, [user.email]);
   } else {
     fields.forEach(function (f) { if (c[f]) course[f] = str_(c[f], 200); });
     update_('Courses', course);
@@ -1037,13 +1068,13 @@ function apiImportRoster_(user, p) {
 }
 
 function apiListStudents_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   return rosterOf_(p.courseCode).map(studentView_);
 }
 
 /** บันทึกของอาจารย์ต่อนักศึกษา 1 คนในวิชานี้ (เช่น เรียนอ่อน ปัญหาสุขภาพ) — นักศึกษาไม่เห็น */
 function apiSetStudentNote_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var r = studentRow_(p.courseCode, str_(p.studentId, 20));
   if (!r) throw new Error('ไม่พบรหัส ' + p.studentId + ' ในรายชื่อวิชา ' + p.courseCode);
   r.note = str_(p.note, 2000);
@@ -1052,8 +1083,9 @@ function apiSetStudentNote_(user, p) {
 }
 
 function apiSetStudentEmail_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var id = str_(p.studentId);
+  if (!studentRow_(p.courseCode, id)) throw new Error('ไม่พบรหัส ' + id + ' ในรายชื่อวิชา ' + p.courseCode);
   var email = str_(p.email, 200).toLowerCase();
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('อีเมลไม่ถูกต้อง');
   var rows = rows_('Students');
@@ -1068,8 +1100,7 @@ function apiSetStudentEmail_(user, p) {
 }
 
 function apiAddStudent_(user, p) {
-  requireTeacher_(user);
-  courseRow_(p.courseCode);
+  requireCourseTeacher_(user, p.courseCode);
   var id = str_(p.studentId, 20);
   var name = str_(p.name, 200);
   if (!/^\d{8,13}$/.test(id)) throw new Error('รหัสนักศึกษาต้องเป็นตัวเลข 8–13 หลัก');
@@ -1094,8 +1125,7 @@ function apiAddStudent_(user, p) {
  * preview: true = นับจำนวนที่จะถูกลบ ไม่ต้องใส่ PIN · trashFiles: ย้ายโฟลเดอร์งานใน Drive ไปถังขยะด้วย (กู้คืนได้ 30 วัน)
  */
 function apiDeleteCourse_(user, p) {
-  requireTeacher_(user);
-  var code = courseRow_(p.courseCode).courseCode;
+  var code = requireCourseTeacher_(user, p.courseCode).courseCode;
   var ids = {};
   rows_('Assignments').forEach(function (a) { if (a.courseCode === code) ids[a.id] = true; });
   var inCourse = function (r) { return r.courseCode === code; };
@@ -1119,12 +1149,14 @@ function apiDeleteCourse_(user, p) {
   remove_('LeaveRequests', inCourse);
   remove_('Students', inCourse);
   remove_('Courses', inCourse);
+  remove_('Settings', function (r) { return r.key === checkinKey_(code); });
+  _cache.settings = null;
   counts.filesTrashed = p.trashFiles ? trashCourseFolder_(code) : false;
   return counts;
 }
 
 function apiRemoveStudent_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var row = find_(rosterOf_(p.courseCode), function (r) { return r.studentId === p.studentId; });
   var email = row && row.email ? row.email.toLowerCase() : '';
   var n = remove_('Students', function (r) { return r.courseCode === p.courseCode && r.studentId === p.studentId; });
@@ -1150,7 +1182,7 @@ function apiRemoveStudent_(user, p) {
 /* ---------- อาจารย์: งาน ---------- */
 
 function apiListAssignments_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var roster = rosterOf_(p.courseCode).length;
   var subs = rows_('Submissions');
   return rows_('Assignments')
@@ -1178,8 +1210,7 @@ function apiListAssignments_(user, p) {
 }
 
 function apiUpsertAssignment_(user, p) {
-  requireTeacher_(user);
-  courseRow_(p.courseCode);
+  requireCourseTeacher_(user, p.courseCode);
   var title = str_(p.title, 200);
   if (!title) throw new Error('กรุณาใส่ชื่องาน');
   var max = numOrNull_(p.maxScore);
@@ -1211,7 +1242,7 @@ function apiUpsertAssignment_(user, p) {
 
 function apiDeleteAssignment_(user, p) {
   requireTeacher_(user);
-  assignmentRow_(p.id);
+  checkEnrolled_(user, assignmentRow_(p.id).courseCode);
   var hasFiles = rows_('Submissions').some(function (s) {
     return s.assignmentId === p.id && (parseJson_(s.files, []).length || s.link);
   });
@@ -1226,6 +1257,7 @@ function apiDeleteAssignment_(user, p) {
 function apiListSubmissions_(user, p) {
   requireTeacher_(user);
   var a = assignmentRow_(p.assignmentId);
+  checkEnrolled_(user, a.courseCode);
   var group = isGroupWork_(a);
   return {
     assignment: assignmentView_(a),
@@ -1245,6 +1277,7 @@ function apiListSubmissions_(user, p) {
 function apiSaveGrades_(user, p) {
   requireTeacher_(user);
   var a = assignmentRow_(p.assignmentId);
+  checkEnrolled_(user, a.courseCode);
   var max = Number(a.maxScore);
   var subs = rows_('Submissions');
   var t = now_();
@@ -1268,7 +1301,7 @@ function apiSaveGrades_(user, p) {
 /* ---------- อาจารย์: เช็คชื่อ / สอบ ---------- */
 
 function apiGetAttendance_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var c = courseView_(courseRow_(p.courseCode));
   var att = {};
   rows_('Attendance').forEach(function (r) { if (r.courseCode === p.courseCode) att[r.studentId] = marksOf_(r); });
@@ -1286,8 +1319,7 @@ function apiGetAttendance_(user, p) {
 }
 
 function apiSaveAttendance_(user, p) {
-  requireTeacher_(user);
-  var course = courseRow_(p.courseCode);
+  var course = requireCourseTeacher_(user, p.courseCode);
   var rows = rows_('Attendance');
   (p.rows || []).forEach(function (it) {
     checkInRoster_(p.courseCode, it.studentId);
@@ -1327,8 +1359,7 @@ function updateHeldWeeks_(course) {
  * ช่องอื่นไม่ถูกแตะ — ส่งซ้ำได้ (เช่น กู้คืนจากเครื่องแล้วส่งใหม่) และไม่ทับ "ลา" ที่อนุมัติระหว่างนั้น
  */
 function apiSetAttendanceMarks_(user, p) {
-  requireTeacher_(user);
-  var course = courseRow_(p.courseCode);
+  var course = requireCourseTeacher_(user, p.courseCode);
   var changes = p.changes || [];
   if (changes.length > 5000) throw new Error('เปลี่ยนพร้อมกันมากเกินไป');
   var roster = Object.create(null);
@@ -1358,7 +1389,7 @@ function apiSetAttendanceMarks_(user, p) {
 }
 
 function apiGetExams_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var c = courseView_(courseRow_(p.courseCode));
   var ex = {};
   rows_('Exams').forEach(function (r) { if (r.courseCode === p.courseCode) ex[r.studentId] = r; });
@@ -1376,8 +1407,7 @@ function apiGetExams_(user, p) {
 }
 
 function apiSaveExams_(user, p) {
-  requireTeacher_(user);
-  var course = courseRow_(p.courseCode);
+  var course = requireCourseTeacher_(user, p.courseCode);
   var maxM = numOrNull_(p.maxMidterm), maxF = numOrNull_(p.maxFinal);
   if (!(maxM > 0) || !(maxF > 0)) throw new Error('คะแนนเต็มสอบต้องมากกว่า 0');
   course.maxMidterm = String(maxM);
@@ -1404,7 +1434,7 @@ function apiSaveExams_(user, p) {
 /* ---------- อาจารย์: สมุดคะแนน / ตั้งค่า ---------- */
 
 function apiGradebook_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var d = courseData_(p.courseCode);
   return {
     course: d.course,
@@ -1428,8 +1458,7 @@ function apiGradebook_(user, p) {
 }
 
 function apiUpdateCourse_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   if (p.weights) {
     var w = {};
     Grade.PARTS.forEach(function (k) {
@@ -1447,17 +1476,17 @@ function apiUpdateCourse_(user, p) {
 
 function apiGetSettings_(user) {
   requireTeacher_(user);
-  return settingsView_();
+  var v = settingsView_();
+  v.hasDeletePin = hasDeletePin_(user);
+  v.canEdit = !!user.admin;
+  return v;
 }
 
 function apiUpdateSettings_(user, p) {
   requireTeacher_(user);
+  // อาจารย์ทั่วไปเปลี่ยนได้แค่ PIN ของตัวเอง · ค่าอื่นใช้ร่วมกันทั้งระบบ = ผู้ดูแลระบบเท่านั้น
+  if (!user.admin && Object.keys(p).some(function (k) { return k !== 'deletePin'; })) requireAdmin_(user);
   var updates = {};
-  if (p.teacherEmails) {
-    var t = p.teacherEmails.map(function (e) { return str_(e).toLowerCase(); }).filter(Boolean);
-    if (t.indexOf(user.email) < 0) throw new Error('ต้องมีอีเมลของคุณเองอยู่ในรายชื่ออาจารย์');
-    updates.teacherEmails = t.join(',');
-  }
   if (p.allowedDomains) updates.allowedDomains = p.allowedDomains.map(function (d) { return str_(d).toLowerCase().replace(/^@/, ''); }).filter(Boolean).join(',');
   if (p.allowedOrigins) updates.allowedOrigins = p.allowedOrigins.map(function (o) { return str_(o).replace(/\/+$/, ''); }).filter(Boolean).join(',');
   if (p.gradeCutoffs) {
@@ -1475,13 +1504,16 @@ function apiUpdateSettings_(user, p) {
     updates.attendancePoints = JSON.stringify(pts);
   }
   if (p.deletePin) {
-    // เปลี่ยน PIN ต้องใส่ PIN เดิมก่อน (ลืม PIN: ลบค่า deletePinHash ในแท็บ Settings ของ Google Sheet)
-    if (hasDeletePin_()) checkDeletePin_(user, p.deletePin.current);
+    // เปลี่ยน PIN ต้องใส่ PIN เดิมก่อน (ลืม PIN: ผู้ดูแลระบบรีเซ็ตให้ได้ที่หน้าผู้ดูแลระบบ)
+    if (hasDeletePin_(user)) checkDeletePin_(user, p.deletePin.current);
     var pin = str_(p.deletePin.next, 20);
     if (!/^\d{4,8}$/.test(pin)) throw new Error('PIN ต้องเป็นตัวเลข 4–8 หลัก');
-    updates.deletePinSalt = uid_('P');
-    updates.deletePinHash = hashPin_(updates.deletePinSalt, pin);
+    var me = teacherRow_(user.email);
+    me.pinSalt = uid_('P');
+    me.pinHash = hashPin_(me.pinSalt, pin);
+    update_('Teachers', me);
   }
+
   if (p.allowNameRegistration !== undefined) updates.allowNameRegistration = p.allowNameRegistration ? 'true' : 'false';
   if (p.attendanceRules) {
     var ar = {};
@@ -1508,7 +1540,7 @@ function apiUpdateSettings_(user, p) {
     }
   });
   _cache.settings = null;
-  return settingsView_();
+  return apiGetSettings_(user);
 }
 
 // ===== server/Upload.js =====
@@ -1599,6 +1631,7 @@ function apiStartUpload_(user, p) {
   if (settingsView_().allowedOrigins.indexOf(origin) < 0) {
     throw new Error('เว็บไซต์ ' + origin + ' ไม่ได้รับอนุญาตให้อัปโหลด (ตั้งค่า allowedOrigins)');
   }
+  checkQuota_(a.courseCode, size);
 
   var st = studentRow_(a.courseCode, user.studentId);
   var folderId = submissionFolderId_(a, t.folderName);
@@ -1786,6 +1819,14 @@ function shareAnyoneReader_(id) {
   var res = driveFetch_('post', 'https://www.googleapis.com/drive/v3/files/' + id + '/permissions',
     { role: 'reader', type: 'anyone' });
   if (res.getResponseCode() !== 200) console.warn('share anyone failed ' + id + ': ' + res.getContentText());
+}
+
+/** แชร์ (on) / ถอน (off) สิทธิ์ดูโฟลเดอร์ <root>/<รหัสวิชา> ให้อาจารย์ผู้สอน — ไฟล์ข้างในได้สิทธิ์ตามโฟลเดอร์ */
+function shareCourseFolder_(courseCode, email, on) {
+  var root = settings_().rootFolderId;
+  if (!root || email === Session.getEffectiveUser().getEmail().toLowerCase()) return;
+  var id = ensureFolder_(root, courseCode);
+  if (on) shareReader_(id, email); else unshareReader_(id, email);
 }
 
 /** ย้ายโฟลเดอร์ <root>/<รหัสวิชา> ไปถังขยะ — คืน true ถ้าพบโฟลเดอร์ */
@@ -2046,6 +2087,7 @@ function apiLeaveGroup_(user, p) {
 function apiDeleteGroup_(user, p) {
   requireTeacher_(user);
   var g = groupRow_(p.groupId);
+  checkEnrolled_(user, assignmentRow_(g.assignmentId).courseCode);
   if (hasWork_(groupSubmissionRow_(g.id))) throw new Error('กลุ่มนี้ส่งงานแล้ว ลบไม่ได้ — ย้ายสมาชิกไปกลุ่มอื่นแทน');
   remove_('Submissions', function (s) { return s.groupId === g.id && !s.studentId; });
   remove_('Groups', function (x) { return x.id === g.id; });
@@ -2103,8 +2145,7 @@ function apiGetSyllabus_(user, p) {
 
 /** บันทึกเนื้อหา (ไฟล์แนบจัดการแยกด้วยคำสั่งด้านล่าง) */
 function apiSaveSyllabus_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   var cur = syllabusOf_(c);
   var inp = p.syllabus || {};
   Object.keys(SYLLABUS_TEXT_FIELDS).forEach(function (k) {
@@ -2121,8 +2162,7 @@ function apiSaveSyllabus_(user, p) {
 }
 
 function apiAddSyllabusLink_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   var s = syllabusOf_(c);
   if (s.attachments.length >= SYLLABUS_MAX_ATTACHMENTS) throw new Error('แนบได้สูงสุด ' + SYLLABUS_MAX_ATTACHMENTS + ' รายการ');
   var url = str_(p.url, 2000);
@@ -2133,13 +2173,13 @@ function apiAddSyllabusLink_(user, p) {
 }
 
 function apiStartSyllabusUpload_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   if (syllabusOf_(c).attachments.length >= SYLLABUS_MAX_ATTACHMENTS) throw new Error('แนบได้สูงสุด ' + SYLLABUS_MAX_ATTACHMENTS + ' รายการ');
   var size = Number(p.size);
   var maxMB = settingsView_().uploadMaxMB;
   if (!(size > 0)) throw new Error('ไฟล์ว่างเปล่า');
   if (size > maxMB * 1024 * 1024) throw new Error('ไฟล์ใหญ่เกิน ' + maxMB + ' MB');
+  checkQuota_(c.courseCode, size);
   var origin = String(p.origin || '').replace(/\/+$/, '');
   if (settingsView_().allowedOrigins.indexOf(origin) < 0) {
     throw new Error('เว็บไซต์ ' + origin + ' ไม่ได้รับอนุญาตให้อัปโหลด (ตั้งค่า allowedOrigins)');
@@ -2158,8 +2198,7 @@ function apiStartSyllabusUpload_(user, p) {
 }
 
 function apiFinalizeSyllabusUpload_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   var f = getDriveFile_(String(p.fileId || ''));
   if (!f || f.trashed || (f.appProperties || {}).syllabusOf !== c.courseCode) throw new Error('ไม่พบไฟล์ที่อัปโหลด');
   var s = syllabusOf_(c);
@@ -2172,8 +2211,7 @@ function apiFinalizeSyllabusUpload_(user, p) {
 }
 
 function apiRemoveSyllabusAttachment_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   var s = syllabusOf_(c);
   var hit = find_(s.attachments, function (x) { return x.id === p.id; });
   if (!hit) throw new Error('ไม่พบไฟล์แนบ');
@@ -2429,7 +2467,7 @@ var AT_RISK_MISSING = 2;
 var AT_RISK_ATTENDANCE = 80;
 
 function apiTeacherDashboard_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var d = courseData_(p.courseCode);
   var roster = rosterOf_(p.courseCode);
   var published = publishedOf_(p.courseCode);
@@ -2581,6 +2619,7 @@ function apiStartLeaveUpload_(user, p) {
   var size = Number(p.size);
   if (!(size > 0)) throw new Error('ไฟล์ว่างเปล่า');
   if (size > LEAVE_MAX_MB * 1024 * 1024) throw new Error('ไฟล์แนบใบลาต้องไม่เกิน ' + LEAVE_MAX_MB + ' MB');
+  checkQuota_(r.courseCode, size);
   var origin = String(p.origin || '').replace(/\/+$/, '');
   if (settingsView_().allowedOrigins.indexOf(origin) < 0) {
     throw new Error('เว็บไซต์ ' + origin + ' ไม่ได้รับอนุญาตให้อัปโหลด (ตั้งค่า allowedOrigins)');
@@ -2629,8 +2668,7 @@ function apiCancelLeave_(user, p) {
 /* ---------- อาจารย์ ---------- */
 
 function apiListLeaves_(user, p) {
-  requireTeacher_(user);
-  courseRow_(p.courseCode);
+  requireCourseTeacher_(user, p.courseCode);
   return rows_('LeaveRequests')
     .filter(function (r) { return r.courseCode === p.courseCode; })
     .sort(function (a, b) {
@@ -2645,6 +2683,7 @@ function apiListLeaves_(user, p) {
 function apiDecideLeave_(user, p) {
   requireTeacher_(user);
   var r = leaveRow_(p.leaveId);
+  checkEnrolled_(user, r.courseCode);
   if (LEAVE_STATUS.indexOf(p.status) < 0) throw new Error('สถานะไม่ถูกต้อง');
   var att = find_(rows_('Attendance'), function (x) { return x.courseCode === r.courseCode && x.studentId === r.studentId; });
   var key = 'w' + r.week;
@@ -2753,8 +2792,7 @@ function checkinView_(code, s) {
 /* ---------- อาจารย์ ---------- */
 
 function apiOpenCheckIn_(user, p) {
-  requireTeacher_(user);
-  courseRow_(p.courseCode);
+  requireCourseTeacher_(user, p.courseCode);
   var week = Number(p.week);
   if (!(week >= 1 && week <= Grade.WEEKS && week === Math.floor(week))) throw new Error('สัปดาห์ไม่ถูกต้อง');
   var late = Number(p.lateAfterMin);
@@ -2769,14 +2807,13 @@ function apiOpenCheckIn_(user, p) {
 }
 
 function apiCheckInStatus_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   return checkinView_(p.courseCode, checkinSession_(p.courseCode));
 }
 
 /** ปิดรอบ: markAbsent = true → ช่องที่ยังว่างในสัปดาห์นั้นเป็น "ขาด" */
 function apiCloseCheckIn_(user, p) {
-  requireTeacher_(user);
-  var course = courseRow_(p.courseCode);
+  var course = requireCourseTeacher_(user, p.courseCode);
   var s = checkinSession_(p.courseCode);
   if (!s) throw new Error('ไม่มีรอบเช็คชื่อที่เปิดอยู่');
   var absent = 0;
@@ -2844,6 +2881,237 @@ function apiCheckIn_(user, p) {
   });
 }
 
+// ===== server/Teachers.js =====
+/*
+ * Teachers — บัญชีอาจารย์ ผู้ดูแลระบบ และสิทธิ์ต่อวิชา
+ * แท็บ Teachers: role admin = ผู้ดูแลระบบ (จัดการบัญชีอาจารย์และการตั้งค่ารวมได้) · teacher = อาจารย์ทั่วไป
+ *   status disabled = เข้าระบบไม่ได้ · expiresAt (YYYY-MM-DD) หมดอายุแล้ว = ดูได้อย่างเดียว · quotaGB ว่าง = ไม่จำกัด
+ * Courses.owners = อีเมลอาจารย์ผู้สอน (JSON) คนแรก = เจ้าของพื้นที่ Drive ของวิชา
+ * อาจารย์เข้าถึงได้เฉพาะวิชาที่มีชื่อตัวเองใน owners — ผู้ดูแลระบบก็เช่นกัน (โอนวิชาได้ที่หน้าผู้ดูแลระบบ)
+ */
+
+var TEACHER_ROLES = ['admin', 'teacher'];
+var TEACHER_STATUS = ['active', 'disabled'];
+var MAX_COURSE_OWNERS = 10;
+
+function teacherRow_(email) {
+  email = String(email || '').toLowerCase();
+  return find_(rows_('Teachers'), function (r) { return r.email.toLowerCase() === email; });
+}
+
+/** หมดอายุหลังสิ้นวัน expiresAt ตามเวลาไทย */
+function teacherExpired_(t) {
+  return !!t.expiresAt && new Date(now_()).getTime() > new Date(t.expiresAt + 'T23:59:59+07:00').getTime();
+}
+
+function courseOwners_(c) {
+  return parseJson_(c.owners, []);
+}
+
+function ownsCourse_(user, c) {
+  return user.role === 'teacher' && courseOwners_(c).indexOf(user.email) >= 0;
+}
+
+/** อาจารย์ที่สอนวิชานี้เท่านั้น — วิชาของคนอื่นตอบเหมือนไม่มีวิชานี้ */
+function requireCourseTeacher_(user, code) {
+  requireTeacher_(user);
+  var c = courseRow_(code);
+  if (!ownsCourse_(user, c)) throw new Error('ไม่พบวิชา ' + code);
+  return c;
+}
+
+function requireAdmin_(user) {
+  requireTeacher_(user);
+  if (!user.admin) throw new Error('เฉพาะผู้ดูแลระบบเท่านั้น');
+}
+
+function cleanEmail_(e) {
+  var email = str_(e, 200).toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('อีเมลไม่ถูกต้อง: ' + (e || '(ว่าง)'));
+  return email;
+}
+
+/* ---------- พื้นที่ Drive ---------- */
+
+function filesSize_(json) {
+  return parseJson_(json, []).reduce(function (n, f) { return n + (Number(f.size) || 0); }, 0);
+}
+
+/** ไบต์ที่ใช้ต่อวิชา (งานที่ส่ง + ใบลา + ไฟล์ syllabus) */
+function courseUsage_() {
+  var byCourse = {};
+  var add = function (code, n) { byCourse[code] = (byCourse[code] || 0) + n; };
+  var courseOf = {};
+  rows_('Assignments').forEach(function (a) { courseOf[a.id] = a.courseCode; });
+  rows_('Submissions').forEach(function (s) { if (courseOf[s.assignmentId]) add(courseOf[s.assignmentId], filesSize_(s.files)); });
+  rows_('LeaveRequests').forEach(function (r) { add(r.courseCode, filesSize_(r.files)); });
+  rows_('Courses').forEach(function (c) {
+    add(c.courseCode, (parseJson_(c.syllabus, {}).attachments || []).reduce(function (n, f) { return n + (Number(f.size) || 0); }, 0));
+  });
+  return byCourse;
+}
+
+/** ไบต์ที่อาจารย์แต่ละคนใช้ — นับวิชาเข้ากับเจ้าของพื้นที่ (owners คนแรก) */
+function teacherUsage_() {
+  var byCourse = courseUsage_();
+  var byTeacher = {};
+  rows_('Courses').forEach(function (c) {
+    var o = courseOwners_(c)[0];
+    if (o) byTeacher[o] = (byTeacher[o] || 0) + (byCourse[c.courseCode] || 0);
+  });
+  return byTeacher;
+}
+
+/** ก่อนเริ่มอัปโหลดไฟล์เข้าวิชานี้ — เกินโควตาของเจ้าของพื้นที่ = ไม่ให้อัป */
+function checkQuota_(courseCode, size) {
+  var o = courseOwners_(courseRow_(courseCode))[0];
+  var t = o && teacherRow_(o);
+  var gb = t ? Number(t.quotaGB) : 0;
+  if (!(gb > 0)) return;
+  var used = teacherUsage_()[o] || 0;
+  if (used + Number(size || 0) > gb * 1024 * 1024 * 1024) {
+    throw new Error('พื้นที่เก็บไฟล์ของวิชานี้เต็ม (' + gb + ' GB) — แจ้งอาจารย์ผู้สอน');
+  }
+}
+
+/* ---------- ผู้สอนร่วม ---------- */
+
+function setCourseOwners_(c, owners) {
+  var before = courseOwners_(c);
+  c.owners = JSON.stringify(owners);
+  update_('Courses', c);
+  owners.forEach(function (e) { if (before.indexOf(e) < 0) shareCourseFolder_(c.courseCode, e, true); });
+  before.forEach(function (e) { if (owners.indexOf(e) < 0) shareCourseFolder_(c.courseCode, e, false); });
+}
+
+/** { courseCode, owners: [email] } — ผู้สอนของวิชา หรือผู้ดูแลระบบ */
+function apiSetCourseOwners_(user, p) {
+  requireTeacher_(user);
+  var c = courseRow_(p.courseCode);
+  if (!user.admin && !ownsCourse_(user, c)) throw new Error('ไม่พบวิชา ' + p.courseCode);
+  var owners = [];
+  (p.owners || []).forEach(function (e) {
+    e = cleanEmail_(e);
+    var t = teacherRow_(e);
+    if (!t || t.status === 'disabled') throw new Error(e + ' ยังไม่มีบัญชีอาจารย์ในระบบ — ให้ผู้ดูแลระบบเพิ่มก่อน');
+    if (owners.indexOf(e) < 0) owners.push(e);
+  });
+  if (!owners.length) throw new Error('วิชาต้องมีอาจารย์ผู้สอนอย่างน้อย 1 คน');
+  if (owners.length > MAX_COURSE_OWNERS) throw new Error('มีผู้สอนได้สูงสุด ' + MAX_COURSE_OWNERS + ' คน');
+  setCourseOwners_(c, owners);
+  return { courseCode: c.courseCode, owners: owners, removedSelf: owners.indexOf(user.email) < 0 };
+}
+
+/* ---------- ผู้ดูแลระบบ ---------- */
+
+function teacherView_(t, usage, courses) {
+  return {
+    email: t.email, name: t.name, role: t.role, status: t.status || 'active', expiresAt: t.expiresAt,
+    expired: t.role !== 'admin' && teacherExpired_(t), quotaGB: numOrNull_(t.quotaGB), note: t.note, createdAt: t.createdAt,
+    hasPin: !!t.pinHash, usedBytes: usage[t.email.toLowerCase()] || 0,
+    courses: courses.filter(function (c) { return courseOwners_(c).indexOf(t.email.toLowerCase()) >= 0; })
+      .map(function (c) { return c.courseCode; })
+  };
+}
+
+function apiAdminOverview_(user) {
+  requireAdmin_(user);
+  var usage = teacherUsage_();
+  var byCourse = courseUsage_();
+  var courses = rows_('Courses');
+  var counts = {};
+  rows_('Students').forEach(function (r) { counts[r.courseCode] = (counts[r.courseCode] || 0) + 1; });
+  return {
+    me: user.email,
+    teachers: rows_('Teachers').map(function (t) { return teacherView_(t, usage, courses); })
+      .sort(function (a, b) { return a.email < b.email ? -1 : 1; }),
+    courses: courses.map(function (c) {
+      return {
+        courseCode: c.courseCode, title: c.title, section: c.section, term: c.term,
+        owners: courseOwners_(c), students: counts[c.courseCode] || 0, usedBytes: byCourse[c.courseCode] || 0
+      };
+    }).sort(function (a, b) { return a.courseCode < b.courseCode ? -1 : 1; })
+  };
+}
+
+/** เพิ่ม/แก้บัญชีอาจารย์ { email, name, role, status, expiresAt, quotaGB, note, resetPin } */
+function apiAdminSaveTeacher_(user, p) {
+  requireAdmin_(user);
+  var email = cleanEmail_(p.email);
+  var role = p.role || 'teacher';
+  var status = p.status || 'active';
+  if (TEACHER_ROLES.indexOf(role) < 0) throw new Error('บทบาทไม่ถูกต้อง');
+  if (TEACHER_STATUS.indexOf(status) < 0) throw new Error('สถานะไม่ถูกต้อง');
+  var expiresAt = str_(p.expiresAt, 10);
+  if (expiresAt && !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)) throw new Error('วันหมดอายุไม่ถูกต้อง');
+  var quota = p.quotaGB === null || p.quotaGB === undefined || p.quotaGB === '' ? '' : numOrNull_(p.quotaGB);
+  if (quota !== '' && !(quota > 0)) throw new Error('โควตาต้องมากกว่า 0 GB (เว้นว่าง = ไม่จำกัด)');
+  if (email === user.email && (role !== 'admin' || status !== 'active')) {
+    throw new Error('ลดสิทธิ์หรือปิดบัญชีของตัวเองไม่ได้ — ให้ผู้ดูแลระบบคนอื่นทำ');
+  }
+  if (rows_('Students').some(function (r) { return r.email.toLowerCase() === email; })) {
+    throw new Error(email + ' ผูกกับนักศึกษาอยู่ — ใช้อีเมลอื่น');
+  }
+  var t = teacherRow_(email);
+  if (!t) {
+    t = { email: email, createdAt: now_(), pinSalt: '', pinHash: '' };
+  }
+  t.name = str_(p.name, 200);
+  t.role = role;
+  t.status = status;
+  t.expiresAt = expiresAt;
+  t.quotaGB = quota === '' ? '' : String(quota);
+  t.note = str_(p.note, 1000);
+  if (p.resetPin) { t.pinSalt = ''; t.pinHash = ''; }
+  update_('Teachers', t);
+  return teacherView_(t, teacherUsage_(), rows_('Courses'));
+}
+
+/** ลบบัญชีได้เมื่อไม่ได้สอนวิชาใดแล้ว (ปิดบัญชีแทนได้ ข้อมูลไม่หาย) */
+function apiAdminRemoveTeacher_(user, p) {
+  requireAdmin_(user);
+  var email = cleanEmail_(p.email);
+  if (email === user.email) throw new Error('ลบบัญชีของตัวเองไม่ได้');
+  var owned = rows_('Courses').filter(function (c) { return courseOwners_(c).indexOf(email) >= 0; });
+  if (owned.length) {
+    throw new Error('ยังสอนวิชา ' + owned.map(function (c) { return c.courseCode; }).join(', ') + ' อยู่ — โอนวิชาก่อน หรือปิดบัญชีแทน');
+  }
+  var n = remove_('Teachers', function (t) { return t.email.toLowerCase() === email; });
+  if (!n) throw new Error('ไม่พบบัญชีนี้');
+  return { removed: email };
+}
+
+/**
+ * ย้ายจากระบบเดิม (Settings.teacherEmails) — เรียกจาก setup()
+ * owner (เจ้าของสคริปต์) = ผู้ดูแลระบบ · วิชาที่ยังไม่มีผู้สอน = ทุกคนในรายชื่อเดิม (สิทธิ์เหมือนเดิม)
+ */
+function migrateTeachers_(owner) {
+  owner = String(owner || '').toLowerCase();
+  var legacy = listSetting_('teacherEmails');
+  if (owner && legacy.indexOf(owner) < 0) legacy.unshift(owner);
+  var s = settings_();
+  var made = 0;
+  if (!rows_('Teachers').length) {
+    legacy.forEach(function (e, i) {
+      var admin = e === owner || (!owner && i === 0);
+      insert_('Teachers', {
+        email: e, name: '', role: admin ? 'admin' : 'teacher', status: 'active', expiresAt: '', quotaGB: '',
+        note: 'ย้ายจากระบบเดิม', createdAt: now_(),
+        // PIN ลบวิชาเดิมเป็นของผู้ตั้ง (เจ้าของสคริปต์)
+        pinSalt: admin ? s.deletePinSalt || '' : '', pinHash: admin ? s.deletePinHash || '' : ''
+      });
+      made++;
+    });
+  }
+  var courses = 0;
+  rows_('Courses').forEach(function (c) {
+    if (courseOwners_(c).length) return;
+    setCourseOwners_(c, legacy.slice());
+    courses++;
+  });
+  return { teachers: made, courses: courses };
+}
+
 // ===== server/Setup.js =====
 /*
  * Setup — รันครั้งเดียวจากตัวแก้ไข Apps Script (เลือกฟังก์ชัน setup แล้วกด Run)
@@ -2877,7 +3145,6 @@ function setup() {
   resetCache_();
   var me = Session.getEffectiveUser().getEmail();
   var defaults = {
-    teacherEmails: me,
     allowedDomains: 'g.cmru.ac.th',
     allowedOrigins: 'https://robinrood.github.io',
     clientId: '',
@@ -2896,6 +3163,11 @@ function setup() {
       update_('Settings', r);
     }
   });
+
+  // บัญชีอาจารย์ + ผู้สอนของแต่ละวิชา (ย้ายจาก teacherEmails เดิม) — คุณ (เจ้าของสคริปต์) เป็นผู้ดูแลระบบ
+  _cache.settings = null;
+  var moved = migrateTeachers_(me);
+  if (moved.teachers || moved.courses) Logger.log('ย้ายบัญชีอาจารย์ ' + moved.teachers + ' คน · กำหนดผู้สอนให้ ' + moved.courses + ' วิชา');
 
   Logger.log('ตั้งค่าเสร็จแล้ว — ต่อไป: ใส่ clientId และ allowedDomains (โดเมนอีเมลมหาวิทยาลัย) ในแท็บ Settings แล้ว Deploy เป็น Web app');
 }

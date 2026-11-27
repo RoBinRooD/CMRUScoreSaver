@@ -374,3 +374,7 @@ footer.build { text-align: center; padding: 1.5rem 0 1rem; }
 .checkin-mark.L { background: var(--warn-soft); color: var(--warn); }
 .checkin-result > button { margin-top: 0.75rem; width: 100%; justify-content: center; }
 @media (max-width: 700px) { .proj-side { max-width: none; width: 100%; } }
+
+/* ผู้สอนของวิชา */
+.owner-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.25rem; }
+.owner-list li { padding: 0.35rem 0; border-bottom: 1px solid var(--border, #e5e5e5); }

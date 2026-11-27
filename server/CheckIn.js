@@ -82,8 +82,7 @@ function checkinView_(code, s) {
 /* ---------- อาจารย์ ---------- */
 
 function apiOpenCheckIn_(user, p) {
-  requireTeacher_(user);
-  courseRow_(p.courseCode);
+  requireCourseTeacher_(user, p.courseCode);
   var week = Number(p.week);
   if (!(week >= 1 && week <= Grade.WEEKS && week === Math.floor(week))) throw new Error('สัปดาห์ไม่ถูกต้อง');
   var late = Number(p.lateAfterMin);
@@ -98,14 +97,13 @@ function apiOpenCheckIn_(user, p) {
 }
 
 function apiCheckInStatus_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   return checkinView_(p.courseCode, checkinSession_(p.courseCode));
 }
 
 /** ปิดรอบ: markAbsent = true → ช่องที่ยังว่างในสัปดาห์นั้นเป็น "ขาด" */
 function apiCloseCheckIn_(user, p) {
-  requireTeacher_(user);
-  var course = courseRow_(p.courseCode);
+  var course = requireCourseTeacher_(user, p.courseCode);
   var s = checkinSession_(p.courseCode);
   if (!s) throw new Error('ไม่มีรอบเช็คชื่อที่เปิดอยู่');
   var absent = 0;

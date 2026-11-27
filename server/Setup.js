@@ -30,7 +30,6 @@ function setup() {
   resetCache_();
   var me = Session.getEffectiveUser().getEmail();
   var defaults = {
-    teacherEmails: me,
     allowedDomains: 'g.cmru.ac.th',
     allowedOrigins: 'https://robinrood.github.io',
     clientId: '',
@@ -49,6 +48,11 @@ function setup() {
       update_('Settings', r);
     }
   });
+
+  // บัญชีอาจารย์ + ผู้สอนของแต่ละวิชา (ย้ายจาก teacherEmails เดิม) — คุณ (เจ้าของสคริปต์) เป็นผู้ดูแลระบบ
+  _cache.settings = null;
+  var moved = migrateTeachers_(me);
+  if (moved.teachers || moved.courses) Logger.log('ย้ายบัญชีอาจารย์ ' + moved.teachers + ' คน · กำหนดผู้สอนให้ ' + moved.courses + ' วิชา');
 
   Logger.log('ตั้งค่าเสร็จแล้ว — ต่อไป: ใส่ clientId และ allowedDomains (โดเมนอีเมลมหาวิทยาลัย) ในแท็บ Settings แล้ว Deploy เป็น Web app');
 }

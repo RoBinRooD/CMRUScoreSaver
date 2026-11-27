@@ -112,7 +112,7 @@ test('tasks: create, move, assign, validate, delete', () => {
 
 test('tasks are removed with their group', () => {
   const b = loadBackend();
-  b.ok(T, 'setStudentEmail', { studentId: '69000102', email: '69000102@demo.ac.th' });
+  b.ok(T, 'setStudentEmail', { courseCode: 'DEMO2303', studentId: '69000102', email: '69000102@demo.ac.th' });
   b.ok('69000102@demo.ac.th', 'leaveGroup', { assignmentId: 'A4' });
   assert.equal(b.db().Tasks.length, 4, 'group still has a member');
   b.ok(S1, 'leaveGroup', { assignmentId: 'A4' });

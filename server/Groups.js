@@ -242,6 +242,7 @@ function apiLeaveGroup_(user, p) {
 function apiDeleteGroup_(user, p) {
   requireTeacher_(user);
   var g = groupRow_(p.groupId);
+  checkEnrolled_(user, assignmentRow_(g.assignmentId).courseCode);
   if (hasWork_(groupSubmissionRow_(g.id))) throw new Error('กลุ่มนี้ส่งงานแล้ว ลบไม่ได้ — ย้ายสมาชิกไปกลุ่มอื่นแทน');
   remove_('Submissions', function (s) { return s.groupId === g.id && !s.studentId; });
   remove_('Groups', function (x) { return x.id === g.id; });

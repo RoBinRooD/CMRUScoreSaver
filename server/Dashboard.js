@@ -117,7 +117,7 @@ var AT_RISK_MISSING = 2;
 var AT_RISK_ATTENDANCE = 80;
 
 function apiTeacherDashboard_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var d = courseData_(p.courseCode);
   var roster = rosterOf_(p.courseCode);
   var published = publishedOf_(p.courseCode);

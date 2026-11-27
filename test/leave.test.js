@@ -80,7 +80,7 @@ test('approve marks the week as leave; reversing restores the old mark', () => {
   assert.equal(marks(b, '69000104')[1], 'A', 'back to absent');
 
   // นักศึกษาเห็นผลและความเห็น · ยกเลิก/แนบไฟล์หลังพิจารณาไม่ได้
-  b.ok(T, 'setStudentEmail', { studentId: '69000104', email: '69000104@demo.ac.th' });
+  b.ok(T, 'setStudentEmail', { courseCode: 'DEMO2303', studentId: '69000104', email: '69000104@demo.ac.th' });
   const mine = b.ok('69000104@demo.ac.th', 'myLeaves', { courseCode: 'DEMO2303' })[0];
   assert.equal(mine.status, 'rejected');
   assert.equal(mine.note, 'ไม่มีใบรับรอง');

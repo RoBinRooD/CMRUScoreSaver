@@ -15,6 +15,7 @@ var WRITE_ACTIONS = {
   saveTask: 1, deleteTask: 1,
   submitLeave: 1, finalizeLeaveUpload: 1, cancelLeave: 1, decideLeave: 1,
   openCheckIn: 1, closeCheckIn: 1,
+  setCourseOwners: 1, adminSaveTeacher: 1, adminRemoveTeacher: 1,
   // checkIn ตรวจรหัสก่อน แล้วค่อยเข้า lock เอง (ดู CheckIn.js)
   // สร้างโฟลเดอร์ใน Drive + Script Properties และนับ rate limit
   startUpload: 1, startLeaveUpload: 1, startSyllabusUpload: 1
@@ -45,6 +46,10 @@ function handleRequest_(req) {
     var run = function () {
       resetCache_();
       var user = authenticate_(req.idToken);
+      // สมาชิกหมดอายุ = ดูได้อย่างเดียว (นักศึกษายังส่งงานได้ตามปกติ)
+      if (user.expired && hasOwn_(WRITE_ACTIONS, name)) {
+        throw new Error('สมาชิกของคุณหมดอายุแล้ว (' + user.expiresAt + ') — ดูข้อมูลได้อย่างเดียว ติดต่อผู้ดูแลระบบเพื่อต่ออายุ');
+      }
       return fn(user, req.payload || {});
     };
     var data = hasOwn_(WRITE_ACTIONS, name) ? withLock_(run) : run();

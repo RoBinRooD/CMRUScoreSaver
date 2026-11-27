@@ -47,8 +47,7 @@ function apiGetSyllabus_(user, p) {
 
 /** บันทึกเนื้อหา (ไฟล์แนบจัดการแยกด้วยคำสั่งด้านล่าง) */
 function apiSaveSyllabus_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   var cur = syllabusOf_(c);
   var inp = p.syllabus || {};
   Object.keys(SYLLABUS_TEXT_FIELDS).forEach(function (k) {
@@ -65,8 +64,7 @@ function apiSaveSyllabus_(user, p) {
 }
 
 function apiAddSyllabusLink_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   var s = syllabusOf_(c);
   if (s.attachments.length >= SYLLABUS_MAX_ATTACHMENTS) throw new Error('แนบได้สูงสุด ' + SYLLABUS_MAX_ATTACHMENTS + ' รายการ');
   var url = str_(p.url, 2000);
@@ -77,13 +75,13 @@ function apiAddSyllabusLink_(user, p) {
 }
 
 function apiStartSyllabusUpload_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   if (syllabusOf_(c).attachments.length >= SYLLABUS_MAX_ATTACHMENTS) throw new Error('แนบได้สูงสุด ' + SYLLABUS_MAX_ATTACHMENTS + ' รายการ');
   var size = Number(p.size);
   var maxMB = settingsView_().uploadMaxMB;
   if (!(size > 0)) throw new Error('ไฟล์ว่างเปล่า');
   if (size > maxMB * 1024 * 1024) throw new Error('ไฟล์ใหญ่เกิน ' + maxMB + ' MB');
+  checkQuota_(c.courseCode, size);
   var origin = String(p.origin || '').replace(/\/+$/, '');
   if (settingsView_().allowedOrigins.indexOf(origin) < 0) {
     throw new Error('เว็บไซต์ ' + origin + ' ไม่ได้รับอนุญาตให้อัปโหลด (ตั้งค่า allowedOrigins)');
@@ -102,8 +100,7 @@ function apiStartSyllabusUpload_(user, p) {
 }
 
 function apiFinalizeSyllabusUpload_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   var f = getDriveFile_(String(p.fileId || ''));
   if (!f || f.trashed || (f.appProperties || {}).syllabusOf !== c.courseCode) throw new Error('ไม่พบไฟล์ที่อัปโหลด');
   var s = syllabusOf_(c);
@@ -116,8 +113,7 @@ function apiFinalizeSyllabusUpload_(user, p) {
 }
 
 function apiRemoveSyllabusAttachment_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   var s = syllabusOf_(c);
   var hit = find_(s.attachments, function (x) { return x.id === p.id; });
   if (!hit) throw new Error('ไม่พบไฟล์แนบ');

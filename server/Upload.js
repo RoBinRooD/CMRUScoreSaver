@@ -85,6 +85,7 @@ function apiStartUpload_(user, p) {
   if (settingsView_().allowedOrigins.indexOf(origin) < 0) {
     throw new Error('เว็บไซต์ ' + origin + ' ไม่ได้รับอนุญาตให้อัปโหลด (ตั้งค่า allowedOrigins)');
   }
+  checkQuota_(a.courseCode, size);
 
   var st = studentRow_(a.courseCode, user.studentId);
   var folderId = submissionFolderId_(a, t.folderName);
@@ -272,6 +273,14 @@ function shareAnyoneReader_(id) {
   var res = driveFetch_('post', 'https://www.googleapis.com/drive/v3/files/' + id + '/permissions',
     { role: 'reader', type: 'anyone' });
   if (res.getResponseCode() !== 200) console.warn('share anyone failed ' + id + ': ' + res.getContentText());
+}
+
+/** แชร์ (on) / ถอน (off) สิทธิ์ดูโฟลเดอร์ <root>/<รหัสวิชา> ให้อาจารย์ผู้สอน — ไฟล์ข้างในได้สิทธิ์ตามโฟลเดอร์ */
+function shareCourseFolder_(courseCode, email, on) {
+  var root = settings_().rootFolderId;
+  if (!root || email === Session.getEffectiveUser().getEmail().toLowerCase()) return;
+  var id = ensureFolder_(root, courseCode);
+  if (on) shareReader_(id, email); else unshareReader_(id, email);
 }
 
 /** ย้ายโฟลเดอร์ <root>/<รหัสวิชา> ไปถังขยะ — คืน true ถ้าพบโฟลเดอร์ */

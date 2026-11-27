@@ -79,7 +79,7 @@ test('<id>@domain email not in any roster: told to contact the teacher', () => {
 
 test('<id>@domain email whose id was taken by another account is flagged', () => {
   const b = loadBackend();
-  b.ok(T, 'setStudentEmail', { studentId: '69000104', email: 'someone@demo.ac.th' });
+  b.ok(T, 'setStudentEmail', { courseCode: 'DEMO2303', studentId: '69000104', email: 'someone@demo.ac.th' });
   assert.equal(b.ok('69000104@demo.ac.th', 'me').registration.takenByOther, true);
   assert.match(err(b, '69000104@demo.ac.th', 'register', {}), /บัญชีอื่น/);
 });
@@ -115,7 +115,7 @@ test('register: id and name must match the registrar roster (when enabled)', () 
   assert.match(err(b, e, 'register', { studentId: '69000104', firstName: 'x', lastName: 'y' }), /สมัครแล้ว/);
   // คนอื่นสมัครรหัสเดียวกันไม่ได้ จนกว่าอาจารย์รีเซ็ต
   assert.match(err(b, 'other@demo.ac.th', 'register', { studentId: '69000103', firstName: 'ปิยะ', lastName: 'แสงทอง' }), /บัญชีอื่น/);
-  b.ok(T, 'setStudentEmail', { studentId: '69000103', email: '' });
+  b.ok(T, 'setStudentEmail', { courseCode: 'DEMO2303', studentId: '69000103', email: '' });
   assert.equal(b.ok('other@demo.ac.th', 'register', { studentId: '69000103', firstName: 'ปิยะ', lastName: 'แสงทอง' }).studentId, '69000103');
 });
 
@@ -280,9 +280,10 @@ test('cannot delete an assignment that has submissions', () => {
   assert.equal(b.ok(T, 'listAssignments', { courseCode: 'DEMO2303' }).some((x) => x.id === a.id), false);
 });
 
-test('settings: teacher cannot remove themselves; values validated', () => {
+test('settings: values validated; only admins change shared settings', () => {
   const b = loadBackend();
-  assert.match(err(b, T, 'updateSettings', { teacherEmails: ['other@demo.ac.th'] }), /อีเมลของคุณเอง/);
+  assert.match(err(b, 'teacher2@demo.ac.th', 'updateSettings', { allowedDomains: ['evil.com'] }), /ผู้ดูแลระบบ/);
+  assert.equal(b.ok('teacher2@demo.ac.th', 'getSettings').canEdit, false);
   assert.match(err(b, T, 'updateSettings', { attendancePoints: { P: 2, L: 0, E: 0, A: 0 } }), /0–1/);
   const s = b.ok(T, 'updateSettings', { allowedDomains: ['@g.cmru.ac.th', 'demo.ac.th'] });
   assert.deepEqual(s.allowedDomains, ['g.cmru.ac.th', 'demo.ac.th']);

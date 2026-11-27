@@ -66,14 +66,17 @@ function domainAllowed_(email, domains) {
 }
 
 /**
- * อาจารย์ = อีเมลอยู่ใน Settings.teacherEmails
+ * อาจารย์ = อีเมลอยู่ในแท็บ Teachers และไม่ถูกปิดบัญชี (role admin = ผู้ดูแลระบบ) — เห็นเฉพาะวิชาที่ตัวเองสอน (Courses.owners)
  * นักศึกษา = บัญชีโดเมนมหาวิทยาลัย (Settings.allowedDomains) ที่สมัครแล้ว คือผูกกับรหัสนักศึกษาในแท็บ Students
  *   ยังไม่สมัคร → studentId = null และเว็บจะแสดงหน้าสมัคร (apiRegister_)
  */
 function resolveUser_(ident) {
   var email = ident.email;
-  if (listSetting_('teacherEmails').indexOf(email) >= 0) {
-    return { email: email, name: ident.name, role: 'teacher', courses: [] };
+  var t = teacherRow_(email);
+  if (t && t.status !== 'disabled') {
+    var admin = t.role === 'admin';
+    return { email: email, name: ident.name || t.name, role: 'teacher', admin: admin, expiresAt: t.expiresAt,
+      expired: !admin && teacherExpired_(t), courses: [] };
   }
   var domains = listSetting_('allowedDomains');
   if (!domains.length) throw new Error('AUTH_DOMAIN: ระบบยังไม่เปิดรับนักศึกษา (อาจารย์ยังไม่ได้ตั้งค่าโดเมนมหาวิทยาลัย)');
@@ -125,16 +128,17 @@ function hashPin_(salt, pin) {
     Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + ':' + pin, Utilities.Charset.UTF_8));
 }
 
-function hasDeletePin_() {
-  return !!settings_().deletePinHash;
+function hasDeletePin_(user) {
+  var t = teacherRow_(user.email);
+  return !!(t && t.pinHash);
 }
 
 /** ผิดเกิน 5 ครั้ง/ชม. ต่อบัญชี → ล็อก 1 ชม. */
 function checkDeletePin_(user, pin) {
-  if (!hasDeletePin_()) throw new Error('ยังไม่ได้ตั้ง PIN สำหรับลบ — ตั้งได้ที่แท็บ ตั้งค่า');
+  if (!hasDeletePin_(user)) throw new Error('ยังไม่ได้ตั้ง PIN สำหรับลบ — ตั้งได้ที่แท็บ ตั้งค่า');
   var hit = rateLimit_('pin_' + user.email, 5, 3600, 'ใส่ PIN ผิดหลายครั้งเกินไป กรุณารอ 1 ชั่วโมง');
-  var s = settings_();
-  if (hashPin_(s.deletePinSalt || '', String(pin || '')) !== s.deletePinHash) {
+  var t = teacherRow_(user.email);
+  if (hashPin_(t.pinSalt || '', String(pin || '')) !== t.pinHash) {
     hit();
     throw new Error('PIN ไม่ถูกต้อง');
   }

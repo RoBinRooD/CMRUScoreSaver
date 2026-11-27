@@ -64,7 +64,12 @@ function actions_() {
     gradebook: apiGradebook_,
     updateCourse: apiUpdateCourse_,
     getSettings: apiGetSettings_,
-    updateSettings: apiUpdateSettings_
+    updateSettings: apiUpdateSettings_,
+    setCourseOwners: apiSetCourseOwners_,
+    // ผู้ดูแลระบบ
+    adminOverview: apiAdminOverview_,
+    adminSaveTeacher: apiAdminSaveTeacher_,
+    adminRemoveTeacher: apiAdminRemoveTeacher_
   };
 }
 
@@ -185,14 +190,16 @@ function studentView_(r) {
 }
 
 function checkEnrolled_(user, courseCode) {
-  if (user.role === 'teacher') return;
+  if (user.role === 'teacher') {
+    if (!ownsCourse_(user, courseRow_(courseCode))) throw new Error('ไม่พบวิชา ' + courseCode);
+    return;
+  }
   if (user.courses.indexOf(courseCode) < 0) throw new Error('คุณไม่ได้ลงทะเบียนวิชานี้');
 }
 
 function settingsView_() {
   var s = settings_();
   return {
-    teacherEmails: listSetting_('teacherEmails'),
     allowedDomains: listSetting_('allowedDomains'),
     allowedOrigins: String(s.allowedOrigins || '').split(/[,\s]+/).filter(Boolean),
     gradeCutoffs: jsonSetting_('gradeCutoffs', Grade.DEFAULT_CUTOFFS),
@@ -200,7 +207,7 @@ function settingsView_() {
     attendanceRules: jsonSetting_('attendanceRules', Grade.DEFAULT_ATTENDANCE_RULES),
     uploadMaxMB: Number(s.uploadMaxMB) || 2048,
     allowNameRegistration: s.allowNameRegistration === 'true',
-    hasDeletePin: !!s.deletePinHash
+    hasDeletePin: false
   };
 }
 
@@ -281,9 +288,15 @@ function scoreInRange_(v, max, label) {
 /* ---------- ทุกคน ---------- */
 
 function apiMe_(user) {
-  var courses = rows_('Courses').map(courseView_);
+  var courses;
   if (user.role === 'student') {
-    courses = courses.filter(function (c) { return user.courses.indexOf(c.courseCode) >= 0; });
+    courses = rows_('Courses').map(courseView_).filter(function (c) { return user.courses.indexOf(c.courseCode) >= 0; });
+  } else {
+    courses = rows_('Courses').filter(function (c) { return ownsCourse_(user, c); }).map(function (c) {
+      var v = courseView_(c);
+      v.owners = courseOwners_(c);
+      return v;
+    });
   }
   return {
     email: user.email,
@@ -294,7 +307,10 @@ function apiMe_(user) {
     needsBinding: user.role === 'student' && !user.studentId,
     courses: courses,
     registration: user.role === 'student' && !user.studentId ? registrationInfo_(user) : null,
-    warnings: user.role === 'teacher' ? setupWarnings_() : []
+    warnings: user.role === 'teacher' ? setupWarnings_() : [],
+    admin: !!user.admin,
+    expiresAt: user.role === 'teacher' ? user.expiresAt || '' : '',
+    expired: !!user.expired
   };
 }
 
@@ -441,13 +457,18 @@ function apiImportRoster_(user, p) {
 
   var course = find_(rows_('Courses'), function (r) { return r.courseCode === code; });
   var fields = ['title', 'section', 'term', 'schedule', 'credits', 'teacher'];
+  if (course && !ownsCourse_(user, course)) {
+    throw new Error('รหัสวิชา ' + code + ' มีอาจารย์ท่านอื่นใช้อยู่ — ถ้าสอนร่วมกัน ให้อาจารย์ผู้สอนเพิ่มคุณเป็นผู้สอนร่วม' +
+      ' ถ้าสอนคนละตอนเรียน ให้เติมตอนเรียนต่อท้ายรหัส เช่น ' + code + '-02');
+  }
   if (!course) {
     course = {
       courseCode: code, weights: JSON.stringify(Grade.DEFAULT_WEIGHTS), maxMidterm: '100', maxFinal: '100',
-      gradesVisible: 'false', heldWeeks: '[]'
+      gradesVisible: 'false', heldWeeks: '[]', owners: '[]'
     };
     fields.forEach(function (f) { course[f] = str_(c[f], 200); });
     insert_('Courses', course);
+    setCourseOwners_(course, [user.email]);
   } else {
     fields.forEach(function (f) { if (c[f]) course[f] = str_(c[f], 200); });
     update_('Courses', course);
@@ -486,13 +507,13 @@ function apiImportRoster_(user, p) {
 }
 
 function apiListStudents_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   return rosterOf_(p.courseCode).map(studentView_);
 }
 
 /** บันทึกของอาจารย์ต่อนักศึกษา 1 คนในวิชานี้ (เช่น เรียนอ่อน ปัญหาสุขภาพ) — นักศึกษาไม่เห็น */
 function apiSetStudentNote_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var r = studentRow_(p.courseCode, str_(p.studentId, 20));
   if (!r) throw new Error('ไม่พบรหัส ' + p.studentId + ' ในรายชื่อวิชา ' + p.courseCode);
   r.note = str_(p.note, 2000);
@@ -501,8 +522,9 @@ function apiSetStudentNote_(user, p) {
 }
 
 function apiSetStudentEmail_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var id = str_(p.studentId);
+  if (!studentRow_(p.courseCode, id)) throw new Error('ไม่พบรหัส ' + id + ' ในรายชื่อวิชา ' + p.courseCode);
   var email = str_(p.email, 200).toLowerCase();
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('อีเมลไม่ถูกต้อง');
   var rows = rows_('Students');
@@ -517,8 +539,7 @@ function apiSetStudentEmail_(user, p) {
 }
 
 function apiAddStudent_(user, p) {
-  requireTeacher_(user);
-  courseRow_(p.courseCode);
+  requireCourseTeacher_(user, p.courseCode);
   var id = str_(p.studentId, 20);
   var name = str_(p.name, 200);
   if (!/^\d{8,13}$/.test(id)) throw new Error('รหัสนักศึกษาต้องเป็นตัวเลข 8–13 หลัก');
@@ -543,8 +564,7 @@ function apiAddStudent_(user, p) {
  * preview: true = นับจำนวนที่จะถูกลบ ไม่ต้องใส่ PIN · trashFiles: ย้ายโฟลเดอร์งานใน Drive ไปถังขยะด้วย (กู้คืนได้ 30 วัน)
  */
 function apiDeleteCourse_(user, p) {
-  requireTeacher_(user);
-  var code = courseRow_(p.courseCode).courseCode;
+  var code = requireCourseTeacher_(user, p.courseCode).courseCode;
   var ids = {};
   rows_('Assignments').forEach(function (a) { if (a.courseCode === code) ids[a.id] = true; });
   var inCourse = function (r) { return r.courseCode === code; };
@@ -568,12 +588,14 @@ function apiDeleteCourse_(user, p) {
   remove_('LeaveRequests', inCourse);
   remove_('Students', inCourse);
   remove_('Courses', inCourse);
+  remove_('Settings', function (r) { return r.key === checkinKey_(code); });
+  _cache.settings = null;
   counts.filesTrashed = p.trashFiles ? trashCourseFolder_(code) : false;
   return counts;
 }
 
 function apiRemoveStudent_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var row = find_(rosterOf_(p.courseCode), function (r) { return r.studentId === p.studentId; });
   var email = row && row.email ? row.email.toLowerCase() : '';
   var n = remove_('Students', function (r) { return r.courseCode === p.courseCode && r.studentId === p.studentId; });
@@ -599,7 +621,7 @@ function apiRemoveStudent_(user, p) {
 /* ---------- อาจารย์: งาน ---------- */
 
 function apiListAssignments_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var roster = rosterOf_(p.courseCode).length;
   var subs = rows_('Submissions');
   return rows_('Assignments')
@@ -627,8 +649,7 @@ function apiListAssignments_(user, p) {
 }
 
 function apiUpsertAssignment_(user, p) {
-  requireTeacher_(user);
-  courseRow_(p.courseCode);
+  requireCourseTeacher_(user, p.courseCode);
   var title = str_(p.title, 200);
   if (!title) throw new Error('กรุณาใส่ชื่องาน');
   var max = numOrNull_(p.maxScore);
@@ -660,7 +681,7 @@ function apiUpsertAssignment_(user, p) {
 
 function apiDeleteAssignment_(user, p) {
   requireTeacher_(user);
-  assignmentRow_(p.id);
+  checkEnrolled_(user, assignmentRow_(p.id).courseCode);
   var hasFiles = rows_('Submissions').some(function (s) {
     return s.assignmentId === p.id && (parseJson_(s.files, []).length || s.link);
   });
@@ -675,6 +696,7 @@ function apiDeleteAssignment_(user, p) {
 function apiListSubmissions_(user, p) {
   requireTeacher_(user);
   var a = assignmentRow_(p.assignmentId);
+  checkEnrolled_(user, a.courseCode);
   var group = isGroupWork_(a);
   return {
     assignment: assignmentView_(a),
@@ -694,6 +716,7 @@ function apiListSubmissions_(user, p) {
 function apiSaveGrades_(user, p) {
   requireTeacher_(user);
   var a = assignmentRow_(p.assignmentId);
+  checkEnrolled_(user, a.courseCode);
   var max = Number(a.maxScore);
   var subs = rows_('Submissions');
   var t = now_();
@@ -717,7 +740,7 @@ function apiSaveGrades_(user, p) {
 /* ---------- อาจารย์: เช็คชื่อ / สอบ ---------- */
 
 function apiGetAttendance_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var c = courseView_(courseRow_(p.courseCode));
   var att = {};
   rows_('Attendance').forEach(function (r) { if (r.courseCode === p.courseCode) att[r.studentId] = marksOf_(r); });
@@ -735,8 +758,7 @@ function apiGetAttendance_(user, p) {
 }
 
 function apiSaveAttendance_(user, p) {
-  requireTeacher_(user);
-  var course = courseRow_(p.courseCode);
+  var course = requireCourseTeacher_(user, p.courseCode);
   var rows = rows_('Attendance');
   (p.rows || []).forEach(function (it) {
     checkInRoster_(p.courseCode, it.studentId);
@@ -776,8 +798,7 @@ function updateHeldWeeks_(course) {
  * ช่องอื่นไม่ถูกแตะ — ส่งซ้ำได้ (เช่น กู้คืนจากเครื่องแล้วส่งใหม่) และไม่ทับ "ลา" ที่อนุมัติระหว่างนั้น
  */
 function apiSetAttendanceMarks_(user, p) {
-  requireTeacher_(user);
-  var course = courseRow_(p.courseCode);
+  var course = requireCourseTeacher_(user, p.courseCode);
   var changes = p.changes || [];
   if (changes.length > 5000) throw new Error('เปลี่ยนพร้อมกันมากเกินไป');
   var roster = Object.create(null);
@@ -807,7 +828,7 @@ function apiSetAttendanceMarks_(user, p) {
 }
 
 function apiGetExams_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var c = courseView_(courseRow_(p.courseCode));
   var ex = {};
   rows_('Exams').forEach(function (r) { if (r.courseCode === p.courseCode) ex[r.studentId] = r; });
@@ -825,8 +846,7 @@ function apiGetExams_(user, p) {
 }
 
 function apiSaveExams_(user, p) {
-  requireTeacher_(user);
-  var course = courseRow_(p.courseCode);
+  var course = requireCourseTeacher_(user, p.courseCode);
   var maxM = numOrNull_(p.maxMidterm), maxF = numOrNull_(p.maxFinal);
   if (!(maxM > 0) || !(maxF > 0)) throw new Error('คะแนนเต็มสอบต้องมากกว่า 0');
   course.maxMidterm = String(maxM);
@@ -853,7 +873,7 @@ function apiSaveExams_(user, p) {
 /* ---------- อาจารย์: สมุดคะแนน / ตั้งค่า ---------- */
 
 function apiGradebook_(user, p) {
-  requireTeacher_(user);
+  requireCourseTeacher_(user, p.courseCode);
   var d = courseData_(p.courseCode);
   return {
     course: d.course,
@@ -877,8 +897,7 @@ function apiGradebook_(user, p) {
 }
 
 function apiUpdateCourse_(user, p) {
-  requireTeacher_(user);
-  var c = courseRow_(p.courseCode);
+  var c = requireCourseTeacher_(user, p.courseCode);
   if (p.weights) {
     var w = {};
     Grade.PARTS.forEach(function (k) {
@@ -896,17 +915,17 @@ function apiUpdateCourse_(user, p) {
 
 function apiGetSettings_(user) {
   requireTeacher_(user);
-  return settingsView_();
+  var v = settingsView_();
+  v.hasDeletePin = hasDeletePin_(user);
+  v.canEdit = !!user.admin;
+  return v;
 }
 
 function apiUpdateSettings_(user, p) {
   requireTeacher_(user);
+  // อาจารย์ทั่วไปเปลี่ยนได้แค่ PIN ของตัวเอง · ค่าอื่นใช้ร่วมกันทั้งระบบ = ผู้ดูแลระบบเท่านั้น
+  if (!user.admin && Object.keys(p).some(function (k) { return k !== 'deletePin'; })) requireAdmin_(user);
   var updates = {};
-  if (p.teacherEmails) {
-    var t = p.teacherEmails.map(function (e) { return str_(e).toLowerCase(); }).filter(Boolean);
-    if (t.indexOf(user.email) < 0) throw new Error('ต้องมีอีเมลของคุณเองอยู่ในรายชื่ออาจารย์');
-    updates.teacherEmails = t.join(',');
-  }
   if (p.allowedDomains) updates.allowedDomains = p.allowedDomains.map(function (d) { return str_(d).toLowerCase().replace(/^@/, ''); }).filter(Boolean).join(',');
   if (p.allowedOrigins) updates.allowedOrigins = p.allowedOrigins.map(function (o) { return str_(o).replace(/\/+$/, ''); }).filter(Boolean).join(',');
   if (p.gradeCutoffs) {
@@ -924,13 +943,16 @@ function apiUpdateSettings_(user, p) {
     updates.attendancePoints = JSON.stringify(pts);
   }
   if (p.deletePin) {
-    // เปลี่ยน PIN ต้องใส่ PIN เดิมก่อน (ลืม PIN: ลบค่า deletePinHash ในแท็บ Settings ของ Google Sheet)
-    if (hasDeletePin_()) checkDeletePin_(user, p.deletePin.current);
+    // เปลี่ยน PIN ต้องใส่ PIN เดิมก่อน (ลืม PIN: ผู้ดูแลระบบรีเซ็ตให้ได้ที่หน้าผู้ดูแลระบบ)
+    if (hasDeletePin_(user)) checkDeletePin_(user, p.deletePin.current);
     var pin = str_(p.deletePin.next, 20);
     if (!/^\d{4,8}$/.test(pin)) throw new Error('PIN ต้องเป็นตัวเลข 4–8 หลัก');
-    updates.deletePinSalt = uid_('P');
-    updates.deletePinHash = hashPin_(updates.deletePinSalt, pin);
+    var me = teacherRow_(user.email);
+    me.pinSalt = uid_('P');
+    me.pinHash = hashPin_(me.pinSalt, pin);
+    update_('Teachers', me);
   }
+
   if (p.allowNameRegistration !== undefined) updates.allowNameRegistration = p.allowNameRegistration ? 'true' : 'false';
   if (p.attendanceRules) {
     var ar = {};
@@ -957,5 +979,5 @@ function apiUpdateSettings_(user, p) {
     }
   });
   _cache.settings = null;
-  return settingsView_();
+  return apiGetSettings_(user);
 }

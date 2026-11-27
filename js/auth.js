@@ -63,7 +63,8 @@ export function signIn(container, message) {
       mount(btn);
       card.append(h('div', { class: 'demo-roles' },
         h('p', { class: 'small muted' }, 'โหมดทดลอง — เลือกบทบาท (ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น)'),
-        h('button', { class: 'primary', onclick: () => done('demo:teacher@demo.ac.th') }, 'อาจารย์'),
+        h('button', { class: 'primary', onclick: () => done('demo:teacher@demo.ac.th') }, 'อาจารย์ (ผู้ดูแลระบบ)'),
+        h('button', { onclick: () => done('demo:teacher2@demo.ac.th') }, 'อาจารย์คนที่ 2 (ยังไม่มีวิชา)'),
         h('button', { onclick: () => done('demo:69000101@demo.ac.th') }, 'นักศึกษา 69000101 (สมัครแล้ว · วิชา 2D)'),
         h('button', { onclick: () => done('demo:68000102@demo.ac.th') }, 'นักศึกษา 68000102 (สมัครแล้ว · วิชา 3D)'),
         h('button', { onclick: () => done('demo:69000103@demo.ac.th') }, 'นักศึกษาใหม่ 69000103 (ยังไม่สมัคร)'),

@@ -6,8 +6,9 @@
 
 var SCHEMA = {
   Settings: ['key', 'value'],
+  Teachers: ['email', 'name', 'role', 'status', 'expiresAt', 'quotaGB', 'note', 'createdAt', 'pinSalt', 'pinHash'],
   Courses: ['courseCode', 'title', 'section', 'term', 'schedule', 'credits', 'teacher',
-    'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks', 'syllabus', 'syllabusUpdatedAt'],
+    'weights', 'maxMidterm', 'maxFinal', 'gradesVisible', 'heldWeeks', 'syllabus', 'syllabusUpdatedAt', 'owners'],
   Students: ['courseCode', 'studentId', 'name', 'group', 'email', 'boundAt', 'nickname', 'phone', 'note'],
   Assignments: ['id', 'courseCode', 'title', 'description', 'maxScore', 'dueAt', 'allowLate', 'published', 'createdAt',
     'groupMax', 'half'],

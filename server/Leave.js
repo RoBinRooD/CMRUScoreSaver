@@ -82,6 +82,7 @@ function apiStartLeaveUpload_(user, p) {
   var size = Number(p.size);
   if (!(size > 0)) throw new Error('ไฟล์ว่างเปล่า');
   if (size > LEAVE_MAX_MB * 1024 * 1024) throw new Error('ไฟล์แนบใบลาต้องไม่เกิน ' + LEAVE_MAX_MB + ' MB');
+  checkQuota_(r.courseCode, size);
   var origin = String(p.origin || '').replace(/\/+$/, '');
   if (settingsView_().allowedOrigins.indexOf(origin) < 0) {
     throw new Error('เว็บไซต์ ' + origin + ' ไม่ได้รับอนุญาตให้อัปโหลด (ตั้งค่า allowedOrigins)');
@@ -130,8 +131,7 @@ function apiCancelLeave_(user, p) {
 /* ---------- อาจารย์ ---------- */
 
 function apiListLeaves_(user, p) {
-  requireTeacher_(user);
-  courseRow_(p.courseCode);
+  requireCourseTeacher_(user, p.courseCode);
   return rows_('LeaveRequests')
     .filter(function (r) { return r.courseCode === p.courseCode; })
     .sort(function (a, b) {
@@ -146,6 +146,7 @@ function apiListLeaves_(user, p) {
 function apiDecideLeave_(user, p) {
   requireTeacher_(user);
   var r = leaveRow_(p.leaveId);
+  checkEnrolled_(user, r.courseCode);
   if (LEAVE_STATUS.indexOf(p.status) < 0) throw new Error('สถานะไม่ถูกต้อง');
   var att = find_(rows_('Attendance'), function (x) { return x.courseCode === r.courseCode && x.studentId === r.studentId; });
   var key = 'w' + r.week;

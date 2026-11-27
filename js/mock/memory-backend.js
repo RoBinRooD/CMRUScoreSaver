@@ -13,6 +13,8 @@ function memoryLoad_(seed) {
   try {
     var saved = typeof localStorage !== 'undefined' && localStorage.getItem(MEMORY_KEY);
     if (saved) MEMORY_DB = JSON.parse(saved);
+    // ข้อมูลทดลองรุ่นเก่า (ไม่มีตารางใหม่) → เริ่มใหม่
+    if (MEMORY_DB && Object.keys(SCHEMA).some(function (k) { return !MEMORY_DB[k]; })) MEMORY_DB = null;
   } catch (e) { /* ใช้ seed */ }
   if (!MEMORY_DB) MEMORY_DB = seed || memorySeed_();
   return MEMORY_DB;
@@ -33,7 +35,6 @@ function memorySeed_() {
   var db = {};
   Object.keys(SCHEMA).forEach(function (k) { db[k] = []; });
   db.Settings = [
-    { key: 'teacherEmails', value: 'teacher@demo.ac.th' },
     { key: 'allowedDomains', value: 'demo.ac.th' },
     { key: 'allowedOrigins', value: (typeof location !== 'undefined' ? location.origin + ',' : '') + 'http://localhost:8080' },
     { key: 'clientId', value: 'demo' },
@@ -42,6 +43,10 @@ function memorySeed_() {
     { key: 'attendancePoints', value: JSON.stringify(Grade.DEFAULT_ATTENDANCE_POINTS) },
     { key: 'uploadMaxMB', value: '2048' }
   ];
+  db.Teachers = [
+    { email: 'teacher@demo.ac.th', name: 'อาจารย์ ตัวอย่าง', role: 'admin', status: 'active', expiresAt: '', quotaGB: '', note: '', createdAt: new Date().toISOString(), pinSalt: '', pinHash: '' },
+    { email: 'teacher2@demo.ac.th', name: 'อาจารย์ คนที่สอง', role: 'teacher', status: 'active', expiresAt: '', quotaGB: '', note: 'ยังไม่มีวิชา', createdAt: new Date().toISOString(), pinSalt: '', pinHash: '' }
+  ];
   var first = ['สมชาย', 'สมหญิง', 'ปิยะ', 'อรุณี', 'กิตติ', 'มาลี', 'วีระ', 'ชนิดา'];
   var last = ['ใจดี', 'รักเรียน', 'แสงทอง', 'มีสุข', 'ศรีงาม', 'คำแก้ว', 'บุญมา', 'ทองดี'];
   [['DEMO2303', 'คอมพิวเตอร์กราฟิกเพื่องานออกแบบสองมิติ (ตัวอย่าง)', '69000', 'พฤ. 08:00-12:00'],
@@ -49,7 +54,7 @@ function memorySeed_() {
     db.Courses.push({
       courseCode: c[0], title: c[1], section: '01', term: '2/2569', schedule: c[3], credits: '3(2-2-5)',
       teacher: 'อาจารย์ ตัวอย่าง', weights: JSON.stringify(Grade.DEFAULT_WEIGHTS), maxMidterm: '100', maxFinal: '100',
-      gradesVisible: 'false', heldWeeks: '[1,2]'
+      gradesVisible: 'false', heldWeeks: '[1,2]', owners: JSON.stringify(['teacher@demo.ac.th'])
     });
     for (var i = 0; i < 8; i++) {
       var id = c[2] + String(101 + i);
@@ -261,6 +266,14 @@ function syllabusFolderId_(courseCode) {
 function shareAnyoneReader_(id) {
   var f = memoryLoad_()._files[id];
   if (f) f.public = true;
+  memoryPersist_();
+}
+
+function shareCourseFolder_(courseCode, email, on) {
+  var db = memoryLoad_();
+  db._folderShares = db._folderShares || {};
+  var list = db._folderShares[courseCode] || [];
+  db._folderShares[courseCode] = on ? list.concat(list.indexOf(email) < 0 ? [email] : []) : list.filter(function (e) { return e !== email; });
   memoryPersist_();
 }
 

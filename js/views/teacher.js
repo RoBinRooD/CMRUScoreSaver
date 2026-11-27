@@ -6,6 +6,7 @@ import { renderTimeline } from './timeline.js';
 import { renderBoard } from './board.js';
 import { teacherLeaves } from './leave.js';
 import { startCheckIn, resumeCheckIn } from './checkin.js';
+import { renderAdmin } from './admin.js';
 
 const TABS = [
   ['overview', 'ภาพรวม'],
@@ -31,22 +32,24 @@ function noteMark(s) {
 
 export function renderTeacher(root, ctx) {
   const { course } = ctx;
-  let tab = TABS.some(([k]) => k === ctx.tab) ? ctx.tab : 'overview';
+  const admin = ctx.me.admin ? [['admin', 'ผู้ดูแลระบบ']] : [];
+  const list = [...(course ? TABS : [['students', 'นักศึกษา'], ['settings', 'ตั้งค่า']]), ...admin];
+  let tab = list.some(([k]) => k === ctx.tab) ? ctx.tab : course ? 'overview' : 'students';
   ctx.openGrading = (id) => { gradingAssignment = id; ctx.setTab('grading'); };
-  if (!course && tab !== 'settings') tab = 'students';
   const body = h('div');
   mount(root,
     (ctx.me.warnings || []).map((w) => h('div', { class: 'banner' }, '⚠️ ', w)),
+    ctx.me.expired ? h('div', { class: 'banner bad' }, `สมาชิกหมดอายุเมื่อ ${ctx.me.expiresAt} — ดูข้อมูลได้อย่างเดียว (นักศึกษายังส่งงานได้) ติดต่อผู้ดูแลระบบเพื่อต่ออายุ`) : null,
     course
       ? h('div', { style: 'margin-bottom:.5rem' },
         h('h1', {}, course.title),
         h('div', { class: 'muted small' }, `${course.courseCode} · Sec ${course.section} · ภาค ${course.term} · ${course.schedule}`))
       : h('h1', {}, 'เริ่มต้น: นำเข้ารายชื่อนักศึกษา'),
-    tabs(course ? TABS : [['students', 'นักศึกษา'], ['settings', 'ตั้งค่า']], tab, ctx.setTab),
+    tabs(list, tab, ctx.setTab),
     body);
   const views = {
     overview: teacherDashboard, syllabus: renderSyllabus, timeline: renderTimeline, board: renderBoard, leaves: teacherLeaves,
-    assignments, grading, attendance, exams, gradebook, students, settings
+    assignments, grading, attendance, exams, gradebook, students, settings, admin: renderAdmin
   };
   views[tab](body, ctx).catch((e) => mount(body, errorBox(e)));
 }
@@ -761,7 +764,7 @@ async function students(body, ctx) {
         s.note ? h('div', { class: 'small note-text', title: s.note }, s.note) : null,
         h('button', { class: 'sm ghost', onclick: () => editNote(ctx.course, s).then((ok) => ok && reload()) }, s.note ? 'แก้บันทึก' : '+ บันทึก')),
       h('td', { class: 'nowrap' },
-        h('button', { class: 'sm', onclick: () => editEmail(s).then((ok) => ok && reload()) }, s.email ? 'แก้/รีเซ็ต' : 'กำหนดอีเมล'),
+        h('button', { class: 'sm', onclick: () => editEmail(ctx.course, s).then((ok) => ok && reload()) }, s.email ? 'แก้/รีเซ็ต' : 'กำหนดอีเมล'),
         actionButton('นำออก', async () => {
           if (!(await confirmBox(`นำ ${s.name} ออกจากรายชื่อวิชานี้? (งานที่ส่งแล้วยังอยู่)`, 'นำออก', 'danger'))) return;
           await call('removeStudent', { courseCode: ctx.course.courseCode, studentId: s.studentId });
@@ -809,11 +812,11 @@ function editNote(course, s) {
   [{ label: 'บันทึก', run: async () => { await call('setStudentNote', { courseCode: course.courseCode, studentId: s.studentId, note: input.value.trim() }); toast('บันทึกแล้ว'); } }]);
 }
 
-function editEmail(s) {
+function editEmail(course, s) {
   const input = h('input', { type: 'email', value: s.email, placeholder: 'เว้นว่าง = รีเซ็ตให้นักศึกษาสมัครใหม่' });
   return modal(`บัญชีของ ${s.studentId} ${s.name}`,
     h('label', { class: 'field' }, h('span', {}, 'อีเมล Google'), input),
-    [{ label: 'บันทึก', run: async () => { await call('setStudentEmail', { studentId: s.studentId, email: input.value.trim() }); toast('บันทึกแล้ว'); } }]);
+    [{ label: 'บันทึก', run: async () => { await call('setStudentEmail', { courseCode: course.courseCode, studentId: s.studentId, email: input.value.trim() }); toast('บันทึกแล้ว'); } }]);
 }
 
 function rosterImporter(ctx) {
@@ -856,7 +859,6 @@ async function settings(body, ctx) {
   const s = await call('getSettings');
   const text = (v) => h('textarea', { value: v.join('\n'), style: 'min-height:70px' });
   const f = {
-    teacherEmails: text(s.teacherEmails),
     allowedDomains: text(s.allowedDomains),
     allowedOrigins: text(s.allowedOrigins),
     uploadMaxMB: h('input', { type: 'number', min: 1, value: s.uploadMaxMB }),
@@ -868,10 +870,28 @@ async function settings(body, ctx) {
   const rules = { failAbove: rule('failAbove'), warnAt: rule('warnAt'), latePerAbsence: rule('latePerAbsence') };
   const lines = (el) => el.value.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 
+  const own = [
+    ctx.course ? courseTeachersSection(ctx) : null,
+    pinSection(s, () => settings(body, ctx)),
+    ctx.course ? deleteCourseSection(ctx, s) : null
+  ];
+  // การตั้งค่ารวมของทั้งระบบ — อาจารย์ทั่วไปดูได้อย่างเดียว
+  if (!s.canEdit) {
+    return mount(body, h('div', { class: 'stack' }, ...own,
+      h('section', { class: 'card' },
+        h('h2', {}, 'การตั้งค่าของระบบ'),
+        h('p', { class: 'muted small' }, 'ใช้ร่วมกันทุกวิชา — ผู้ดูแลระบบเป็นผู้แก้ไข'),
+        h('ul', { class: 'small' },
+          h('li', {}, 'โดเมนอีเมลนักศึกษา: ', s.allowedDomains.join(', ') || '(ยังไม่ตั้ง)'),
+          h('li', {}, 'เกณฑ์เกรด: ', s.gradeCutoffs.map(([g, m]) => `${g} ≥ ${m}`).join(' · ')),
+          h('li', {}, `เกณฑ์ขาดเรียน: ขาดเกิน ${s.attendanceRules.failAbove} = F · ตั้งแต่ ${s.attendanceRules.warnAt} = ติดตาม · สาย ${s.attendanceRules.latePerAbsence} = ขาด 1`),
+          h('li', {}, `ขนาดไฟล์สูงสุด ${s.uploadMaxMB} MB ต่อไฟล์`)))));
+  }
+
   mount(body, h('div', { class: 'stack' },
+    ...own.slice(0, 1),
     h('section', { class: 'card form' },
-      h('h2', {}, 'การเข้าถึง'),
-      h('label', { class: 'field' }, h('span', {}, 'อีเมลอาจารย์ (บรรทัดละ 1)'), f.teacherEmails),
+      h('h2', {}, 'การเข้าถึง (ทั้งระบบ)'),
       h('label', { class: 'field' }, h('span', {}, 'โดเมนอีเมลมหาวิทยาลัยที่นักศึกษาใช้ล็อกอิน เช่น cmru.ac.th (จำเป็น — ว่าง = นักศึกษาเข้าไม่ได้)'), f.allowedDomains),
       h('label', { class: 'field' }, h('span', {}, 'เว็บไซต์ที่อัปโหลดได้ (origin) เช่น https://robinrood.github.io'), f.allowedOrigins),
       h('label', { class: 'field' }, h('span', {}, 'ขนาดไฟล์สูงสุดต่อไฟล์ (MB)'), f.uploadMaxMB),
@@ -892,7 +912,6 @@ async function settings(body, ctx) {
       h('p', { class: 'muted small' }, 'ลาไม่นับเป็นขาด · ช่องว่าง = ยังไม่เช็ค ไม่นับ · ใส่ 0 ที่ "สาย" = สายไม่นับเป็นขาด · ใช้กับทุกวิชา')),
     h('div', { class: 'row' }, h('span', { class: 'spacer' }), actionButton('บันทึกการตั้งค่า', async () => {
       await call('updateSettings', {
-        teacherEmails: lines(f.teacherEmails),
         allowedDomains: lines(f.allowedDomains),
         allowedOrigins: lines(f.allowedOrigins),
         uploadMaxMB: Number(f.uploadMaxMB.value),
@@ -904,8 +923,36 @@ async function settings(body, ctx) {
       toast('บันทึกการตั้งค่าแล้ว');
       await ctx.refreshMe();
     }, { class: 'primary' })),
-    pinSection(s, () => settings(body, ctx)),
-    ctx.course ? deleteCourseSection(ctx, s) : null));
+    ...own.slice(1)));
+}
+
+/** อาจารย์ผู้สอนของวิชานี้ — ผู้สอนทุกคนเห็นและแก้วิชาได้เท่ากัน */
+function courseTeachersSection(ctx) {
+  const c = ctx.course;
+  const owners = [...(c.owners || [])];
+  const input = h('input', { type: 'email', placeholder: 'อีเมลอาจารย์ที่มีบัญชีในระบบแล้ว', style: 'flex:1;min-width:14em' });
+  const save = async (next, msg) => {
+    const res = await call('setCourseOwners', { courseCode: c.courseCode, owners: next });
+    toast(msg);
+    if (res.removedSelf) ctx.setTab('overview');
+    await ctx.refreshMe();
+  };
+  return h('section', { class: 'card form' },
+    h('h2', {}, 'อาจารย์ผู้สอน'),
+    h('p', { class: 'muted small' }, `ผู้สอนทุกคนเห็นและแก้ไขวิชา ${c.courseCode} ได้เท่ากัน และเปิดไฟล์งานใน Google Drive ได้ · คนแรกเป็นเจ้าของพื้นที่เก็บไฟล์`),
+    h('ul', { class: 'owner-list' }, owners.map((e) => h('li', { class: 'row' },
+      h('span', {}, e, e === ctx.me.email ? h('span', { class: 'muted' }, ' (คุณ)') : null),
+      h('span', { class: 'spacer' }),
+      owners.length > 1 ? actionButton(e === ctx.me.email ? 'ออกจากวิชานี้' : 'นำออก', async () => {
+        const self = e === ctx.me.email;
+        if (!(await confirmBox(self ? `ออกจากการสอนวิชา ${c.courseCode}? คุณจะไม่เห็นวิชานี้อีก` : `นำ ${e} ออกจากผู้สอนวิชา ${c.courseCode}?`, self ? 'ออกจากวิชา' : 'นำออก', 'danger'))) return;
+        await save(owners.filter((x) => x !== e), self ? 'ออกจากวิชาแล้ว' : 'นำออกแล้ว');
+      }, { class: 'sm ghost danger' }) : null))),
+    h('div', { class: 'row' }, input, actionButton('+ เพิ่มผู้สอนร่วม', async () => {
+      const e = input.value.trim().toLowerCase();
+      if (!e) throw new Error('กรุณาใส่อีเมล');
+      await save([...owners, e], `เพิ่ม ${e} แล้ว`);
+    })));
 }
 
 const pinInput = (label) => h('input', {
@@ -920,7 +967,7 @@ function pinSection(s, reload) {
   return h('section', { class: 'card form' },
     h('h2', {}, 'PIN สำหรับลบข้อมูล'),
     h('p', { class: 'muted small' }, s.hasDeletePin
-      ? 'ตั้ง PIN แล้ว — ต้องใส่ทุกครั้งที่ลบวิชา · ลืม PIN: ลบค่า deletePinHash ในแท็บ Settings ของ Google Sheet แล้วตั้งใหม่'
+      ? 'ตั้ง PIN แล้ว — ต้องใส่ทุกครั้งที่ลบวิชา · ลืม PIN: ให้ผู้ดูแลระบบรีเซ็ตให้'
       : 'ยังไม่ได้ตั้ง PIN — ต้องตั้งก่อนจึงจะลบวิชาได้ (ตัวเลข 4–8 หลัก ระบบเก็บแบบเข้ารหัส ไม่มีใครเห็น PIN)'),
     h('div', { class: 'row' },
       s.hasDeletePin ? h('label', { class: 'field' }, h('span', {}, 'PIN เดิม'), current) : null,

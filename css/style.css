@@ -340,3 +340,37 @@ footer.build { text-align: center; padding: 1.5rem 0 1rem; }
 .note-text { white-space: pre-wrap; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; margin-bottom: 0.25rem; }
 
 .save-status { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 100%; }
+
+/* เช็คชื่อด้วย QR */
+.banner.info { background: var(--info-soft); color: var(--info); align-items: center; }
+.projector {
+  position: fixed; inset: 0; z-index: 50; background: var(--bg); color: var(--text, inherit);
+  display: flex; flex-direction: column; padding: 16px 24px; overflow: auto;
+}
+.proj-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.proj-title { font-size: 1.3rem; font-weight: 600; }
+.proj-body { flex: 1; display: flex; gap: 2rem; align-items: center; justify-content: center; flex-wrap: wrap; min-height: 0; }
+.proj-qr { text-align: center; }
+.qr-box { background: #fff; padding: 8px; border-radius: 12px; display: inline-block; }
+.qr { display: block; width: min(68vh, 88vw); height: auto; image-rendering: pixelated; }
+.qr-bar { height: 6px; background: #e5e5e5; border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.qr-bar > div { height: 100%; background: var(--ok); transition: width 0.25s linear; }
+.proj-hint { font-size: 1.15rem; margin: 0.75rem 0 0.25rem; }
+.proj-side { min-width: 240px; max-width: 360px; }
+.proj-count { font-size: 1.4rem; }
+.proj-count strong { font-size: 3.5rem; line-height: 1; }
+.proj-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.35rem; }
+.proj-list .mark { display: inline-flex; align-items: center; width: 1.6rem; height: 1.6rem; vertical-align: middle; }
+.checkin-result h1 { margin: 0.5rem 0; }
+.checkin-icon {
+  width: 84px; height: 84px; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;
+  font-size: 3rem; font-weight: 700;
+}
+.checkin-icon.ok { background: var(--ok-soft); color: var(--ok); }
+.checkin-icon.warn { background: var(--warn-soft); color: var(--warn); }
+.checkin-icon.bad { background: var(--bad-soft); color: var(--bad); }
+.checkin-mark { display: inline-block; font-size: 1.6rem; font-weight: 600; padding: 0.2rem 1.2rem; border-radius: 999px; margin-bottom: 0.5rem; }
+.checkin-mark.P { background: var(--ok-soft); color: var(--ok); }
+.checkin-mark.L { background: var(--warn-soft); color: var(--warn); }
+.checkin-result > button { margin-top: 0.75rem; width: 100%; justify-content: center; }
+@media (max-width: 700px) { .proj-side { max-width: none; width: 100%; } }

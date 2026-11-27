@@ -193,6 +193,17 @@ function verifyIdToken_(token) {
   return { email: m[1].toLowerCase(), name: m[1].split('@')[0] };
 }
 
+/** โหมดทดลองไม่มี Utilities — ใช้ hash ง่ายๆ (FNV-1a) แทน */
+function checkinHash_(text) {
+  var out = '';
+  for (var round = 0; round < 2; round++) {
+    var h = 0x811c9dc5 ^ round;
+    for (var i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193) >>> 0;
+    out += ('0000000' + h.toString(16)).slice(-8);
+  }
+  return out;
+}
+
 function hashPin_(salt, pin) {
   return 'demo-hash:' + salt + ':' + pin;
 }

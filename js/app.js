@@ -1,11 +1,15 @@
-import { h, mount, loading, errorBox } from './ui.js';
+import { h, mount, loading, errorBox, toast } from './ui.js';
 import { DEMO, getToken, signIn, signOut } from './auth.js';
 import { call, onReauth, resetDemo } from './api.js';
 import { renderStudent } from './views/student.js';
 import { renderTeacher } from './views/teacher.js';
+import { takeCheckInParam, clearCheckInParam, inAppBrowserNotice, renderCheckIn } from './views/checkin.js';
 
 const app = document.getElementById('app');
 const topRight = document.getElementById('topbar-right');
+
+// สแกน QR เช็คชื่อมา (?ci=...) — ทำหลังล็อกอินและสมัครเสร็จ
+let pendingCheckIn = takeCheckInParam();
 
 const state = {
   me: null,
@@ -77,13 +81,25 @@ function ctx() {
 
 function render() {
   const c = ctx();
+  if (pendingCheckIn && state.me.role === 'student' && !state.me.needsBinding) {
+    const ci = pendingCheckIn;
+    pendingCheckIn = null;
+    clearCheckInParam();
+    return renderCheckIn(app, c, ci, render);
+  }
+  if (pendingCheckIn && state.me.role === 'teacher') {
+    pendingCheckIn = null;
+    clearCheckInParam();
+    toast('QR เช็คชื่อใช้กับบัญชีนักศึกษาเท่านั้น');
+  }
   if (state.me.role === 'teacher') renderTeacher(app, c);
   else renderStudent(app, c);
 }
 
 async function start() {
   state.tab = location.hash.slice(1) || null;
-  if (!getToken()) await signIn(app);
+  if (!getToken() && inAppBrowserNotice(app, pendingCheckIn)) return;
+  if (!getToken()) await signIn(app, pendingCheckIn ? 'เข้าสู่ระบบเพื่อเช็คชื่อ' : undefined);
   mount(app, loading());
   try {
     await refreshMe();

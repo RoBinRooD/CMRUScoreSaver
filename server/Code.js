@@ -14,6 +14,8 @@ var WRITE_ACTIONS = {
   saveSyllabus: 1, addSyllabusLink: 1, finalizeSyllabusUpload: 1, removeSyllabusAttachment: 1,
   saveTask: 1, deleteTask: 1,
   submitLeave: 1, finalizeLeaveUpload: 1, cancelLeave: 1, decideLeave: 1,
+  openCheckIn: 1, closeCheckIn: 1,
+  // checkIn ตรวจรหัสก่อน แล้วค่อยเข้า lock เอง (ดู CheckIn.js)
   // สร้างโฟลเดอร์ใน Drive + Script Properties และนับ rate limit
   startUpload: 1, startLeaveUpload: 1, startSyllabusUpload: 1
 };

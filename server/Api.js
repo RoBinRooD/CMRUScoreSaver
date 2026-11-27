@@ -16,6 +16,7 @@ function actions_() {
     myGrades: apiMyGrades_,
     studentDashboard: apiStudentDashboard_,
     myLeaves: apiMyLeaves_,
+    checkIn: apiCheckIn_,
     submitLeave: apiSubmitLeave_,
     startLeaveUpload: apiStartLeaveUpload_,
     finalizeLeaveUpload: apiFinalizeLeaveUpload_,
@@ -45,6 +46,9 @@ function actions_() {
     teacherDashboard: apiTeacherDashboard_,
     listLeaves: apiListLeaves_,
     decideLeave: apiDecideLeave_,
+    openCheckIn: apiOpenCheckIn_,
+    checkInStatus: apiCheckInStatus_,
+    closeCheckIn: apiCloseCheckIn_,
     saveSyllabus: apiSaveSyllabus_,
     addSyllabusLink: apiAddSyllabusLink_,
     startSyllabusUpload: apiStartSyllabusUpload_,
@@ -721,6 +725,7 @@ function apiGetAttendance_(user, p) {
     heldWeeks: c.heldWeeks,
     attendanceRules: settingsView_().attendanceRules,
     pendingLeaves: pendingLeaves_(p.courseCode),
+    checkIn: (function (s) { return s ? { week: s.week, openedAt: s.openedAt } : null; })(checkinSession_(p.courseCode)),
     rows: rosterOf_(p.courseCode).map(function (r) {
       var v = studentView_(r);
       v.marks = att[r.studentId] || marksOf_(null);

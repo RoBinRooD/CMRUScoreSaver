@@ -5,6 +5,7 @@ import { renderSyllabus } from './syllabus.js';
 import { renderTimeline } from './timeline.js';
 import { renderBoard } from './board.js';
 import { teacherLeaves } from './leave.js';
+import { startCheckIn, resumeCheckIn } from './checkin.js';
 
 const TABS = [
   ['overview', 'ภาพรวม'],
@@ -521,7 +522,18 @@ async function attendance(body, ctx) {
   // วาดใหม่เมื่อบันทึกเสร็จ เพื่อเอาจุด "ยังไม่บันทึก" ออก
   saver.onChange = () => { drawStatus(); if (!saver.saving && holder.isConnected) draw(); };
 
+  // ปิด/ย่อจอ QR → โหลดตารางใหม่ (ระบบลงชื่อให้ระหว่างนั้น) — ส่งที่ค้างก่อนเพื่อไม่ให้หาย
+  const afterQr = async () => { await saver.flush(); attendance(body, ctx); };
+  const qrBar = data.checkIn
+    ? h('div', { class: 'banner info row' }, `กำลังเปิดเช็คชื่อด้วย QR สัปดาห์ ${data.checkIn.week} (เปิดเมื่อ ${fmtDate(data.checkIn.openedAt)})`,
+      h('span', { class: 'spacer' }),
+      actionButton('แสดง QR', () => resumeCheckIn(ctx, afterQr), { class: 'sm primary' }))
+    : h('div', { class: 'row' },
+      actionButton('📱 เช็คชื่อด้วย QR', () => startCheckIn(ctx, rows, afterQr), { class: 'primary' }),
+      h('span', { class: 'muted small' }, 'นักศึกษาสแกน QR บนจอด้วยมือถือ ระบบลงชื่อ มา/สาย ให้เอง ปิดรอบแล้วคนที่ไม่สแกน = ขาด'));
+
   mount(body, h('div', { class: 'stack' },
+    qrBar,
     data.pendingLeaves ? h('div', { class: 'banner' }, `มีใบลารออนุมัติ ${data.pendingLeaves} ใบ — อนุมัติแล้วระบบจะเช็คชื่อเป็น "ลา" ให้ `,
       h('button', { class: 'sm', onclick: () => ctx.setTab('leaves') }, 'ไปที่ใบลา')) : null,
     h('div', { class: 'row' },
